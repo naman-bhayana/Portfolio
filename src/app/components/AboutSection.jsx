@@ -55,22 +55,22 @@ const AboutSection = () => {
   return (
     <section className="text-white" id="about">
       <div className="md:grid md:grid-cols-2 gap-8 items-center py-8 px-4 xl:gap-16 sm:py-16 xl:px-16">
-        <Image src="/images/about-image.png" width={500} height={500} />
+        <Image src="/images/about-image.png" width={500} height={500} alt="About me profile" />
         <div className="mt-4 md:mt-0 text-left flex flex-col h-full">
           <h2 className="text-4xl font-bold text-white mb-4">About Me</h2>
           <p className="text-base lg:text-lg ">
-            I'm a Full-Stack Developer and Data Science graduate with a strong
+            I&apos;m a Full-Stack Developer and Data Science graduate with a strong
             focus on building smart, scalable, and data-driven web applications.
             I specialize in the MERN stack, Java, Python, and SQL, with
             extensive experience developing RESTful APIs and integrating dynamic
-            features. I’m passionate about blending functionality with clean,
+            features. I&apos;m passionate about blending functionality with clean,
             responsive design using React, Next.js, Tailwind CSS, and Bootstrap.
           </p>
           <br />
           <p className="text-base lg:text-lg">
-            As a Machine Learning enthusiast, I've built ML models and leveraged
+            As a Machine Learning enthusiast, I&apos;ve built ML models and leveraged
             data to drive insights and automation. I also explore blockchain
-            technology to create decentralized applications. I'm a quick
+            technology to create decentralized applications. I&apos;m a quick
             learner, a problem-solver, and someone who enjoys collaborating to
             turn ideas into real-world solutions.
           </p>

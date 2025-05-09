@@ -10,16 +10,36 @@ export async function POST(req, res) {
   try {
     const data = await resend.emails.send({
       from: fromEmail,
-      to: [fromEmail, email],
+      to: [fromEmail,email, "naman.bhayana13@gmail.com"],
       subject: subject,
       react: (
         <>
-          <h1>{subject}</h1>
-          <p>Thank you for contacting us!</p>
-          <p>New message submitted:</p>
-          <p>{message}</p>
+          <div style={{ fontFamily: 'Arial, sans-serif', color: '#333', lineHeight: '1.6' }}>
+            <h2 style={{ color: '#2c3e50' }}>📧 New Contact Request</h2>
+            <p><strong>Subject:</strong> <span style={{ color: '#16a085' }}>{subject}</span></p>
+      
+            <div style={{
+              backgroundColor: '#f4f6f8',
+              padding: '15px',
+              borderRadius: '8px',
+              borderLeft: '5px solid #3498db',
+              margin: '20px 0'
+            }}>
+              <p style={{ margin: 0 }}><strong>Message:</strong></p>
+              <p style={{ margin: '10px 0 0' }}>{message}</p>
+            </div>
+      
+            <p>This is an <strong>automated response</strong> to confirm I’ve received your message.</p>
+            <p>Thank you for reaching out to me. I appreciate your message and will respond shortly.</p>
+            
+            <p style={{ marginTop: '30px' }}>
+              Best regards,<br />
+              <strong style={{ color: '#2c3e50' }}>Naman Bhayana</strong>
+            </p>
+          </div>
         </>
-      ),
+      )
+      
     });
     return NextResponse.json(data);
   } catch (error) {
