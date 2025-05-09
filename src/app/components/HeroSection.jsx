@@ -48,8 +48,10 @@ const HeroSection = () => {
             >
               Hire Me
             </Link>
-            <Link
+            <a
               href="https://drive.google.com/drive/folders/13KSsUzJI9t4Hq_zm4Ll_uaIVDSQGAJuC?usp=sharing"
+              target="_blank"
+              rel="noopener noreferrer"
               className="px-1 inline-block py-1 w-full sm:w-fit rounded-full bg-gradient-to-br from-[#00ffe7] to-[#0066ff]
 
  hover:bg-slate-800 text-white mt-3"
@@ -57,7 +59,7 @@ const HeroSection = () => {
               <span className="block bg-[#121212] hover:bg-slate-800 rounded-full px-5 py-2">
                 Download CV
               </span>
-            </Link>
+            </a>
           </div>
         </motion.div>
         <motion.div
