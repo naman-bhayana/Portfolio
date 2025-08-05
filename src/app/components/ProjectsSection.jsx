@@ -7,6 +7,24 @@ import { motion, useInView } from "framer-motion";
 const projectsData = [
   {
     id: 1,
+    title: "WanderNest",
+    description: " WanderNest is a full-stack vacation rental app with secure CRUD, smart search, reviews, OAuth login, Mapbox maps, and image uploads—powered by RESTful APIs and encrypted data handling for a seamless booking experience.",
+    image: "/images/projects/wandernest.png",
+    tag: ["All", "Web","AI/ML"],
+    gitUrl: "https://github.com/naman-bhayana/WanderNest",
+    previewUrl: "https://wandernest-j69y.onrender.com/",
+  },
+  {
+    id: 2,
+    title: "Plinko",
+    description: "Plinko is a web-based game where users drop a ball through a peg-filled pyramid to win random multipliers, inspired by the classic Japanese Pachinko.",
+    image: "/images/projects/plinko.png",
+    tag: ["All", "Web","Blockchain"],
+    gitUrl: "https://github.com/naman-bhayana/Plinko",
+    previewUrl: "https://plinko-frontend-hvak.onrender.com/",
+  },
+  {
+    id: 3,
     title: "Intellishop",
     description: "A smart retail experience powered by AI and robotics. The application allows users to place orders, track deliveries, and interact with robotic assistants in store.",
     image: "/images/projects/1.png",
@@ -15,7 +33,7 @@ const projectsData = [
     previewUrl: "https://github.com/naman-bhayana/Intellishop",
   },
   {
-    id: 2,
+    id: 4,
     title: "Jobzee",
     description: "Jobzee is a web-based job consultancy platform built with the MERN stack, connecting job seekers and employers through a secure and user-friendly interface.",
     image: "/images/projects/21.png",
@@ -24,7 +42,7 @@ const projectsData = [
     previewUrl: "https://github.com/naman-bhayana/Jobzee",
   },
   {
-    id: 3,
+    id: 5,
     title: "ArtBlock",
     description: "ArtBlock is a beginner-friendly NFT marketplace where artists can securely showcase and sell digital art, built with a future-ready MERN stack and simulated blockchain features.",
     image: "/images/projects/71.png",
@@ -32,24 +50,6 @@ const projectsData = [
     gitUrl: "https://github.com/naman-bhayana/ArtBlock",
     previewUrl: "https://github.com/naman-bhayana/ArtBlock",
   },
-  // {
-  //   id: 4,
-  //   title: "Food Ordering Application",
-  //   description: "Project 4 description",
-  //   image: "/images/projects/4.png",
-  //   tag: ["All", "Mobile"],
-  //   gitUrl: "/",
-  //   previewUrl: "/",
-  // },
-  // {
-  //   id: 5,
-  //   title: "React Firebase Template",
-  //   description: "Authentication and CRUD operations",
-  //   image: "/images/projects/5.png",
-  //   tag: ["All", "Web"],
-  //   gitUrl: "/",
-  //   previewUrl: "/",
-  // },
   // {
   //   id: 6,
   //   title: "Full-stack Roadmap",
