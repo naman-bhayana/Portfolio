@@ -32,7 +32,7 @@ export async function POST(req, res) {
               <p style={{ margin: '10px 0 0' }}>{message}</p>
             </div>
       
-            <p>This is an <strong>automated response</strong> to confirm I've received your message.</p>
+            <p>This is an <strong>automated response</strong> to confirm I&apos;ve received your message.</p>
             <p>Thank you for reaching out to me. I appreciate your message and will respond shortly.</p>
             
             <p style={{ marginTop: '30px' }}>
