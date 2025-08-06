@@ -7,9 +7,12 @@ import Image from "next/image";
 
 const EmailSection = () => {
   const [emailSubmitted, setEmailSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
+    
     const data = {
       email: e.target.email.value,
       subject: e.target.subject.value,
@@ -30,12 +33,20 @@ const EmailSection = () => {
       body: JSONdata,
     };
 
-    const response = await fetch(endpoint, options);
-    const resData = await response.json();
+    try {
+      const response = await fetch(endpoint, options);
+      const resData = await response.json();
 
-    if (response.status === 200) {
-      console.log("Message sent.");
-      setEmailSubmitted(true);
+      if (response.status === 200) {
+        console.log("Message sent.");
+        setEmailSubmitted(true);
+      } else {
+        console.error("Failed to send message:", resData);
+      }
+    } catch (error) {
+      console.error("Error sending message:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -72,7 +83,7 @@ const EmailSection = () => {
           </a>
         </div>
       </div>
-      <div>
+      <div className="relative z-20">
         {emailSubmitted ? (
           <p className="text-green-500 text-sm mt-2">
             Email sent successfully!
@@ -91,7 +102,8 @@ const EmailSection = () => {
                 type="email"
                 id="email"
                 required
-                className="bg-[#18191E] border border-[#33353F] placeholder-[#9CA2A9] text-gray-100 text-sm rounded-lg block w-full p-2.5"
+                disabled={isLoading}
+                className="bg-[#18191E] border border-[#33353F] placeholder-[#9CA2A9] text-gray-100 text-sm rounded-lg block w-full p-2.5 disabled:opacity-50 disabled:cursor-not-allowed"
                 placeholder="john@gmail.com"
               />
             </div>
@@ -107,7 +119,8 @@ const EmailSection = () => {
                 type="text"
                 id="subject"
                 required
-                className="bg-[#18191E] border border-[#33353F] placeholder-[#9CA2A9] text-gray-100 text-sm rounded-lg block w-full p-2.5"
+                disabled={isLoading}
+                className="bg-[#18191E] border border-[#33353F] placeholder-[#9CA2A9] text-gray-100 text-sm rounded-lg block w-full p-2.5 disabled:opacity-50 disabled:cursor-not-allowed"
                 placeholder="Just saying hi"
               />
             </div>
@@ -121,15 +134,21 @@ const EmailSection = () => {
               <textarea
                 name="message"
                 id="message"
-                className="bg-[#18191E] border border-[#33353F] placeholder-[#9CA2A9] text-gray-100 text-sm rounded-lg block w-full p-2.5"
+                disabled={isLoading}
+                className="bg-[#18191E] border border-[#33353F] placeholder-[#9CA2A9] text-gray-100 text-sm rounded-lg block w-full p-2.5 disabled:opacity-50 disabled:cursor-not-allowed"
                 placeholder="Let's talk about..."
               />
             </div>
             <button
               type="submit"
-              className="bg-gradient-to-br from-[#00ffe7] to-[#0066ff] text-white font-medium py-2.5 px-5 rounded-lg w-full"
+              disabled={isLoading}
+              className={`bg-gradient-to-br from-[#00ffe7] to-[#0066ff] text-white font-medium py-2.5 px-5 rounded-lg w-full transition-all duration-300 ${
+                isLoading 
+                  ? 'opacity-50 cursor-not-allowed' 
+                  : 'hover:opacity-90 active:scale-95'
+              }`}
             >
-              Send Message
+              {isLoading ? 'Sending...' : 'Send Message'}
             </button>
           </form>
         )}
