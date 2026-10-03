@@ -17,7 +17,9 @@ export default function Contact() {
         </div>
         <div className="lg:col-span-7">
           <p className="text-email font-semibold [overflow-wrap:anywhere]">
-            <a id="contact-email" href={MAILTO}>
+            {/* The <wbr> hints would add spaces to the computed accessible name, so the
+                name is set to the visible text explicitly. */}
+            <a id="contact-email" href={MAILTO} aria-label={PERSON.email}>
               {/* On narrow screens the address wraps after the @, not mid-word. */}
               {emailLocal}@<wbr />
               {emailDomain}
@@ -27,7 +29,7 @@ export default function Contact() {
           <ul role="list" className="mt-8 space-y-2 [overflow-wrap:anywhere]">
             {CONTACT.links.map((link) => (
               <li key={link.href}>
-                <a href={link.href} rel={link.me ? 'me' : undefined} className="link">
+                <a href={link.href} rel={link.me ? 'me' : undefined} className="link" aria-label={link.label}>
                   {/* Narrow screens wrap after a "/", never inside the handle. */}
                   {link.label.split('/').map((part, i) => (
                     <Fragment key={i}>

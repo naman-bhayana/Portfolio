@@ -164,6 +164,32 @@ for (const textSpacing of [false, true]) {
   await context.close()
 }
 
+// ---------------------------------------------------------------- accessible link names
+// Every link's computed accessible name must equal its visible text (WCAG 2.5.3). Read from
+// Chrome's accessibility tree: Playwright's own snapshots normalise whitespace and would miss
+// names broken up by <wbr> line-break hints.
+{
+  const { context, page } = await newPage({ width: 320, height: 640, mobile: true, reducedMotion: 'reduce' })
+  await page.goto(`${BASE}/`, { waitUntil: 'networkidle' })
+  const cdp = await context.newCDPSession(page)
+  const { root } = await cdp.send('DOM.getDocument', { depth: -1 })
+  const { nodeIds } = await cdp.send('DOM.querySelectorAll', { nodeId: root.nodeId, selector: 'a[href]' })
+  const mismatches = []
+  for (const nodeId of nodeIds) {
+    const { nodes } = await cdp.send('Accessibility.getPartialAXTree', { nodeId, fetchRelatives: false })
+    const name = nodes[0]?.name?.value ?? ''
+    const { object } = await cdp.send('DOM.resolveNode', { nodeId })
+    const { result } = await cdp.send('Runtime.callFunctionOn', {
+      objectId: object.objectId,
+      functionDeclaration: 'function () { return this.textContent.replace(/\\s+/g, " ").trim() }',
+      returnByValue: true,
+    })
+    if (name !== result.value) mismatches.push(`"${name}" vs text "${result.value}"`)
+  }
+  check(mismatches.length === 0, 'T4.link-names', `${nodeIds.length} links: accessible name = visible text`, mismatches.join(' | '))
+  await context.close()
+}
+
 // ---------------------------------------------------------------- JavaScript disabled
 {
   const { context, page } = await newPage({ width: 1280, height: 800, javaScriptEnabled: false })
