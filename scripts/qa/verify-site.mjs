@@ -544,8 +544,14 @@ function headProblems(res) {
   const canon = head.querySelectorAll('link').filter((l) => (l.getAttribute('rel') || '').toLowerCase().split(/\s+/).includes('canonical'))
   if (canon.length !== 1) p.push(`${canon.length} canonical links`)
   else if (!/^https?:\/\//.test(canon[0].getAttribute('href') || '')) p.push(`canonical not absolute: ${q(canon[0].getAttribute('href'))}`)
+  // Exactly one robots meta, indexable, with large image previews: a stray noindex on the
+  // home page would de-index it silently.
   const robotsMeta = metas('robots')
+  if (robotsMeta.length !== 1) p.push(`${robotsMeta.length} robots metas, expected 1`)
+  if (robotsMeta.some((v) => /\b(noindex|none)\b/i.test(v))) p.push('meta robots contains noindex/none')
   if (!robotsMeta.some((v) => /max-image-preview\s*:\s*large/i.test(v))) p.push('meta robots lacks max-image-preview:large')
+  const xRobots = res.headers?.get?.('x-robots-tag') ?? ''
+  if (/noindex|none/i.test(xRobots)) p.push(`X-Robots-Tag: ${xRobots}`)
   if (metas('keywords').length) p.push('meta keywords present')
   return p
 }
@@ -686,7 +692,9 @@ await section('T7', async () => {
     const missingWork = SELECTED_WORK.items.filter((i) => !llms.text.includes(i.name)).map((i) => i.name)
     if (missingWork.length) problems.push(`work items missing: ${missingWork.join(', ')}`)
     if (llms.text.includes('/work')) problems.push("contains '/work'")
-    check(!problems.length, 'T7.llms', `200 text/plain, ${lines.filter((l) => /^\s*- /.test(l)).length} link items`, problems.join('; '))
+    const linkItems = sectionLines.filter((l) => /^\s*- \[/.test(l)).length
+    const detailItems = (firstH2 === -1 ? lines : lines.slice(0, firstH2)).filter((l) => /^\s*- /.test(l)).length
+    check(!problems.length, 'T7.llms', `200 text/plain, ${linkItems} link items, ${detailItems} detail items`, problems.join('; '))
     llmsUrls = [...llms.text.matchAll(/https?:\/\/[^\s)<>\]"']+/g)].map((m) => m[0].replace(/[.,;:]+$/, ''))
   }
 
@@ -745,6 +753,20 @@ await section('T7', async () => {
   for (const p of ['/api/send', '/this-path-should-not-exist']) {
     const r = await get(at(p), { redirect: 'manual' })
     check(r.status === 404, `T7.404`, `${p} 404`, `${p} -> ${fetchErr(r)}, expected 404`)
+  }
+
+  // The 404 page must not inherit the home page's indexing or canonical tags.
+  const nf = await get(at('/this-path-should-not-exist'), { accept: HTML_ACCEPT })
+  if (nf.status === 404 && nf.text) {
+    const h = parse(nf.text.slice(0, nf.text.indexOf('</head>') + 7), { comment: false })
+    const robots404 = h.querySelectorAll('meta[name="robots"]').map((m) => m.getAttribute('content') ?? '')
+    const canon404 = h.querySelectorAll('link[rel="canonical"]').length
+    const titles404 = h.querySelectorAll('title').length
+    const problems = []
+    if (robots404.length !== 1 || !/noindex/i.test(robots404[0])) problems.push(`robots metas ${JSON.stringify(robots404)}`)
+    if (canon404) problems.push(`${canon404} canonical link(s)`)
+    if (titles404 !== 1) problems.push(`${titles404} <title> elements`)
+    check(!problems.length, 'T7.404-head', '404: one noindex, no canonical, one title', problems.join('; '))
   }
 })
 

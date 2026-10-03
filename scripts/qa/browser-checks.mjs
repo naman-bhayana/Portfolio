@@ -107,7 +107,42 @@ for (const vp of [
   await context.close()
 }
 
+// ---------------------------------------------------------------- late web fonts (CLS)
+// With the woff2 files delayed, the font swap must not move the layout at Lighthouse's mobile
+// viewport. 360x640 is reported only: the owner decided to keep display: swap (spec row 15).
+for (const vp of [
+  { name: '412x823', width: 412, height: 823, gate: true },
+  { name: '360x640', width: 360, height: 640, gate: false },
+]) {
+  const { context, page } = await newPage({ width: vp.width, height: vp.height, mobile: true, reducedMotion: 'reduce' })
+  await page.route(/\.woff2(\?.*)?$/, async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 2500))
+    await route.continue()
+  })
+  await page.addInitScript(() => {
+    window.__cls = 0
+    new PerformanceObserver((list) => {
+      for (const entry of list.getEntries()) if (!entry.hadRecentInput) window.__cls += entry.value
+    }).observe({ type: 'layout-shift', buffered: true })
+  })
+  await page.goto(`${BASE}/`, { waitUntil: 'load' })
+  await page.waitForTimeout(4000)
+  const cls = await page.evaluate(() => window.__cls)
+  const id = `T8.late-font-cls.${vp.name}`
+  if (vp.gate) check(cls <= 0.05, id, `CLS ${cls.toFixed(3)} with fonts delayed 2.5 s`, `CLS ${cls.toFixed(3)} with fonts delayed 2.5 s (budget 0.05)`)
+  else report('INFO', id, `CLS ${cls.toFixed(3)} with fonts delayed 2.5 s (display: swap kept; informational)`)
+  await context.close()
+}
+
 // ---------------------------------------------------------------- reflow (WCAG 1.4.10, 1.4.12)
+// Laptop widths too: the hero glow must never make the page scroll sideways.
+for (const width of [1024, 1100]) {
+  const { context, page } = await newPage({ width, height: 800, reducedMotion: 'reduce' })
+  await page.goto(`${BASE}/`, { waitUntil: 'networkidle' })
+  const sizes = await page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, width: document.documentElement.clientWidth }))
+  check(sizes.scrollWidth <= sizes.width, `T4.reflow-${width}`, `no horizontal overflow at ${width} px`, JSON.stringify(sizes))
+  await context.close()
+}
 for (const textSpacing of [false, true]) {
   const { context, page } = await newPage({ width: 320, height: 640, mobile: true, reducedMotion: 'reduce' })
   await page.goto(`${BASE}/`, { waitUntil: 'networkidle' })
@@ -273,12 +308,18 @@ for (const textSpacing of [false, true]) {
     const status = await page.locator('[role="status"]').textContent()
     const copied = await page.evaluate(() => navigator.clipboard.readText()).catch(() => '')
     check(/copied/i.test(status ?? '') && copied.includes('@'), 'T10.copy-email', `"${status}" and clipboard holds ${copied}`, `status "${status}", clipboard "${copied}"`)
-    // A second press must change the live region again so screen readers announce it.
-    const before = await page.evaluate(() => window.__statusChanges)
+    // A second press must empty and then refill the live region, so screen readers announce
+    // it again (they only speak changes).
+    await page.evaluate(() => {
+      window.__statusLog = []
+      const region = document.querySelector('#contact [role="status"]')
+      new MutationObserver(() => window.__statusLog.push(region.textContent)).observe(region, { childList: true, subtree: true, characterData: true })
+    })
     await button.click()
-    await page.waitForTimeout(200)
-    const after = await page.evaluate(() => window.__statusChanges)
-    check(after > before, 'T10.copy-reannounce', 'a second copy updates the status region again', `no status change on the second press (${before} -> ${after})`)
+    await page.waitForTimeout(250)
+    const log = await page.evaluate(() => window.__statusLog)
+    const refilled = log.length >= 2 && log.at(-2) === '' && /copied/i.test(log.at(-1) ?? '')
+    check(refilled, 'T10.copy-reannounce', 'a second copy empties and refills the status region', `status changes on the second press: ${JSON.stringify(log)}`)
   } else {
     report('FAIL', 'T10.copy-email', 'copy button not visible after hydration')
   }
