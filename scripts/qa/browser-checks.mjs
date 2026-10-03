@@ -107,6 +107,28 @@ for (const vp of [
   await context.close()
 }
 
+// ---------------------------------------------------------------- reflow (WCAG 1.4.10, 1.4.12)
+for (const textSpacing of [false, true]) {
+  const { context, page } = await newPage({ width: 320, height: 640, mobile: true, reducedMotion: 'reduce' })
+  await page.goto(`${BASE}/`, { waitUntil: 'networkidle' })
+  if (textSpacing) {
+    await page.addStyleTag({
+      content:
+        '* { line-height: 1.5 !important; letter-spacing: 0.12em !important; word-spacing: 0.16em !important; } p { margin-bottom: 2em !important; }',
+    })
+  }
+  const overflow = await page.evaluate(() => {
+    const width = document.documentElement.clientWidth
+    const wide = [...document.querySelectorAll('main *, header *, footer *')]
+      .filter((el) => el.getBoundingClientRect().right > width + 0.5)
+      .map((el) => el.id || el.tagName.toLowerCase())
+    return { scrollWidth: document.documentElement.scrollWidth, width, wide: [...new Set(wide)].slice(0, 6) }
+  })
+  const id = textSpacing ? 'T4.reflow-320-spacing' : 'T4.reflow-320'
+  check(overflow.scrollWidth <= overflow.width && overflow.wide.length === 0, id, `no horizontal overflow at 320 px${textSpacing ? ' with text-spacing overrides' : ''}`, JSON.stringify(overflow))
+  await context.close()
+}
+
 // ---------------------------------------------------------------- JavaScript disabled
 {
   const { context, page } = await newPage({ width: 1280, height: 800, javaScriptEnabled: false })
@@ -241,11 +263,22 @@ for (const vp of [
   const button = page.locator('[data-copy-email]')
   const visible = await button.isVisible()
   if (visible) {
+    await page.evaluate(() => {
+      window.__statusChanges = 0
+      const region = document.querySelector('#contact [role="status"]')
+      new MutationObserver(() => window.__statusChanges++).observe(region, { childList: true, subtree: true, characterData: true })
+    })
     await button.click()
     await page.waitForTimeout(200)
     const status = await page.locator('[role="status"]').textContent()
     const copied = await page.evaluate(() => navigator.clipboard.readText()).catch(() => '')
     check(/copied/i.test(status ?? '') && copied.includes('@'), 'T10.copy-email', `"${status}" and clipboard holds ${copied}`, `status "${status}", clipboard "${copied}"`)
+    // A second press must change the live region again so screen readers announce it.
+    const before = await page.evaluate(() => window.__statusChanges)
+    await button.click()
+    await page.waitForTimeout(200)
+    const after = await page.evaluate(() => window.__statusChanges)
+    check(after > before, 'T10.copy-reannounce', 'a second copy updates the status region again', `no status change on the second press (${before} -> ${after})`)
   } else {
     report('FAIL', 'T10.copy-email', 'copy button not visible after hydration')
   }

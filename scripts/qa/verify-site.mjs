@@ -430,9 +430,9 @@ await section('C4', async () => {
     if (found > 5) fail(id, `${found - 5} more`)
     if (!found) pass(id, `none in ${cs.map((c) => c.name).join(', ')}`)
   }
-  const visible = corpora.filter((c) => c.visible)
-
-  scan('C4.exclamation', /!/, visible)
+  // Every voice rule applies to all public text (title, meta, structured data, alt text,
+  // llms.txt, manifest), not only the page body.
+  scan('C4.exclamation', /!/, voice)
   scan('C4.new-delhi', /\bNew\s+Delhi\b/i, voice)
   const H = '[-\\u2010\\u2011]'
   const MON = '(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*\\.?'
@@ -440,8 +440,8 @@ await section('C4', async () => {
     `\\b(?:19|20)\\d{2}\\s*${H}\\s*(?:\\d{2}(?:\\d{2})?\\b(?!${H}\\d)|present\\b|now\\b|today\\b)` +
       `|\\b${MON}(?:\\s+\\d{4})?\\s*${H}\\s*(?:${MON}\\s+)?(?:\\d{4}|present)\\b`, 'i'), voice, 'hyphenated range')
   scan('C4.weak-verbs', /\b(helped with|worked on|responsible for)\b/i, voice)
-  scan('C4.tech-names', /\b(?:MongoDB|MySQL|OAuth|JWT|MERN|Redux|Bootstrap|Tailwind|Mapbox|TensorFlow|PyTorch)\b|\bNext\.?js\b/i, visible)
-  scan('C4.tech-names-cs', /\b(?:React|Node|Express)\b/, visible)
+  scan('C4.tech-names', /\b(?:MongoDB|MySQL|OAuth|JWT|MERN|Redux|Bootstrap|Tailwind|Mapbox|TensorFlow|PyTorch)\b|\bNext\.?js\b/i, voice)
+  scan('C4.tech-names-cs', /\b(?:React|Node|Express)\b/, voice)
 
   // ideasIQ casing: only 'ideasIQ' or the domain 'ideasiq.ai'
   let badCase = 0
@@ -473,21 +473,34 @@ await section('C4', async () => {
     check(iq.querySelectorAll('a').some((a) => a.getAttribute('href') === 'https://ideasiq.ai/'), 'C4.item-ideasiq',
       'links https://ideasiq.ai/', 'no <a href="https://ideasiq.ai/"> in the ideasIQ item')
 
-  // Oxford commas, allowed only inside verbatim site.js strings.
-  const allow = new Set()
-  for (const v of Object.values(SITE)) for (const l of stringLeaves(v)) if (/,\s(and|or)\s/.test(l.value)) allow.add(norm(l.value))
-  allow.add(norm(ABOUT.paragraph.map((s) => (typeof s === 'string' ? s : s.text)).join('')))
-  const covered = []
-  for (const s of allow) for (let i = bodyText.indexOf(s); i >= 0; i = bodyText.indexOf(s, i + 1)) covered.push([i, i + s.length])
+  // Oxford commas fail everywhere except inside these spec §3 strings, which are final copy
+  // and already contain one. The list is frozen: a new string with a serial comma fails.
+  const allow = [
+    HERO.subline,
+    SELECTED_WORK.subline,
+    SELECTED_WORK.items[0].summary,
+    SELECTED_WORK.items[0].bullets[2],
+    ABOUT.paragraph.map((s) => (typeof s === 'string' ? s : s.text)).join(''),
+    CONTACT.body,
+  ].map(norm)
   let oxford = 0
-  for (const m of bodyText.matchAll(/,\s(and|or)\s/g)) {
-    if (covered.some(([s, e]) => m.index >= s && m.index < e)) continue
-    oxford++
-    if (oxford <= 5) fail('C4.oxford-comma', `body: ${q(snippet(bodyText, m.index, m[0].length, 50), 120)}`)
+  for (const c of voice) {
+    const covered = []
+    for (const s of allow) for (let i = c.text.indexOf(s); i >= 0; i = c.text.indexOf(s, i + 1)) covered.push([i, i + s.length])
+    for (const m of c.text.matchAll(/,\s(and|or)\s/g)) {
+      if (covered.some(([s, e]) => m.index >= s && m.index < e)) continue
+      oxford++
+      if (oxford <= 5) fail('C4.oxford-comma', `${c.name}: ${q(snippet(c.text, m.index, m[0].length, 50), 120)}`)
+    }
   }
-  if (!oxford) pass('C4.oxford-comma', `none outside ${allow.size} verbatim site.js strings`)
+  if (!oxford) pass('C4.oxford-comma', `none outside the ${allow.length} allow-listed spec §3 strings`)
 
-  scan('C4.us-spelling', /\b(modeling|organization|productized|optimization)\b/i, voice)
+  // American spellings the British-spelling rule (§7 rule 10) would catch.
+  scan(
+    'C4.us-spelling',
+    /\b(?:optimiz\w*|organiz\w*|productiz\w*|prioritiz\w*|analyz\w*|realiz\w*|recogniz\w*|customiz\w*|monetiz\w*|standardiz\w*|utiliz\w*|color\w*|center(?:ed|s)?|behavior\w*|modeling|modeled|catalog|favorite\w*|honor\w*)\b/i,
+    voice,
+  )
 })
 
 // ---------------------------------------------------------------- SHARE
@@ -549,6 +562,15 @@ await section('SHARE', async () => {
     } else check(!problems.length, `SHARE.ua.${name}`, 'head ok', `${problems.length} problem(s): ${problems.join('; ')}`)
   }
   if (headEl) ogImageUrl = headEl.querySelector('meta[property="og:image"]')?.getAttribute('content') ?? null
+
+  // next/font should preload both Poppins files. Windows builds of Next 16.3.8 drop these
+  // links (a path-separator bug in the font manifest), so a local miss is only a warning;
+  // the Linux build on Vercel must have them.
+  const fontPreloads = [...(home.text ?? '').matchAll(/<link\b[^>]*rel="preload"[^>]*>/g)]
+    .map((m) => m[0])
+    .filter((tag) => /as="font"/.test(tag) && /\/_next\/static\/media\/[^"]+\.p\.woff2/.test(tag))
+  if (fontPreloads.length === 2) pass('SHARE.font-preload', '2 woff2 font preloads in <head>')
+  else (PROFILE === 'local' ? warn : fail)('SHARE.font-preload', `${fontPreloads.length} font preload link(s), expected 2`)
 })
 
 // ---------------------------------------------------------------- LD
@@ -655,8 +677,14 @@ await section('T7', async () => {
     if (!llms.contentType.startsWith('text/plain')) problems.push(`content-type ${q(llms.contentType)}`)
     if (lines[0].trim() !== `# ${PERSON.name}`) problems.push(`first line ${q(lines[0])}`)
     if (!lines.some((l) => l.startsWith('> '))) problems.push("no '> ' line")
-    const badItems = lines.filter((l) => /^\s*- /.test(l) && !/^\s*- \[[^\]]+\]\([^)\s]+\)/.test(l))
-    if (badItems.length) problems.push(`${badItems.length} list item(s) not a markdown link, first ${q(badItems[0].trim(), 60)}`)
+    // llmstxt.org: free-form details (lists included) may precede the first H2; list items
+    // inside the H2 sections must be links.
+    const firstH2 = lines.findIndex((l) => l.startsWith('## '))
+    const sectionLines = firstH2 === -1 ? [] : lines.slice(firstH2)
+    const badItems = sectionLines.filter((l) => /^\s*- /.test(l) && !/^\s*- \[[^\]]+\]\([^)\s]+\)/.test(l))
+    if (badItems.length) problems.push(`${badItems.length} section list item(s) not a markdown link, first ${q(badItems[0].trim(), 60)}`)
+    const missingWork = SELECTED_WORK.items.filter((i) => !llms.text.includes(i.name)).map((i) => i.name)
+    if (missingWork.length) problems.push(`work items missing: ${missingWork.join(', ')}`)
     if (llms.text.includes('/work')) problems.push("contains '/work'")
     check(!problems.length, 'T7.llms', `200 text/plain, ${lines.filter((l) => /^\s*- /.test(l)).length} link items`, problems.join('; '))
     llmsUrls = [...llms.text.matchAll(/https?:\/\/[^\s)<>\]"']+/g)].map((m) => m[0].replace(/[.,;:]+$/, ''))
