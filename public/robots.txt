@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+
+Sitemap: https://www.namanbhayana.com/sitemap.xml
+
+# No AI-bot blocks: OAI-SearchBot, PerplexityBot, ClaudeBot and Google-Extended should all read it.
