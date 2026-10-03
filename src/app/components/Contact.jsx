@@ -1,10 +1,13 @@
 import { CONTACT, MAILTO, NEXERAH_EMAIL, NEXERAH_MAILTO, PERSON, RESUME_DRIVE_URL, RESUME_PATH } from '@/content/site'
 import CopyEmail from './CopyEmail'
 
+const [emailLocal, emailDomain] = PERSON.email.split('@')
+
 export default function Contact() {
   return (
     <section id="contact" aria-labelledby="contact-heading" className="section border-t border-line">
-      <div className="container-page grid gap-10 lg:grid-cols-12 lg:gap-12" data-reveal>
+      {/* grid-cols-1 = minmax(0, 1fr): long unbroken links can never widen the column. */}
+      <div className="container-page grid grid-cols-1 gap-10 lg:grid-cols-12 lg:gap-12" data-reveal>
         <div className="lg:col-span-5">
           <h2 id="contact-heading" className="text-balance text-h2 font-semibold">
             {CONTACT.heading}
@@ -14,11 +17,13 @@ export default function Contact() {
         <div className="lg:col-span-7">
           <p className="text-email font-semibold [overflow-wrap:anywhere]">
             <a id="contact-email" href={MAILTO}>
-              {PERSON.email}
+              {/* On narrow screens the address wraps after the @, not mid-word. */}
+              {emailLocal}@<wbr />
+              {emailDomain}
             </a>
           </p>
           <CopyEmail email={PERSON.email} targetId="contact-email" labels={CONTACT.copy} />
-          <ul role="list" className="mt-8 space-y-2">
+          <ul role="list" className="mt-8 space-y-2 [overflow-wrap:anywhere]">
             {CONTACT.links.map((link) => (
               <li key={link.href}>
                 <a href={link.href} rel={link.me ? 'me' : undefined} className="link">

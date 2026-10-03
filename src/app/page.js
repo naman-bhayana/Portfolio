@@ -12,6 +12,7 @@ import WhatIBuild from './components/WhatIBuild'
 // Page-specific metadata lives here so other routes never inherit this canonical or card.
 export const metadata = {
   alternates: { canonical: '/' },
+  robots: { index: true, follow: true, 'max-image-preview': 'large' },
   openGraph: {
     type: 'profile',
     url: '/',

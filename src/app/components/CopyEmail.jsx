@@ -14,12 +14,17 @@ export default function CopyEmail({ email, targetId, labels }) {
     () => false,
   )
   const [status, setStatus] = useState('')
-  const timer = useRef(0)
+  const showTimer = useRef(0)
+  const clearTimer = useRef(0)
 
+  // Empty the region first and fill it a moment later, so a second copy is announced too
+  // (screen readers only speak changes).
   function announce(message) {
-    setStatus(message)
-    window.clearTimeout(timer.current)
-    timer.current = window.setTimeout(() => setStatus(''), 8000)
+    window.clearTimeout(showTimer.current)
+    window.clearTimeout(clearTimer.current)
+    setStatus('')
+    showTimer.current = window.setTimeout(() => setStatus(message), 50)
+    clearTimer.current = window.setTimeout(() => setStatus(''), 8000)
   }
 
   async function copy() {

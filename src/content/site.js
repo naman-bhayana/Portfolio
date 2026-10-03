@@ -163,6 +163,9 @@ export const SELECTED_WORK = {
   ],
 }
 
+// Screen-reader heading for the proof strip (D9-style; spec §4.4 wants an h2 per section).
+export const PROOF_HEADING = 'Proof'
+
 // spec §3.6, in reading order. Static text: never animated.
 export const PROOF = [
   { value: '400+', label: 'models governed through one gateway' },
@@ -224,6 +227,13 @@ export const FOOTER = {
 }
 
 export const SKIP_LINK = 'Skip to content' // D9
+
+// 404 page (D9-style).
+export const NOT_FOUND = {
+  title: 'Page not found',
+  body: 'There is nothing at this address.',
+  home: 'Go to the home page',
+}
 
 // spec §5 (llms.txt summary line)
 export const LLMS_SUMMARY =

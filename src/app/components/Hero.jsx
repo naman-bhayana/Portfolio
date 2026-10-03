@@ -1,3 +1,4 @@
+import { Fragment } from 'react'
 import { AVATAR, HERO } from '@/content/site'
 
 // The optimiser serves exactly these widths (next.config.js images.deviceSizes) at quality 75.
@@ -22,9 +23,19 @@ const keepCompounds = (text) =>
 export default function Hero() {
   return (
     <section aria-labelledby="hero-heading" className="border-b border-line">
-      <div className="container-page grid gap-10 pt-10 sm:pt-14 lg:grid-cols-12 lg:items-end lg:gap-8 lg:pt-20">
+      <div className="container-page grid grid-cols-1 gap-10 pt-10 sm:pt-14 lg:grid-cols-12 lg:items-end lg:gap-8 lg:pt-20">
         <div className="lg:col-span-7 lg:pb-24">
-          <p className="eyebrow">{HERO.eyebrow}</p>
+          <p className="eyebrow">
+            {/* Break only between the two roles, never inside one. */}
+            <span>
+              {HERO.eyebrow.split(' · ').map((role, i) => (
+                <Fragment key={role}>
+                  {i > 0 && ' · '}
+                  <span className="whitespace-nowrap">{role}</span>
+                </Fragment>
+              ))}
+            </span>
+          </p>
           <h1 id="hero-heading" className="mt-4 text-balance text-display font-semibold">
             {HERO.heading}
           </h1>

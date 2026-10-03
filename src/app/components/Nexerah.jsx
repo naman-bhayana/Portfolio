@@ -4,7 +4,7 @@ import { NEXERAH } from '@/content/site'
 export default function Nexerah() {
   return (
     <section id="nexerah" aria-labelledby="nexerah-heading" className="section border-t border-line">
-      <div className="container-page grid gap-10 lg:grid-cols-12 lg:gap-12" data-reveal>
+      <div className="container-page grid grid-cols-1 gap-10 lg:grid-cols-12 lg:gap-12" data-reveal>
         <div className="lg:col-span-7">
           <p className="eyebrow">{NEXERAH.eyebrow}</p>
           <h2 id="nexerah-heading" className="mt-4 text-balance text-h2 font-semibold">

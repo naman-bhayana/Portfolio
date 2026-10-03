@@ -4,7 +4,7 @@ import { ABOUT } from '@/content/site'
 export default function About() {
   return (
     <section id="about" aria-labelledby="about-heading" className="section">
-      <div className="container-page grid gap-8 lg:grid-cols-12 lg:gap-12" data-reveal>
+      <div className="container-page grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-12" data-reveal>
         <div className="lg:col-span-4">
           <h2 id="about-heading" className="text-h2 font-semibold">
             {ABOUT.heading}

@@ -12,14 +12,14 @@ const poppins = Poppins({
   variable: '--font-poppins',
 })
 
-// Site-wide fields only. The canonical URL, Open Graph, Twitter and JSON-LD belong to the
-// page that they describe (src/app/page.js), so other routes never inherit them.
+// Site-wide fields only. The canonical URL, robots, Open Graph, Twitter and JSON-LD belong to
+// the page that they describe (src/app/page.js), so other routes such as the 404 never
+// inherit them.
 export const metadata = {
   metadataBase: new URL(SITE_URL),
   title: HEAD.title,
   description: HEAD.description,
   authors: [{ name: PERSON.name, url: SITE_URL }],
-  robots: { index: true, follow: true, 'max-image-preview': 'large' },
 }
 
 export const viewport = {

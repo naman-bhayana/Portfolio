@@ -126,21 +126,23 @@ const OG = { width: 1200, height: 630 }
 const TEXT_ZONE = { x0: 290, x1: 720 } // inside the centred 630 square crop (x 285-915)
 const NAME_ZONE = { x0: 285, x1: 915 }
 const SAFE = { x0: 50, x1: 1150, y0: 35, y1: 595 }
-const TEXT_LEFT = 298
+const TEXT_LEFT = 292
 const AVATAR = { left: 738, height: 540, bleed: 22 } // bleed: px hidden below the bottom edge
 const GLOW_FADE = { x0: 740, x1: 860 } // glow is zero left of x0, full right of x1
 
 const [nameFirst, nameLast] = PERSON.name.split(' ')
 const [roleA, roleB] = HERO.eyebrow.split(' · ')
 
-// The role line breaks at its ' · ' separator, so the line break stands in for the dot.
-// Baselines are relative to the first line; the block is centred vertically afterwards.
+// Spec §3.9 hierarchy: name (88 px), then the role (~34 px), then the cyan headline (~30 px).
+// The role must wrap to fit the square-crop zone, so it breaks at its ' · ' separator (the line
+// break stands in for the dot) and runs at 27 px, the largest size that fits; the headline
+// stays a step smaller. Baselines are relative to the first line; the block is then centred.
 const OG_LINES = [
   { text: nameFirst, weight: 700, size: 88, color: COLOR.text, baseline: 0, name: true },
   { text: nameLast, weight: 700, size: 88, color: COLOR.text, baseline: 92, name: true },
-  { text: roleA, weight: 600, size: 26, color: COLOR.muted, baseline: 152 },
-  { text: roleB, weight: 600, size: 26, color: COLOR.muted, baseline: 188 },
-  { text: HERO.heading, weight: 600, size: 36, color: COLOR.cyan, baseline: 250 },
+  { text: roleA, weight: 600, size: 27, color: COLOR.text, baseline: 153 },
+  { text: roleB, weight: 600, size: 27, color: COLOR.text, baseline: 190 },
+  { text: HERO.heading, weight: 600, size: 24, color: COLOR.cyan, baseline: 240 },
 ]
 
 // Line geometry from opentype.js (kerned advances and ink bounds), before anything renders.
@@ -354,14 +356,16 @@ async function buildIcons() {
   }
 
   // favicon.ico: heavier glyph and no rule at 16 px, where a hairline only smudges.
+  // 48 px goes first: Next.js reads the link's `sizes` from the first frame, and Google
+  // prefers favicons in multiples of 48 px.
   const frames = [
-    svgToPng(iconSvg(bold, { width: 0.84, radius: 0.18, accent: false }).svg, 16),
-    svgToPng(iconSvg(semibold, { width: 0.7, radius: 0.2, accent: false }).svg, 32),
     svgToPng(app.svg, 48),
+    svgToPng(iconSvg(semibold, { width: 0.7, radius: 0.2, accent: false }).svg, 32),
+    svgToPng(iconSvg(bold, { width: 0.84, radius: 0.18, accent: false }).svg, 16),
   ]
   const ico = await pngToIco(frames)
   check(ico.readUInt16LE(4) === 3, 'favicon.ico must hold three frames')
-  check([0, 1, 2].every((i) => ico[6 + i * 16] === [16, 32, 48][i]), 'favicon.ico frames must be 16, 32 and 48 px')
+  check([0, 1, 2].every((i) => ico[6 + i * 16] === [48, 32, 16][i]), 'favicon.ico frames must be 48, 32 and 16 px')
   await write('src/app/favicon.ico', ico)
 }
 

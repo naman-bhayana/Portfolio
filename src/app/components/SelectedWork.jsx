@@ -18,7 +18,7 @@ export default function SelectedWork() {
             <li
               key={item.id}
               id={`work-${item.id}`}
-              className="grid gap-5 border-b border-line py-8 lg:grid-cols-12 lg:gap-12 lg:py-10"
+              className="grid grid-cols-1 gap-5 border-b border-line py-8 lg:grid-cols-12 lg:gap-12 lg:py-10"
               data-reveal
             >
               <div className="lg:col-span-4">

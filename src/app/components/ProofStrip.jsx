@@ -1,10 +1,14 @@
-import { PROOF } from '@/content/site'
+import { PROOF, PROOF_HEADING } from '@/content/site'
 
 // Static numbers, number first in the DOM so the reading order matches what is seen.
-// Never wrapped in the scroll reveal and never animated (spec §3.6).
+// Never wrapped in the scroll reveal and never animated (spec §3.6). The heading is for
+// screen readers and for anything that splits the page by headings.
 export default function ProofStrip() {
   return (
-    <div id="proof" className="border-y border-line">
+    <section id="proof" aria-labelledby="proof-heading" className="border-y border-line">
+      <h2 id="proof-heading" className="sr-only">
+        {PROOF_HEADING}
+      </h2>
       <div className="container-page">
         <dl className="proof">
           {PROOF.map((item) => (
@@ -15,6 +19,6 @@ export default function ProofStrip() {
           ))}
         </dl>
       </div>
-    </div>
+    </section>
   )
 }
