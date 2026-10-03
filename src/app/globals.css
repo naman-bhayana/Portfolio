@@ -1,3 +1,276 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  html {
+    background-color: #0a0c10;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-bg font-sans text-fg antialiased;
+    font-size: 1rem;
+    line-height: 1.65;
+  }
+
+  @media (min-width: 1024px) {
+    body {
+      font-size: 1.0625rem;
+    }
+  }
+
+  ::selection {
+    background-color: rgb(0 150 247 / 0.35);
+    color: #e6e8eb;
+  }
+
+  /* The hidden attribute must win over component display rules (the copy button). */
+  [hidden] {
+    display: none !important;
+  }
+
+  /* spec §4.4 */
+  :focus-visible {
+    outline: 2px solid #00d0ee;
+    outline-offset: 3px;
+  }
+
+  /* <main> takes programmatic focus from the skip link; it needs no ring. */
+  main:focus {
+    outline: none;
+  }
+
+  /* Links inside running text must not rely on colour alone (WCAG 1.4.1). */
+  p a,
+  .link {
+    color: #00d0ee;
+    text-decoration-line: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.2em;
+  }
+
+  p a:hover,
+  .link:hover {
+    text-decoration-thickness: 2px;
+  }
+
+  section[id] {
+    scroll-margin-top: 1rem;
+  }
+}
+
+@layer components {
+  .skip-link {
+    position: absolute;
+    left: 1rem;
+    top: 0.75rem;
+    z-index: 50;
+    transform: translateY(-200%);
+    border-radius: 8px;
+    background-color: #e6e8eb;
+    padding: 0.625rem 1rem;
+    color: #0a0c10;
+    font-weight: 600;
+  }
+
+  .skip-link:focus {
+    transform: none;
+  }
+
+  .container-page {
+    @apply mx-auto w-full max-w-page px-5 sm:px-8;
+  }
+
+  .section {
+    padding-block: clamp(4rem, 3rem + 4vw, 7.5rem);
+  }
+
+  .eyebrow {
+    @apply flex items-start gap-2.5 text-sm text-muted;
+  }
+
+  .eyebrow::before {
+    content: '';
+    @apply mt-[0.55em] h-1.5 w-1.5 flex-none rounded-full bg-cyan;
+  }
+
+  .meta {
+    @apply font-mono text-[0.8125rem] leading-6 text-muted;
+  }
+
+  .nav-link {
+    @apply inline-flex min-h-11 items-center text-[0.9375rem] text-muted hover:text-fg;
+  }
+
+  .btn {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-[10px] border border-transparent px-5 text-[0.9375rem] font-semibold leading-none;
+  }
+
+  .btn-primary {
+    background-image: linear-gradient(135deg, #00d0ee, #0096f7);
+    color: #0a0c10;
+  }
+
+  .btn-secondary {
+    @apply border-border text-fg hover:border-fg;
+  }
+
+  /* "What I build": four layers on one spine, one owner. */
+  .stack {
+    @apply relative overflow-hidden rounded-xl border border-line bg-surface;
+  }
+
+  .stack::before {
+    content: '';
+    position: absolute;
+    inset-block: 0;
+    left: 0;
+    width: 3px;
+    background-image: linear-gradient(to bottom, #00d0ee, #0096f7);
+  }
+
+  .stack-layer {
+    @apply grid gap-2 py-5 pl-7 pr-5 md:grid-cols-[11rem_1fr] md:gap-6 md:py-6 md:pl-9 md:pr-8;
+  }
+
+  .stack-layer + .stack-layer {
+    @apply border-t border-line;
+  }
+
+  .bullet {
+    @apply relative pl-5;
+  }
+
+  .bullet::before {
+    content: '';
+    @apply absolute left-0 top-[0.8em] h-px w-2.5 bg-cyan;
+  }
+
+  /* Proof strip: static text, never animated (spec §3.6). */
+  .proof {
+    @apply grid grid-cols-2 gap-px bg-line md:grid-cols-3;
+  }
+
+  .proof > div {
+    @apply bg-bg px-4 py-7 sm:px-6 md:py-9;
+  }
+
+  .hero-figure {
+    position: relative;
+    justify-self: center;
+    width: min(70vw, 400px);
+  }
+
+  .hero-figure::before {
+    content: '';
+    position: absolute;
+    inset: -10% -14% 0;
+    background-image: radial-gradient(
+      closest-side,
+      rgb(0 150 247 / 0.22),
+      rgb(0 208 238 / 0.07) 55%,
+      transparent
+    );
+    pointer-events: none;
+  }
+
+  .hero-figure img {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  @media (min-width: 1024px) {
+    .hero-figure {
+      justify-self: end;
+      width: 400px;
+    }
+  }
+
+  /* The one gradient hairline in the Nexerah block. */
+  .status-panel {
+    @apply relative overflow-hidden rounded-xl border border-line bg-surface p-6 sm:p-7;
+  }
+
+  .status-panel::before {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    top: 0;
+    height: 1px;
+    background-image: linear-gradient(to right, #00d0ee, #0096f7);
+  }
+}
+
+/* Motion is opt-in by preference. Nothing above the fold moves; the proof strip never does. */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  .reveal-pending {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  .reveal-in {
+    animation: reveal 400ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+
+  a,
+  button {
+    transition:
+      color 150ms,
+      border-color 150ms,
+      text-decoration-thickness 150ms;
+  }
+}
+
+@keyframes reveal {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media print {
+  .reveal-pending {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Forced colours drop gradients and shadows; keep every control visible. */
+@media (forced-colors: active) {
+  .btn-primary {
+    border-color: ButtonText;
+  }
+
+  .stack::before,
+  .status-panel::before,
+  .hero-figure::before {
+    display: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .hero-figure::before {
+    display: none;
+  }
+
+  .meta,
+  .nav-link {
+    color: #e6e8eb;
+  }
+}
