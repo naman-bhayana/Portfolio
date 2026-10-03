@@ -1,27 +1,35 @@
 {
-  "name": "portfolio-website",
-  "version": "0.1.0",
+  "name": "namanbhayana-com",
+  "version": "1.0.0",
   "private": true,
+  "engines": {
+    "node": "24.x"
+  },
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "dev": "next dev -H 127.0.0.1",
+    "build": "next build --webpack",
+    "start": "next start -H 127.0.0.1",
+    "lint": "eslint .",
+    "assets": "node scripts/assets/build.mjs",
+    "budget": "node scripts/qa/js-budget.mjs",
+    "verify": "node scripts/qa/verify-site.mjs"
   },
   "dependencies": {
-    "@heroicons/react": "^2.0.18",
-    "autoprefixer": "10.4.15",
-    "encoding": "^0.1.13",
-    "eslint": "8.47.0",
-    "eslint-config-next": "13.4.15",
-    "framer-motion": "^10.16.1",
-    "next": "13.4.15",
-    "postcss": "8.4.27",
-    "react": "18.2.0",
-    "react-animated-numbers": "^0.16.0",
-    "react-dom": "18.2.0",
-    "react-type-animation": "^3.1.0",
-    "resend": "^1.0.0",
-    "tailwindcss": "3.3.3"
+    "next": "16.3.8",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "devDependencies": {
+    "@resvg/resvg-js": "2.6.2",
+    "autoprefixer": "10.6.1",
+    "axe-core": "4.13.0",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.3.8",
+    "opentype.js": "2.0.0",
+    "png-to-ico": "3.0.2",
+    "postcss": "8.5.28",
+    "satori": "0.33.5",
+    "sharp": "0.35.4",
+    "tailwindcss": "3.4.19"
   }
 }
