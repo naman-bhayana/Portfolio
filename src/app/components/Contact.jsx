@@ -1,3 +1,4 @@
+import { Fragment } from 'react'
 import { CONTACT, MAILTO, NEXERAH_EMAIL, NEXERAH_MAILTO, PERSON, RESUME_DRIVE_URL, RESUME_PATH } from '@/content/site'
 import CopyEmail from './CopyEmail'
 
@@ -27,7 +28,17 @@ export default function Contact() {
             {CONTACT.links.map((link) => (
               <li key={link.href}>
                 <a href={link.href} rel={link.me ? 'me' : undefined} className="link">
-                  {link.label}
+                  {/* Narrow screens wrap after a "/", never inside the handle. */}
+                  {link.label.split('/').map((part, i) => (
+                    <Fragment key={i}>
+                      {i > 0 && (
+                        <>
+                          /<wbr />
+                        </>
+                      )}
+                      {part}
+                    </Fragment>
+                  ))}
                 </a>
               </li>
             ))}

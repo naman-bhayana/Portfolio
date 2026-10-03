@@ -22,16 +22,19 @@ const keepCompounds = (text) =>
 // element on first paint, so it loads eagerly at high priority.
 export default function Hero() {
   return (
-    <section aria-labelledby="hero-heading" className="border-b border-line">
+    // overflow-x-clip: the avatar glow may spill past the column, never past the page.
+    <section aria-labelledby="hero-heading" className="overflow-x-clip border-b border-line">
       <div className="container-page grid grid-cols-1 gap-10 pt-10 sm:pt-14 lg:grid-cols-12 lg:items-end lg:gap-8 lg:pt-20">
         <div className="lg:col-span-7 lg:pb-24">
           <p className="eyebrow">
-            {/* Break only between the two roles, never inside one. */}
+            {/* Phones: one role per line, so the fallback font and Poppins wrap identically
+                and nothing moves when the web font arrives. From sm: one line, with the
+                separator, breaking only between the roles. */}
             <span>
               {HERO.eyebrow.split(' · ').map((role, i) => (
                 <Fragment key={role}>
-                  {i > 0 && ' · '}
-                  <span className="whitespace-nowrap">{role}</span>
+                  {i > 0 && <span className="hidden sm:inline"> · </span>}
+                  <span className="block sm:inline sm:whitespace-nowrap">{role}</span>
                 </Fragment>
               ))}
             </span>

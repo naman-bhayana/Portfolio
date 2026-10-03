@@ -9,15 +9,17 @@ export const metadata = {
 export default function NotFound() {
   return (
     <section aria-labelledby="not-found-heading" className="section">
-      <div className="container-page max-w-prose">
-        <h1 id="not-found-heading" className="text-h2 font-semibold">
-          {NOT_FOUND.title}
-        </h1>
-        <p className="mt-4 text-lead text-muted">{NOT_FOUND.body}</p>
-        <p className="mt-8">
-          {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- a full load is fine here */}
-          <a href="/">{NOT_FOUND.home}</a>
-        </p>
+      <div className="container-page">
+        <div className="max-w-prose">
+          <h1 id="not-found-heading" className="text-h2 font-semibold">
+            {NOT_FOUND.title}
+          </h1>
+          <p className="mt-4 text-lead text-muted">{NOT_FOUND.body}</p>
+          <p className="mt-8">
+            {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- a full load is fine here */}
+            <a href="/">{NOT_FOUND.home}</a>
+          </p>
+        </div>
       </div>
     </section>
   )
