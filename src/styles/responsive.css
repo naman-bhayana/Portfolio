@@ -1,0 +1,334 @@
+/* Narrow layouts. Two breakpoints: tablets (1100 px) and phones (960 px). */
+
+@media (max-width: 1100px) {
+  .wall {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .b1 {
+    grid-row: auto;
+  }
+  .row2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .cell:nth-child(2) {
+    border-right: 0;
+  }
+  .cell:nth-child(-n+2) {
+    border-bottom: 1px solid var(--line);
+  }
+  .row {
+    grid-template-columns: 36px minmax(0, 1fr);
+    gap: 4px 12px;
+    padding: 18px 4px;
+  }
+  .row .k,
+  .row .d,
+  .row .lks {
+    grid-column: 2;
+  }
+  .row .lks {
+    justify-content: flex-start;
+    min-width: 0;
+    margin-top: 8px;
+  }
+  .row .lks:empty {
+    display: none;
+  }
+  .tl {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    row-gap: 40px;
+  }
+  .tl::before,
+  .prog {
+    display: none;
+  }
+  .nx {
+    padding: 48px 40px 120px;
+    gap: 40px;
+  }
+}
+
+@media (max-width: 960px) {
+  .wrap {
+    width: min(1240px, 100% - 32px);
+  }
+  .navin {
+    padding: 10px 0 4px;
+  }
+  .links {
+    order: 3;
+    flex-wrap: wrap;
+    width: 100%;
+    margin: 0 -10px;
+  }
+  .links a {
+    padding: 0 10px;
+  }
+  .hero {
+    padding: 36px 0 68px;
+  }
+  .herogrid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+  .herotext {
+    display: contents;
+  }
+  .status {
+    order: 1;
+    justify-self: start;
+  }
+  .h1 {
+    order: 2;
+  }
+  .role {
+    order: 3;
+  }
+  .cta {
+    order: 4;
+  }
+  .stage {
+    order: 5;
+    margin-top: 44px;
+  }
+  .lede {
+    order: 6;
+    margin-top: 36px;
+  }
+  .trust {
+    order: 7;
+    margin-top: 32px;
+  }
+  .status {
+    align-items: flex-start;
+    border-radius: 16px;
+    font-size: 12.5px;
+  }
+  .status .pulse {
+    margin-top: 5px;
+  }
+  .name {
+    font-size: clamp(56px, 17.5vw, 120px);
+  }
+  .stage {
+    width: min(360px, 86%);
+  }
+  .chip {
+    padding: 8px 11px;
+    font-size: 12px;
+  }
+  .c1 {
+    left: -8%;
+    top: 2%;
+  }
+  .c2 {
+    right: -8%;
+  }
+  .c3 {
+    left: -9%;
+  }
+  .c4 {
+    right: -6%;
+  }
+  .mqg {
+    gap: 28px;
+    padding: 16px 14px 16px 28px;
+  }
+  .mqg li {
+    gap: 28px;
+    font-size: 23px;
+  }
+  .sec {
+    padding: 76px 0;
+  }
+  .sh {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .flag {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .flagbody {
+    padding: 28px 22px 30px;
+  }
+  .mods {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .flagviz {
+    padding: 22px;
+    border-left: 0;
+    border-top: 1px solid var(--line);
+  }
+  .cases {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .idxh {
+    margin-top: 48px;
+  }
+  .stackgrid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+  .iso {
+    height: 440px;
+    scale: .74;
+    margin: 0 -20px -36px;
+  }
+  .b1 {
+    padding: 26px 22px 24px;
+  }
+
+  .b1 .num {
+    font-size: clamp(72px, 26vw, 110px);
+  }
+
+  .b2 .num,
+  .b3 .num {
+    font-size: clamp(52px, 17vw, 64px);
+  }
+  .b2,
+  .b3 {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+    padding: 24px 22px;
+  }
+  .b2 .viz,
+  .b3 .viz {
+    margin-top: 18px;
+  }
+  .row2 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .cell {
+    display: grid;
+    grid-template-columns: 132px minmax(0, 1fr);
+    align-items: center;
+    gap: 0 14px;
+    padding: 20px;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .cell b {
+    font-size: 40px;
+    white-space: nowrap;
+  }
+  .cell .ct {
+    margin-top: 0;
+  }
+  .dom {
+    padding: 14px 20px 16px;
+    border-top: 0;
+  }
+  .tools {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+    margin-top: 44px;
+  }
+  .tools .mono {
+    padding-top: 0;
+  }
+  .about {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 40px;
+  }
+  .tlh {
+    margin-top: 56px;
+  }
+  .tl {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 0;
+    margin-top: 22px;
+    padding-left: 7px;
+  }
+  .tl::before {
+    display: block;
+    left: 7px;
+    right: auto;
+    top: 6px;
+    bottom: 6px;
+    width: 1px;
+    height: auto;
+  }
+  .ev {
+    padding: 0 0 28px 30px;
+  }
+  .ev::before {
+    left: -7px;
+    top: 1px;
+  }
+  .ev:last-child {
+    padding-bottom: 0;
+  }
+  .nx {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 34px 22px 96px;
+    border-radius: 26px;
+  }
+  .nxmark {
+    font-size: 140px;
+    bottom: -54px;
+  }
+  .contact {
+    padding: 88px 0 76px;
+  }
+  .cacts .pill {
+    flex: 1 1 100%;
+  }
+  .footin {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .footl {
+    margin-left: -12px;
+  }
+}
+
+/* Small phones: the brand, the pause switch and the button still share one row. */
+/* Tablets: wide enough for two cards to a row and the flagship's modules in two columns. */
+@media (min-width: 640px) and (max-width: 960px) {
+  .cases {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .mods {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .navin {
+    gap: 4px 10px;
+  }
+
+  .brand {
+    gap: 8px;
+    font-size: 15px;
+  }
+
+  .mark {
+    width: 32px;
+    height: 32px;
+    font-size: 13px;
+  }
+
+  .navend {
+    gap: 8px;
+  }
+
+  .navcta {
+    padding: 0 12px;
+    font-size: 13.5px;
+  }
+}
+
+/* Below 360 px the monogram stands in for the name, which stays available to screen readers. */
+@media (max-width: 359px) {
+  .brand span + span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}

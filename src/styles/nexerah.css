@@ -1,0 +1,106 @@
+/* Nexerah panel. */
+
+/* The panel follows the ship log directly. */
+.nxsec {
+  padding-top: 0;
+}
+
+.nx {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr);
+  gap: 56px;
+  align-items: center;
+  padding: 64px 64px 128px;
+  border-radius: 32px;
+  border: 1px solid rgba(0, 225, 255, .26);
+  overflow: clip;
+  background: linear-gradient(160deg, #0B1524 0%, #080C14 55%, #0A1222 100%);
+}
+
+.nx::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(640px 420px at 88% 0%, rgba(0, 150, 255, .24), transparent 70%);
+}
+
+.nxmark {
+  position: absolute;
+  right: -12px;
+  bottom: -92px;
+  font: italic 400 230px/1 var(--serif);
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(0, 225, 255, .16);
+  pointer-events: none;
+  user-select: none;
+}
+
+.nx>div {
+  position: relative;
+}
+
+.nx .h2 {
+  font-size: clamp(30px, 3.7vw, 52px);
+}
+
+.nx .lead {
+  margin-top: 20px;
+}
+
+.nxcta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px 22px;
+  margin-top: 32px;
+}
+
+.soon {
+  font: 500 12.5px/1.4 var(--mono);
+  letter-spacing: .04em;
+  color: var(--muted);
+}
+
+.nxlist {
+  display: grid;
+  gap: 12px;
+}
+
+.nxi {
+  padding: 20px 22px;
+  border-radius: 18px;
+  background: rgba(5, 8, 13, .6);
+  border: 1px solid var(--line);
+}
+
+.nxi strong {
+  display: block;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -.01em;
+}
+
+.nxi span {
+  display: block;
+  margin-top: 4px;
+  font-size: 14.5px;
+  color: var(--muted);
+}
+
+.nxs {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 22px;
+  border-radius: 18px;
+  border: 1px solid rgba(0, 225, 255, .35);
+  font-size: 14.5px;
+  color: var(--soft);
+}
+
+.nxs strong {
+  color: var(--fg);
+  font-weight: 600;
+}

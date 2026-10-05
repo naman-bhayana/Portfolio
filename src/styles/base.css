@@ -1,0 +1,212 @@
+/* Tokens, reset and the primitives every section shares. The page is dark only. */
+
+:root {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background-color: #05070B;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: #05070B;
+}
+
+::selection {
+  background-color: rgba(26, 125, 255, .4);
+  color: #EEF3F8;
+}
+
+/* The hidden attribute must win over component display rules (the copy button). */
+[hidden] {
+  display: none !important;
+}
+
+:focus-visible {
+  outline: 2px solid #00E1FF;
+  outline-offset: 3px;
+}
+
+/* <main> takes programmatic focus from the skip link; it needs no ring. */
+main:focus {
+  outline: none;
+}
+
+.skip-link {
+  position: absolute;
+  left: 16px;
+  top: 12px;
+  z-index: 50;
+  transform: translateY(-200%);
+  border-radius: 8px;
+  background-color: #EEF3F8;
+  padding: 10px 16px;
+  color: #05070B;
+  font: 600 15px/1.4 var(--font-poppins), system-ui, sans-serif;
+  text-decoration: none;
+}
+
+.skip-link:focus {
+  transform: none;
+}
+
+.nb {
+  --bg: #05070B;
+  --line: rgba(148, 170, 200, .13);
+  --line2: rgba(148, 170, 200, .22);
+  --grid: rgba(120, 160, 210, .045);
+  --fg: #EEF3F8;
+  --soft: #C5CFDB;
+  --muted: #93A0B1;
+  --dim: #7B8798;
+  --cyan: #00E1FF;
+  --blue: #1A7DFF;
+  --grad: linear-gradient(100deg, #00E5FF 0%, #1A8CFF 55%, #4F5BFF 100%);
+  --gradbtn: linear-gradient(100deg, #00E5FF 0%, #2D9BFF 100%);
+  --display: var(--font-poppins), system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --serif: var(--font-serif), 'Iowan Old Style', Georgia, serif;
+  --mono: var(--font-mono), ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  --ease: cubic-bezier(.2, .8, .2, 1);
+  position: relative;
+  overflow-x: clip;
+  background-color: var(--bg);
+  background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 72px 72px;
+  color: var(--fg);
+  font: 400 16px/1.65 var(--display);
+  -webkit-font-smoothing: antialiased;
+}
+
+.nb :where(a) {
+  color: inherit;
+  text-decoration: none;
+}
+
+.nb :where(img) {
+  display: block;
+  max-width: 100%;
+}
+
+.nb :where(p, h1, h2, h3, ul, ol, figure) {
+  margin: 0;
+}
+
+.nb :where(ul, ol) {
+  padding: 0;
+  list-style: none;
+}
+
+.wrap {
+  width: min(1240px, 100% - 40px);
+  margin-inline: auto;
+}
+
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Text drawn by CSS from data-t. For decoration the page already says once in words (the
+   letters of the name, the typed role line, the marquee's second copy) or that only labels a
+   drawing. It shows, but it is not part of the document's text, so anything that reads the
+   HTML (a crawler, an answer engine, reader mode) never gets it twice or glued to its
+   neighbour. Always inside aria-hidden. */
+.nb [data-t]::before {
+  content: attr(data-t);
+}
+
+.mono {
+  font: 500 12px/1.4 var(--mono);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.grad {
+  background-image: var(--grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+
+.em {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 1.12em;
+  letter-spacing: -.015em;
+  padding-right: .06em;
+}
+
+.sec {
+  position: relative;
+  padding: 104px 0;
+  scroll-margin-top: 72px;
+}
+
+/* Focus moving up the page must not land under the sticky header (WCAG 2.4.11). */
+.nb :where(a[href], button) {
+  scroll-margin-top: 120px;
+}
+
+/* The page is dark and its accent text is a clipped gradient. Printed without backgrounds it
+   would be pale text on white with the gradient words missing, so print keeps the colours. */
+@media print {
+  :root {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
+.sh {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 380px);
+  gap: 48px;
+  align-items: end;
+  margin-bottom: 52px;
+}
+
+.kick {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font: 500 12px/1 var(--mono);
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--cyan);
+}
+
+.kick::before {
+  content: "";
+  width: 28px;
+  height: 1px;
+  background: var(--cyan);
+}
+
+.h2 {
+  margin-top: 18px;
+  font-size: clamp(34px, 4.8vw, 68px);
+  font-weight: 700;
+  line-height: 1.03;
+  letter-spacing: -.035em;
+  text-wrap: balance;
+}
+
+.sub {
+  color: var(--muted);
+  font-size: 16.5px;
+  text-wrap: pretty;
+}

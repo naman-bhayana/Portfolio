@@ -1,0 +1,325 @@
+/* Motion. Base styles are the finished state, so the page is complete with all of this off.
+   Everything that loops animates only opacity or a transform, usually on a pseudo-element laid
+   over the still state, so the loops run on the compositor and cost the main thread nothing.
+   Loops are staggered with negative delays: one that waits out a positive delay keeps the main
+   thread ticking until it starts. */
+
+@keyframes spin {
+  to {
+    rotate: 360deg;
+  }
+}
+
+@keyframes bob {
+  50% {
+    translate: 0 -10px;
+  }
+}
+
+/* The caret blinks by collapsing to no height, not by fading. Left at opacity 0 at a moment
+   when other animations start or finish, it made Chrome tick the main thread every frame
+   until it showed again. */
+@keyframes blink {
+  0%, 49.9% {
+    scale: 1;
+  }
+  50%, 100% {
+    scale: 1 0;
+  }
+}
+
+@keyframes ping {
+  0% {
+    opacity: 1;
+    scale: 1;
+  }
+  80%, 100% {
+    opacity: 0;
+    scale: 3.5;
+  }
+}
+
+@keyframes mq {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes fill {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes eq {
+  50% {
+    scale: 1 .96;
+  }
+}
+
+@keyframes shrink {
+  from {
+    scale: 1 1;
+  }
+  to {
+    scale: .65 1;
+  }
+}
+
+@keyframes stage {
+  0%, 100% {
+    opacity: 0;
+  }
+  6%, 22% {
+    opacity: 1;
+  }
+}
+
+@keyframes lvl {
+  50% {
+    translate: 9% 0;
+  }
+}
+
+@keyframes wipe {
+  0% {
+    translate: -100%;
+  }
+  45%, 100% {
+    translate: 0;
+  }
+}
+
+@keyframes unwipe {
+  0% {
+    translate: 100%;
+  }
+  45%, 100% {
+    translate: 0;
+  }
+}
+
+@keyframes scan {
+  from {
+    translate: 0 0;
+  }
+  to {
+    translate: 0 124px;
+  }
+}
+
+@keyframes lit {
+  0%, 22% {
+    opacity: 1;
+  }
+  28%, 100% {
+    opacity: 0;
+  }
+}
+
+@keyframes rv {
+  from {
+    opacity: 0;
+    translate: 0 46px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+@keyframes spread {
+  from {
+    opacity: .25;
+    transform: translateY(var(--y0)) rotateX(60deg) rotateZ(45deg);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(var(--y)) rotateX(60deg) rotateZ(45deg);
+  }
+}
+
+@keyframes grow {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  .pulse::after {
+    animation: ping 2s infinite;
+  }
+  .caret::before {
+    animation: blink 1s linear infinite;
+  }
+  .orbit {
+    animation: spin 9s linear infinite;
+  }
+  .orbit2 {
+    animation: spin 70s linear infinite reverse;
+  }
+  /* The hero's arrival (name, role, copy, avatar, chips) is timed in Hero.jsx, which also
+     starts the chips' bob. This is the bob on its own, for once the arrival is over. */
+  .chip {
+    animation: bob 6s ease-in-out infinite;
+  }
+  .c2 {
+    animation-delay: -2s;
+  }
+  .c3 {
+    animation-delay: -4s;
+  }
+  .c4 {
+    animation-delay: -1s;
+  }
+  .mqt {
+    animation: mq 52s linear infinite;
+  }
+  .mq:hover .mqt {
+    animation-play-state: paused;
+  }
+  .eq i {
+    animation: eq 1.9s ease-in-out infinite;
+  }
+  .eq i:nth-child(2n) {
+    animation-duration: 2.6s;
+  }
+  .eq i:nth-child(3n) {
+    animation-delay: -.4s;
+  }
+  .eq i:nth-child(5n) {
+    animation-delay: -.9s;
+    animation-duration: 1.5s;
+  }
+  .stages i::after {
+    animation: stage calc(var(--n) * .4s) linear infinite;
+    animation-delay: calc((var(--i) - var(--n)) * .4s);
+  }
+  .gasrows i::after {
+    animation: lvl 2.8s ease-in-out infinite;
+  }
+  .gasrows span:nth-child(2n) i::after {
+    animation-delay: -2.1s;
+  }
+  .gasrows span:nth-child(3n) i::after {
+    animation-delay: -1.5s;
+  }
+  .wipe {
+    animation: wipe 6s var(--ease) infinite;
+  }
+  .wipe div {
+    animation: unwipe 6s var(--ease) infinite;
+  }
+  .beam {
+    animation: scan 3.2s ease-in-out infinite alternate;
+  }
+  .plate::before,
+  .layer::before {
+    animation: lit 8s ease-in-out infinite;
+  }
+  .p3::before,
+  .l3::before {
+    animation-delay: -6s;
+  }
+  .p2::before,
+  .l2::before {
+    animation-delay: -4s;
+  }
+  .p1::before,
+  .l1::before {
+    animation-delay: -2s;
+  }
+  @supports (animation-timeline: view()) {
+    /* Fills backwards only: once a block has arrived the animation lets go of it. Held on by
+       a forwards fill, the block would stay on a moving layer and its text would be drawn off
+       the pixel grid, visibly soft on high-density screens. */
+    .rv {
+      animation: rv linear backwards;
+      animation-timeline: view();
+      animation-range: cover 0% cover 20%;
+    }
+    /* A block that holds keyboard focus is shown at once: a link must never take focus
+       while the block around it is still transparent. */
+    .rv:focus-within {
+      animation: none;
+    }
+    .rv.s2 {
+      animation-range: cover 3% cover 24%;
+    }
+    .rv.s3 {
+      animation-range: cover 6% cover 28%;
+    }
+    .iso {
+      view-timeline: --iso block;
+    }
+    .plate {
+      animation: spread linear both;
+      animation-timeline: --iso;
+      animation-range: cover 4% cover 40%;
+    }
+    .prog {
+      animation: grow linear both;
+      animation-timeline: view();
+      animation-range: cover 6% cover 46%;
+    }
+    .dots .on {
+      animation: fill linear both;
+      animation-timeline: view();
+      animation-range: cover 10% cover 42%;
+    }
+    .ba .now i {
+      animation: shrink linear both;
+      animation-timeline: view();
+      animation-range: cover 12% cover 44%;
+    }
+  }
+}
+
+/* Browsers without scroll-driven animations: MotionIsland holds back the blocks that are still
+   below the fold (.rv-wait) and plays them in as they arrive (.rv-in). */
+@media (prefers-reduced-motion: no-preference) {
+  .rv-wait:not(:focus-within) {
+    opacity: 0;
+    translate: 0 46px;
+  }
+
+  .rv-in {
+    animation: rv .7s var(--ease) both;
+  }
+}
+
+/* Pause switch (WCAG 2.2.2): with every animation off, the base styles show the finished page. */
+#pause-motion:checked ~ .nb *,
+#pause-motion:checked ~ .nb *::before,
+#pause-motion:checked ~ .nb *::after {
+  animation: none !important;
+  transition: none !important;
+}
+
+#pause-motion:checked ~ .nb .rv-wait {
+  opacity: 1;
+  translate: none;
+}
+
+@media print {
+  .nb *,
+  .nb *::before,
+  .nb *::after {
+    animation: none !important;
+  }
+
+  .rv-wait {
+    opacity: 1;
+    translate: none;
+  }
+}

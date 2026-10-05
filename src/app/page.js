@@ -3,11 +3,12 @@ import { serializeGraph } from '@/lib/structured-data'
 import About from './components/About'
 import Contact from './components/Contact'
 import Hero from './components/Hero'
+import Marquee from './components/Marquee'
+import MotionIsland from './components/MotionIsland'
 import Nexerah from './components/Nexerah'
-import ProofStrip from './components/ProofStrip'
-import Reveal from './components/Reveal'
-import SelectedWork from './components/SelectedWork'
-import WhatIBuild from './components/WhatIBuild'
+import ProofWall from './components/ProofWall'
+import Stack from './components/Stack'
+import Work from './components/Work'
 
 // Page-specific metadata lives here so other routes never inherit this canonical or card.
 export const metadata = {
@@ -36,13 +37,14 @@ export default function Home() {
   return (
     <>
       <Hero />
-      <WhatIBuild />
-      <SelectedWork />
-      <ProofStrip />
+      <Marquee />
+      <ProofWall />
+      <Work />
+      <Stack />
       <About />
       <Nexerah />
       <Contact />
-      <Reveal />
+      <MotionIsland />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeGraph() }} />
     </>
   )

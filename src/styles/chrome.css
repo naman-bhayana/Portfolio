@@ -1,0 +1,246 @@
+/* Header, buttons and footer. */
+
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: rgba(5, 7, 11, .68);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--line);
+}
+
+.navin {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 24px;
+  min-height: 72px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  font-weight: 600;
+  font-size: 16px;
+  letter-spacing: -.01em;
+}
+
+.mark {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+  background: var(--gradbtn);
+  color: #03111B;
+  font-weight: 700;
+  font-size: 14px;
+  box-shadow: 0 0 26px rgba(0, 190, 255, .45);
+}
+
+.links {
+  display: flex;
+  gap: 4px;
+  font-size: 14.5px;
+  color: var(--muted);
+}
+
+.links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 999px;
+  transition: color .2s, background .2s;
+}
+
+.links a:hover {
+  color: var(--fg);
+  background: rgba(255, 255, 255, .05);
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 0 26px;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 15px;
+  white-space: nowrap;
+  transition: transform .25s var(--ease), box-shadow .25s, background .25s;
+}
+
+.ic {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ic.sm {
+  width: 13px;
+  height: 13px;
+}
+
+/* The copy-email control is a real button. */
+button.pill {
+  border: 0;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.pill-primary {
+  background: var(--gradbtn);
+  color: #03111B;
+  box-shadow: 0 12px 34px -10px rgba(0, 170, 255, .65);
+}
+
+.pill-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 46px -10px rgba(0, 170, 255, .95);
+}
+
+.pill-ghost {
+  position: relative;
+  color: var(--fg);
+  background: rgba(255, 255, 255, .02);
+}
+
+.pill-ghost::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: var(--grad);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.pill-ghost:hover {
+  transform: translateY(-2px);
+  background: rgba(0, 180, 255, .08);
+}
+
+.navcta {
+  min-height: 44px;
+  padding: 0 20px;
+  font-size: 14px;
+}
+
+.foot {
+  border-top: 1px solid var(--line);
+  padding: 30px 0;
+  font-size: 13px;
+  color: var(--dim);
+}
+
+.footin {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 24px;
+}
+
+.footl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.footl a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 12px;
+  color: var(--muted);
+}
+
+.footl a:hover {
+  color: var(--fg);
+}
+
+.navend {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* The checkbox half of the pause switch (layout.js). It is fixed to the viewport: left at the
+   top of the document, focusing it, which every click on its label does, would scroll the
+   page back to the start. */
+#pause-motion {
+  position: fixed;
+  top: 0;
+  left: 0;
+}
+
+/* The visible half of the pause switch; the checkbox itself sits before .nb (layout.js). */
+.pause {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--line2);
+  color: var(--muted);
+  cursor: pointer;
+  transition: color .2s, border-color .2s;
+}
+
+.pause:hover {
+  border-color: var(--cyan);
+  color: var(--fg);
+}
+
+.pause .ic {
+  fill: currentColor;
+  stroke: none;
+}
+
+.pause .when-paused,
+#pause-motion:checked ~ .nb .pause .when-playing {
+  display: none;
+}
+
+#pause-motion:checked ~ .nb .pause .when-paused {
+  display: block;
+}
+
+#pause-motion:focus-visible ~ .nb .pause {
+  outline: 2px solid #00E1FF;
+  outline-offset: 3px;
+}
+
+/* Visitors who already asked for less motion get none, so there is nothing to pause. */
+@media (prefers-reduced-motion: reduce) {
+  #pause-motion,
+  .pause {
+    display: none;
+  }
+}
+
+/* Forced colours drop backgrounds, and with them the gradient that draws these outlines.
+   `button.pill` is named because the button reset above removes its border. */
+@media (forced-colors: active) {
+  .pill-primary,
+  .pill-ghost,
+  button.pill,
+  .tag.hot {
+    border: 1px solid ButtonText;
+  }
+}

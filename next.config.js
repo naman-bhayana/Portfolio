@@ -1,4 +1,5 @@
 const { RESUME_DRIVE_URL } = require('./src/content/site.js')
+const { IMAGE_QUALITY, IMAGE_WIDTHS, THUMB_WIDTH } = require('./src/lib/images.js')
 
 // Report-only first. A static page cannot carry a per-request nonce, so inline scripts are
 // allowed; promote this to Content-Security-Policy after a clean week in production.
@@ -37,11 +38,14 @@ const nextConfig = {
   agentRules: false,
   images: {
     formats: ['image/avif', 'image/webp'],
-    // The hero avatar is the only optimised image: serve it 640 and 768 px wide, nothing else.
-    deviceSizes: [640, 768],
-    imageSizes: [384],
-    qualities: [75],
-    localPatterns: [{ pathname: '/images/**', search: '' }],
+    // The optimiser serves the widths the page asks for (src/lib/images.js) and nothing else.
+    deviceSizes: IMAGE_WIDTHS,
+    imageSizes: [THUMB_WIDTH],
+    qualities: [IMAGE_QUALITY],
+    localPatterns: [
+      { pathname: '/images/**', search: '' },
+      { pathname: '/work/**', search: '' },
+    ],
   },
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }]

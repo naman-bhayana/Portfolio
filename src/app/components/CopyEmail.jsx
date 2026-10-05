@@ -45,14 +45,15 @@ export default function CopyEmail({ email, targetId, labels }) {
     }
   }
 
+  // Both elements join the row of contact buttons; CSS puts the status on its own line.
   return (
-    <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
-      <button type="button" className="btn btn-secondary" onClick={copy} hidden={!hydrated} data-copy-email>
+    <>
+      <button type="button" className="pill pill-ghost" onClick={copy} hidden={!hydrated} data-copy-email>
         {labels.button}
       </button>
-      <p role="status" className="text-sm text-muted">
+      <p role="status" className="copystatus">
         {status}
       </p>
-    </div>
+    </>
   )
 }

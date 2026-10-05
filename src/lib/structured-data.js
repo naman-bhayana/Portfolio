@@ -7,8 +7,8 @@ const ID = {
   website: `${SITE_URL}/#website`,
 }
 
-// Person + ProfilePage + WebSite (spec §4.2). Every value is backed by visible text on the page.
-// Nexerah gets no Organization node until nexerah.com answers 200 (spec row 23).
+// Person + ProfilePage + WebSite. Every value is backed by visible text on the page.
+// Nexerah gets no Organization node until nexerah.com answers 200.
 export function buildGraph() {
   return {
     '@context': 'https://schema.org',
@@ -28,7 +28,7 @@ export function buildGraph() {
           url: ENTITY.employer.url,
         },
         email: `mailto:${PERSON.email}`,
-        sameAs: [PERSON.linkedin, PERSON.github, ENTITY.employerProfile],
+        sameAs: [PERSON.linkedin, PERSON.github, PERSON.x, PERSON.instagram, ENTITY.employerProfile],
         alumniOf: { '@type': 'CollegeOrUniversity', name: ENTITY.alumniOf },
         address: { '@type': 'PostalAddress', addressLocality: ENTITY.locality, addressCountry: ENTITY.country },
         knowsAbout: ENTITY.knowsAbout,

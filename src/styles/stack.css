@@ -1,0 +1,166 @@
+/* Stack: the isometric plates, the four layers and the toolbox. */
+
+.stackgrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 40px;
+  align-items: center;
+}
+
+.iso {
+  position: relative;
+  height: 600px;
+}
+
+.plate {
+  position: absolute;
+  left: 50%;
+  top: 70%;
+  width: 330px;
+  height: 330px;
+  margin: -165px;
+  border-radius: 26px;
+  background: linear-gradient(135deg, #121B26, #0A0F16);
+  border: 1px solid rgba(0, 225, 255, .16);
+  box-shadow: 0 60px 60px -30px rgba(0, 0, 0, .7);
+  transform: translateY(var(--y)) rotateX(60deg) rotateZ(45deg);
+}
+
+.plate::after {
+  content: "";
+  position: absolute;
+  inset: 18px;
+  border-radius: 16px;
+  border: 1px dashed rgba(0, 225, 255, .12);
+}
+
+/* The lit state of a plate or a layer is a layer of its own, faded in over the still one. */
+.plate::before,
+.layer::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .3s;
+}
+
+.plate::before {
+  border: 1px solid var(--cyan);
+  box-shadow: 0 0 0 1px rgba(0, 225, 255, .35), 0 0 60px rgba(0, 200, 255, .38);
+}
+
+.layer::before {
+  z-index: -1;
+  border: 1px solid rgba(0, 225, 255, .45);
+  background: rgba(0, 180, 255, .05);
+}
+
+.p1 {
+  --y: 0px;
+  --y0: 44px;
+}
+
+.p2 {
+  --y: -92px;
+  --y0: 14px;
+}
+
+.p3 {
+  --y: -184px;
+  --y0: -16px;
+}
+
+.p4 {
+  --y: -276px;
+  --y0: -46px;
+}
+
+.layers {
+  display: grid;
+  gap: 14px;
+}
+
+.layer {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 20px;
+  padding: 22px 24px;
+  border-radius: 20px;
+  border: 1px solid var(--line);
+  background: rgba(10, 15, 22, .72);
+}
+
+.layer .n {
+  padding-top: 8px;
+  font: 500 12px/1 var(--mono);
+  color: var(--cyan);
+}
+
+.layer h3 {
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -.02em;
+  line-height: 1.3;
+}
+
+.layer p {
+  margin-top: 6px;
+  font-size: 14.5px;
+  color: var(--muted);
+  text-wrap: pretty;
+}
+
+/* Standing still, the product pair is the lit one. */
+.p2::before,
+.l2::before {
+  opacity: 1;
+}
+
+/* Pointing at a layer stops the loop and lights that layer and its plate instead. */
+.stackgrid:has(.layer:hover) .plate::before,
+.stackgrid:has(.layer:hover) .layer::before {
+  animation: none;
+  opacity: 0;
+}
+
+.stackgrid:has(.layer:hover) .layer:hover::before,
+.stackgrid:has(.l4:hover) .p4::before,
+.stackgrid:has(.l3:hover) .p3::before,
+.stackgrid:has(.l2:hover) .p2::before,
+.stackgrid:has(.l1:hover) .p1::before {
+  opacity: 1;
+}
+
+.tools {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+  margin-top: 64px;
+  padding-top: 32px;
+  border-top: 1px solid var(--line);
+}
+
+.tools .mono {
+  padding-top: 9px;
+}
+
+.toollist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.toollist li {
+  padding: 9px 12px;
+  border-radius: 9px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, .025);
+  font: 500 12.5px/1 var(--mono);
+  letter-spacing: .02em;
+  color: var(--soft);
+}

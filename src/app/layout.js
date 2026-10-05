@@ -1,16 +1,19 @@
-import { Poppins } from 'next/font/google'
-import { HEAD, PERSON, SITE_URL, SKIP_LINK } from '@/content/site'
+import { HEAD, MOTION, PERSON, SITE_URL, SKIP_LINK } from '@/content/site'
 import SiteFooter from './components/SiteFooter'
 import SiteHeader from './components/SiteHeader'
-import './globals.css'
-
-// Two weights only (400 body, 600 headings): two self-hosted woff2 files.
-const poppins = Poppins({
-  weight: ['400', '600'],
-  subsets: ['latin'],
-  display: 'swap',
-  variable: '--font-poppins',
-})
+import { fontVariables } from './fonts'
+// Order matters: responsive.css overrides the section files, and motion.css comes last.
+import '@/styles/base.css'
+import '@/styles/chrome.css'
+import '@/styles/hero.css'
+import '@/styles/proof.css'
+import '@/styles/work.css'
+import '@/styles/stack.css'
+import '@/styles/about.css'
+import '@/styles/nexerah.css'
+import '@/styles/contact.css'
+import '@/styles/responsive.css'
+import '@/styles/motion.css'
 
 // Site-wide fields only. The canonical URL, robots, Open Graph, Twitter and JSON-LD belong to
 // the page that they describe (src/app/page.js), so other routes such as the 404 never
@@ -23,7 +26,7 @@ export const metadata = {
 }
 
 export const viewport = {
-  themeColor: '#0A0C10',
+  themeColor: '#05070B',
   colorScheme: 'dark',
   width: 'device-width',
   initialScale: 1,
@@ -31,16 +34,21 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={poppins.variable}>
+    <html lang="en" className={fontVariables}>
       <body>
         <a href="#main" className="skip-link">
           {SKIP_LINK}
         </a>
-        <SiteHeader />
-        <main id="main" tabIndex={-1}>
-          {children}
-        </main>
-        <SiteFooter />
+        {/* Pause switch (WCAG 2.2.2). A real checkbox, so it works without JavaScript; it sits
+            before .nb because motion.css reaches the page through a sibling selector. */}
+        <input id="pause-motion" className="sr" type="checkbox" role="switch" aria-label={MOTION.pause} />
+        <div className="nb">
+          <SiteHeader />
+          <main id="main" tabIndex={-1}>
+            {children}
+          </main>
+          <SiteFooter />
+        </div>
       </body>
     </html>
   )
