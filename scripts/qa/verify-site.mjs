@@ -14,6 +14,7 @@ import { parse } from 'node-html-parser'
 import { CHROME_UA, HTML_ACCEPT, get, headerMap, rawGet } from './lib/net.mjs'
 import {
   findEmoji,
+  gluedText,
   isCopyLeaf,
   isUrlish,
   lineOf,
@@ -35,8 +36,8 @@ process.emitWarning = (w, ...rest) => {
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
 const SITE = await import(pathToFileURL(path.join(REPO_ROOT, 'src', 'content', 'site.js')).href)
-const { SITE_URL, UPDATED, PERSON, HEAD, HERO, WHAT_I_BUILD, SELECTED_WORK, PROOF, ABOUT, NEXERAH, CONTACT, FOOTER } =
-  SITE
+const { SITE_URL, UPDATED, PERSON, HEAD, HERO, CAPABILITIES, PROOF, WORK, BUILDS, STACK, ABOUT, TIMELINE } = SITE
+const { NEXERAH, CONTACT, FOOTER } = SITE
 const { OG_IMAGE, SHARE, AVATAR, RESUME_PATH, RESUME_DRIVE_URL } = SITE
 
 // ---------------------------------------------------------------- arguments
@@ -225,9 +226,21 @@ await section('C1', async () => {
   const h1s = body.querySelectorAll('h1')
   check(h1s.length === 1, 'C1.h1-count', `${h1s.length} h1`, `expected exactly one h1, found ${h1s.length}`)
   if (h1s.length) {
-    const t = norm(h1s[0].text)
-    check(t === HERO.heading, 'C1.h1-text', q(t), `h1 is ${q(t)}, expected ${q(HERO.heading)}`)
+    // The name is drawn letter by letter in an aria-hidden copy; the h1 reads as the rest.
+    const spoken = parse(h1s[0].outerHTML)
+    for (const e of spoken.querySelectorAll('[aria-hidden="true"]')) e.remove()
+    const t = norm(spoken.text)
+    check(t === HERO.heading, 'C1.h1-text', q(t), `h1 reads ${q(t)}, expected ${q(HERO.heading)}`)
+    // The letters are drawn by CSS, so the heading's whole text is the heading and no more.
+    const whole = norm(h1s[0].text)
+    check(whole === HERO.heading, 'C1.h1-plain', 'the h1 holds its text once', `h1 text is ${q(whole)}, expected ${q(HERO.heading)}`)
   }
+
+  // What a plain HTML-to-text reader gets: no text glued to its neighbour. The parts of a
+  // figure ("400" and "+") belong together.
+  const glued = gluedText(body, body.querySelectorAll('[role="img"]'))
+  check(!glued.length, 'C1.text-flow', 'no text is glued to its neighbour in the HTML',
+    `${glued.length} place(s) read as one word: ${glued.slice(0, 6).map((j) => q(j)).join(', ')}`)
 
   const all = body.querySelectorAll('*')
   const h1Index = h1s.length ? all.indexOf(h1s[0]) : -1
@@ -235,41 +248,55 @@ await section('C1', async () => {
   check(
     eyebrowIndex >= 0 && h1Index >= 0 && eyebrowIndex < h1Index,
     'C1.eyebrow',
-    'eyebrow <p> precedes the h1',
-    eyebrowIndex < 0 ? `no <p> with text ${q(HERO.eyebrow)}` : 'eyebrow <p> does not precede the h1',
+    'status <p> precedes the h1',
+    eyebrowIndex < 0 ? `no <p> with text ${q(HERO.eyebrow)}` : 'status <p> does not precede the h1',
   )
 
   const header = body.querySelector('header')
   check(header && textOf(header).includes(PERSON.name), 'C1.header', `header contains ${q(PERSON.name)}`,
     header ? `header does not contain ${q(PERSON.name)}` : 'no <header> element')
 
-  // Proof <dl>
-  const dl = body.querySelectorAll('dl').find((d) => d.querySelectorAll('dt').some((dt) => norm(dt.text) === PROOF[0].value))
-  if (!dl) fail('C1.proof', `no <dl> with a <dt> ${q(PROOF[0].value)}`)
+  // Proof wall: every figure and its label, in page order, and the count-up numbers already
+  // at their final value in the server HTML.
+  const proofRoot = body.querySelector('#proof')
+  if (!proofRoot) fail('C1.proof', 'no #proof section')
   else {
-    const kids = dl.querySelectorAll('dt, dd')
-    const dts = kids.filter((k) => tagOf(k) === 'dt')
+    const figures = [...PROOF.wall, ...PROOF.cells]
+    const text = textOf(proofRoot)
     const problems = []
-    if (dts.length !== PROOF.length) problems.push(`${dts.length} <dt>, expected ${PROOF.length}`)
-    PROOF.forEach((p, i) => {
-      const dt = dts[i]
-      if (!dt) return
-      if (norm(dt.text) !== p.value) problems.push(`dt[${i}] ${q(norm(dt.text))} != ${q(p.value)}`)
-      const dd = kids[kids.indexOf(dt) + 1]
-      if (!dd || tagOf(dd) !== 'dd') problems.push(`dt[${i}] has no following <dd>`)
-      else if (norm(dd.text) !== p.label) problems.push(`dd[${i}] ${q(norm(dd.text))} != ${q(p.label)}`)
-    })
-    check(!problems.length, 'C1.proof', `${PROOF.length} dt/dd pairs in order`, problems.join('; '))
+    let from = 0
+    for (const item of figures) {
+      for (const expected of [item.value, item.label]) {
+        const i = text.indexOf(norm(expected), from)
+        if (i < 0) problems.push(`${q(expected, 40)} missing or out of order`)
+        else from = i
+      }
+    }
+    // Each figure is in the text once and reads on into its label, and carries its value as
+    // the name of a labelled graphic for screen readers.
+    const labelled = proofRoot.querySelectorAll('[role="img"]').map((el) => el.getAttribute('aria-label'))
+    for (const item of figures) {
+      const sentence = norm(`${item.value} ${item.label}`)
+      if (!text.includes(sentence)) problems.push(`does not read ${q(sentence, 48)}`)
+      if (!labelled.includes(item.say ?? item.value)) problems.push(`no graphic named ${q(item.say ?? item.value)}`)
+    }
+    const counts = proofRoot.querySelectorAll('[data-count]')
+    const numbers = figures.flatMap((item) => item.parts).filter((part) => typeof part === 'number')
+    if (counts.length !== numbers.length) problems.push(`${counts.length} [data-count], expected ${numbers.length}`)
+    for (const el of counts) {
+      if (norm(el.text) !== el.getAttribute('data-count')) problems.push(`[data-count=${el.getAttribute('data-count')}] reads ${q(el.text)}`)
+    }
+    check(!problems.length, 'C1.proof', `${figures.length} figures in order, ${counts.length} final numbers in the HTML`, problems.join('; '))
   }
 
   // About
-  const aboutText = norm(ABOUT.paragraph.map((s) => (typeof s === 'string' ? s : s.text)).join(''))
+  const aboutText = norm(ABOUT.bio.map((s) => (typeof s === 'string' ? s : s.text)).join(''))
   const aboutP = body.querySelectorAll('p').find((p) => norm(p.text) === aboutText)
-  check(!!aboutP, 'C1.about', 'About paragraph matches site.js', `no <p> equal to the joined ABOUT.paragraph (starts ${q(aboutText, 50)})`)
+  check(!!aboutP, 'C1.about', 'About paragraph matches site.js', `no <p> equal to the joined ABOUT.bio (starts ${q(aboutText, 50)})`)
   check(bodyText.includes(norm(ABOUT.disclosure)), 'C1.disclosure', 'ABOUT.disclosure present', `missing ${q(ABOUT.disclosure)}`)
 
-  // Selected work headings
-  const names = SELECTED_WORK.items.map((i) => i.name)
+  // Work headings: every build, in page order
+  const names = BUILDS.map((i) => i.name)
   const workRoot = body.querySelector('#work')
   const h3s = (workRoot || body).querySelectorAll('h3').map((h) => norm(h.text))
   if (workRoot) {
@@ -281,17 +308,32 @@ await section('C1', async () => {
       `h3s matching work items are [${seq.join(', ')}], expected [${names.join(', ')}]; no #work section`)
   }
 
+  // The number of builds is typed into the copy by hand, as a figure and as a word. Hold
+  // every mention to the length of the list.
+  const NUMBER_WORDS = 'zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty'.split(' ')
+  const asFigure = new RegExp(`\\b${names.length}\\b`)
+  const asWord = new RegExp(`\\b${NUMBER_WORDS[names.length] ?? names.length}\\b`, 'i')
+  const mentions = {
+    'PROOF.cells[0].value': asFigure.test(PROOF.cells[0].value),
+    'HERO.roles': HERO.roles.some((role) => asFigure.test(role)),
+    'HERO.rolesSummary': asFigure.test(HERO.rolesSummary),
+    'WORK.heading': asWord.test(WORK.heading.lead + WORK.heading.em),
+  }
+  const stale = Object.keys(mentions).filter((place) => !mentions[place])
+  check(!stale.length, 'C1.build-count', `${names.length} builds, and the copy says so in ${Object.keys(mentions).length} places`,
+    `there are ${names.length} builds, but ${stale.join(', ')} says otherwise`)
+
   // Nexerah block and footer
   const nex = [
-    ['heading', NEXERAH.heading],
+    ['heading', NEXERAH.heading.lead + NEXERAH.heading.em],
     ['body', NEXERAH.body],
     ['status', NEXERAH.status],
-    ['updated', NEXERAH.updated],
+    ['availability', NEXERAH.availability],
     ['cta.label', NEXERAH.cta.label],
     ['domainNote', NEXERAH.domainNote],
   ]
   const missingNex = nex.filter(([, v]) => !bodyText.includes(norm(v))).map(([k]) => k)
-  check(!missingNex.length, 'C1.nexerah', 'heading, body, status, updated, cta, domainNote present', `missing NEXERAH.${missingNex.join(', NEXERAH.')}`)
+  check(!missingNex.length, 'C1.nexerah', 'heading, body, status, availability, cta, domainNote present', `missing NEXERAH.${missingNex.join(', NEXERAH.')}`)
   const footer = body.querySelector('footer')
   check(bodyText.includes(norm(FOOTER.line)), 'C1.footer', 'FOOTER.line present', `missing ${q(FOOTER.line)}`)
   if (footer && bodyText.includes(norm(FOOTER.line)) && !textOf(footer).includes(norm(FOOTER.line))) warn('C1.footer-place', 'FOOTER.line is not inside <footer>')
@@ -302,23 +344,34 @@ await section('C1', async () => {
   check(desc === norm(HEAD.description), 'C1.head-description', 'meta description matches HEAD.description',
     desc ? `meta description ${q(desc)} != HEAD.description` : 'no meta description')
 
-  // Every visible copy leaf. CONTACT.copy holds interaction states (copied / fallback) that
-  // only exist after hydration, so it is excluded. The Resume link is rendered only once
-  // RESUME_DRIVE_URL is set in site.js.
-  const groups = { HERO, WHAT_I_BUILD, SELECTED_WORK, PROOF, ABOUT, NEXERAH, CONTACT, FOOTER }
+  // Every copy leaf. CONTACT.copy holds interaction states (copied / fallback) that only exist
+  // after hydration, so it is excluded. The Resume link is rendered only once RESUME_DRIVE_URL
+  // is set in site.js. `alt` leaves are image descriptions; `visual` names a drawn diagram.
+  // A leaf also counts when CSS draws it from data-t (decoration) or it names something for
+  // screen readers.
+  const groups = { HERO, AVATAR, CAPABILITIES, PROOF, WORK, STACK, ABOUT, TIMELINE, NEXERAH, CONTACT, FOOTER }
+  const alts = new Set(body.querySelectorAll('img').map((img) => norm(img.getAttribute('alt') ?? '')))
+  const drawn = new Set(body.querySelectorAll('[data-t]').map((el) => norm(el.getAttribute('data-t'))))
+  const named = new Set(body.querySelectorAll('[aria-label]').map((el) => norm(el.getAttribute('aria-label'))))
   let total = 0
   const missing = []
   for (const [g, v] of Object.entries(groups)) {
     for (const leaf of stringLeaves(v, g)) {
-      if (!isCopyLeaf(leaf) || leaf.path.startsWith('CONTACT.copy')) continue
+      if (!isCopyLeaf(leaf) || leaf.key === 'visual' || leaf.path.startsWith('CONTACT.copy')) continue
       if (leaf.path === 'CONTACT.resumeLabel' && !RESUME_DRIVE_URL) continue
       total++
-      if (!bodyText.includes(norm(leaf.value))) missing.push(leaf)
+      const value = norm(leaf.value)
+      const rendered = leaf.key === 'alt' ? alts.has(value) : bodyText.includes(value) || drawn.has(value) || named.has(value)
+      if (!rendered) missing.push(leaf)
     }
   }
   for (const m of missing.slice(0, 20)) fail('C1.copy', `${m.path} not rendered: ${q(m.value, 70)}`)
   if (missing.length > 20) fail('C1.copy', `${missing.length - 20} more of ${total} copy strings not rendered`)
   if (!missing.length) pass('C1.copy', `${total}/${total} site.js copy strings rendered verbatim`)
+
+  // A figure the owner still has to supply is written as [SOMETHING] in site.js: never ship one.
+  const placeholder = bodyText.match(/\[[A-Z][^\]]{0,40}\]/)
+  check(!placeholder, 'C1.no-placeholder', 'no [PLACEHOLDER] left on the page', `found ${q(placeholder?.[0] ?? '')}`)
 
   // Hidden content
   const hiddenStyle = body
@@ -440,8 +493,6 @@ await section('C4', async () => {
     `\\b(?:19|20)\\d{2}\\s*${H}\\s*(?:\\d{2}(?:\\d{2})?\\b(?!${H}\\d)|present\\b|now\\b|today\\b)` +
       `|\\b${MON}(?:\\s+\\d{4})?\\s*${H}\\s*(?:${MON}\\s+)?(?:\\d{4}|present)\\b`, 'i'), voice, 'hyphenated range')
   scan('C4.weak-verbs', /\b(helped with|worked on|responsible for)\b/i, voice)
-  scan('C4.tech-names', /\b(?:MongoDB|MySQL|OAuth|JWT|MERN|Redux|Bootstrap|Tailwind|Mapbox|TensorFlow|PyTorch)\b|\bNext\.?js\b/i, voice)
-  scan('C4.tech-names-cs', /\b(?:React|Node|Express)\b/, voice)
 
   // ideasIQ casing: only 'ideasIQ' or the domain 'ideasiq.ai'
   let badCase = 0
@@ -455,7 +506,7 @@ await section('C4', async () => {
   if (!badCase) pass('C4.ideasiq-case', 'every occurrence is ideasIQ or ideasiq.ai')
 
   // Work items
-  const byId = Object.fromEntries(SELECTED_WORK.items.map((i) => [i.id, i]))
+  const byId = Object.fromEntries(BUILDS.map((i) => [i.id, i]))
   const item = (id) => (byId[id] ? findWorkItem(byId[id]) : null)
   const mli = item('myleadsiq')
   if (!mli) fail('C4.item-myleadsiq', 'myLeadsIQ item not found')
@@ -473,16 +524,9 @@ await section('C4', async () => {
     check(iq.querySelectorAll('a').some((a) => a.getAttribute('href') === 'https://ideasiq.ai/'), 'C4.item-ideasiq',
       'links https://ideasiq.ai/', 'no <a href="https://ideasiq.ai/"> in the ideasIQ item')
 
-  // Oxford commas fail everywhere except inside these spec §3 strings, which are final copy
-  // and already contain one. The list is frozen: a new string with a serial comma fails.
-  const allow = [
-    HERO.subline,
-    SELECTED_WORK.subline,
-    SELECTED_WORK.items[0].summary,
-    SELECTED_WORK.items[0].bullets[2],
-    ABOUT.paragraph.map((s) => (typeof s === 'string' ? s : s.text)).join(''),
-    CONTACT.body,
-  ].map(norm)
+  // Serial (Oxford) commas fail everywhere. The allow-list is for strings that must keep one;
+  // it is empty today.
+  const allow = [].map(norm)
   let oxford = 0
   for (const c of voice) {
     const covered = []
@@ -493,9 +537,9 @@ await section('C4', async () => {
       if (oxford <= 5) fail('C4.oxford-comma', `${c.name}: ${q(snippet(c.text, m.index, m[0].length, 50), 120)}`)
     }
   }
-  if (!oxford) pass('C4.oxford-comma', `none outside the ${allow.length} allow-listed spec §3 strings`)
+  if (!oxford) pass('C4.oxford-comma', `none (${allow.length} allow-listed strings)`)
 
-  // American spellings the British-spelling rule (§7 rule 10) would catch.
+  // American spellings: the site is written in British English.
   scan(
     'C4.us-spelling',
     /\b(?:optimiz\w*|organiz\w*|productiz\w*|prioritiz\w*|analyz\w*|realiz\w*|recogniz\w*|customiz\w*|monetiz\w*|standardiz\w*|utiliz\w*|color\w*|center(?:ed|s)?|behavior\w*|modeling|modeled|catalog|favorite\w*|honor\w*)\b/i,
@@ -569,14 +613,16 @@ await section('SHARE', async () => {
   }
   if (headEl) ogImageUrl = headEl.querySelector('meta[property="og:image"]')?.getAttribute('content') ?? null
 
-  // next/font should preload both Poppins files. Windows builds of Next 16.3.8 drop these
-  // links (a path-separator bug in the font manifest), so a local miss is only a warning;
-  // the Linux build on Vercel must have them.
+  // next/font should preload the faces of the first screen: Poppins 400, 600 and 700 and the
+  // serif italic (see src/app/fonts.js). Windows builds of Next 16.3.8 drop these links (a
+  // path-separator bug in the font manifest), so a local miss is only a warning; the Linux
+  // build on Vercel must have them.
+  const FONT_PRELOADS = 4
   const fontPreloads = [...(home.text ?? '').matchAll(/<link\b[^>]*rel="preload"[^>]*>/g)]
     .map((m) => m[0])
     .filter((tag) => /as="font"/.test(tag) && /\/_next\/static\/media\/[^"]+\.p\.woff2/.test(tag))
-  if (fontPreloads.length === 2) pass('SHARE.font-preload', '2 woff2 font preloads in <head>')
-  else (PROFILE === 'local' ? warn : fail)('SHARE.font-preload', `${fontPreloads.length} font preload link(s), expected 2`)
+  if (fontPreloads.length === FONT_PRELOADS) pass('SHARE.font-preload', `${FONT_PRELOADS} woff2 font preloads in <head>`)
+  else (PROFILE === 'local' ? warn : fail)('SHARE.font-preload', `${fontPreloads.length} font preload link(s), expected ${FONT_PRELOADS}`)
 })
 
 // ---------------------------------------------------------------- LD
@@ -689,7 +735,7 @@ await section('T7', async () => {
     const sectionLines = firstH2 === -1 ? [] : lines.slice(firstH2)
     const badItems = sectionLines.filter((l) => /^\s*- /.test(l) && !/^\s*- \[[^\]]+\]\([^)\s]+\)/.test(l))
     if (badItems.length) problems.push(`${badItems.length} section list item(s) not a markdown link, first ${q(badItems[0].trim(), 60)}`)
-    const missingWork = SELECTED_WORK.items.filter((i) => !llms.text.includes(i.name)).map((i) => i.name)
+    const missingWork = BUILDS.filter((i) => !llms.text.includes(i.name)).map((i) => i.name)
     if (missingWork.length) problems.push(`work items missing: ${missingWork.join(', ')}`)
     if (llms.text.includes('/work')) problems.push("contains '/work'")
     const linkItems = sectionLines.filter((l) => /^\s*- \[/.test(l)).length

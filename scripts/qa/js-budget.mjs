@@ -1,10 +1,9 @@
 // Gzip size of the JavaScript a modern browser downloads to load the prerendered home page.
 // Next.js 16 no longer prints "First Load JS" in `next build`, so this script is the budget check.
 //
-// Budget: the framework baseline plus at most 15 KB of our own code. The spec's original 110 KB
-// total predates Next 16 + React 19, whose runtime alone measured 127.9 KB gzip (webpack build)
-// on an empty page on 3 Oct 2026; that page still scored Lighthouse mobile Performance 99-100
-// with 80-90 ms Total Blocking Time. Lighthouse ≥95, TBT ≤150 ms and LCP ≤1.8 s stay hard gates.
+// Budget: the framework baseline plus at most 15 KB of our own code. Next 16 + React 19 alone
+// measured 127.9 KB gzip (webpack build) on an empty page on 3 Oct 2026. The page adds two
+// small client pieces (copy email, count-up) and the rest is server HTML and CSS.
 //
 // Usage: npm run build && npm run budget
 import { existsSync, readFileSync } from 'node:fs'

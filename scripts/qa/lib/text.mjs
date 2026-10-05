@@ -42,6 +42,44 @@ export function textOf(node) {
   return norm(out)
 }
 
+// Places where a plain HTML-to-text reader (a crawler, an answer engine, reader mode) would
+// glue two pieces of text together: text from different nodes that touches with no whitespace
+// and no block boundary in between ("1616products", "AI agentsVoice AI"). Joins inside one of
+// the `allow` elements are meant: the parts of one figure, such as "400" and "+".
+export function gluedText(node, allow = []) {
+  const allowed = new Set(allow)
+  const home = (n) => {
+    for (let p = n; p; p = p.parentNode) if (allowed.has(p)) return p
+    return null
+  }
+  const chunks = []
+  const walk = (n) => {
+    for (const child of n.childNodes) {
+      if (child.nodeType === 3) chunks.push(child)
+      else if (child.nodeType === 1 && !DROP_TAGS.has(tagOf(child))) {
+        const block = BLOCK.has(tagOf(child))
+        if (block) chunks.push(null)
+        walk(child)
+        if (block) chunks.push(null)
+      }
+    }
+  }
+  walk(node)
+  const joins = []
+  let last = null
+  for (const chunk of chunks) {
+    if (!chunk || !chunk.text.trim()) {
+      if (!chunk || /\s/.test(chunk.text)) last = null
+      continue
+    }
+    if (last && !/\s$/.test(last.text) && !/^\s/.test(chunk.text) && (!home(last) || home(last) !== home(chunk))) {
+      joins.push(`${last.text.slice(-16)}|${chunk.text.slice(0, 16)}`)
+    }
+    last = chunk
+  }
+  return joins
+}
+
 // Every string leaf of a value, with its dotted path and the key that holds it.
 export function stringLeaves(value, path = '', key = '', out = []) {
   if (typeof value === 'string') out.push({ path, key, value })

@@ -15,6 +15,15 @@ const BASE = (process.argv[2] || 'http://127.0.0.1:3000').replace(/\/$/, '')
 const shotsArg = process.argv.indexOf('--shots')
 const SHOTS = shotsArg > -1 ? process.argv[shotsArg + 1] : null
 if (SHOTS) mkdirSync(SHOTS, { recursive: true })
+// Style recalculations tolerated while the page rests for 2 s. One looping animation left on
+// the main thread shows up as one per frame, well over a hundred.
+const IDLE_RECALCS = 4
+// Scrolling the whole page, on a phone taken to be four times slower than this machine: the
+// total time tasks run past 50 ms, and the longest single task. Measured at 35-110 ms and
+// 65-80 ms on 5 Oct 2026; an animation that lays out on every frame adds seconds.
+const PHONE_SLOWDOWN = 4
+const SCROLL_BLOCKING_MS = 250
+const SCROLL_WORST_TASK_MS = 150
 
 let failures = 0
 const report = (status, id, detail) => {
@@ -40,6 +49,54 @@ async function newPage({ width, height, deviceScaleFactor = 1, javaScriptEnabled
   })
   return { context, page: await context.newPage() }
 }
+
+// ---------------------------------------------------------------- shared probes
+// Scroll from top to bottom in steps, the way a reader would, and rest at the very end.
+// Driven from here, not from a timer in the page, so it also works with JavaScript disabled.
+async function scrollThrough(page, step = 300, pause = 60) {
+  const height = await page.evaluate(() => document.documentElement.scrollHeight)
+  for (let y = 0; y <= height; y += step) {
+    await page.evaluate((top) => window.scrollTo(0, top), y)
+    await page.waitForTimeout(pause)
+  }
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
+  await page.waitForTimeout(500)
+}
+
+// Reveal blocks that have been reached (at or above the viewport) but are not fully opaque.
+const stuckReveals = (page) =>
+  page.evaluate(() =>
+    [...document.querySelectorAll('.rv')]
+      .filter((el) => el.getBoundingClientRect().top < innerHeight && Number(getComputedStyle(el).opacity) < 0.99)
+      .map((el) => el.id || String(el.className)),
+  )
+
+// How much of each typed role is on show, 0 to 1: the part of the text inside its clipping box.
+const shownRoles = (page) =>
+  page.evaluate(() =>
+    [...document.querySelectorAll('.role .tc')].map((box) => {
+      const clip = box.getBoundingClientRect()
+      const text = box.firstElementChild.getBoundingClientRect()
+      const shown = Math.min(clip.right, text.right) - Math.max(clip.left, text.left)
+      return Math.round((Math.max(0, shown) / text.width) * 100) / 100
+    }),
+  )
+
+// Stop every time-based animation at one moment on the page's animation clock.
+const freezeAt = (page, ms) =>
+  page.evaluate((ms) => {
+    for (const animation of document.getAnimations()) {
+      if (animation.timeline !== document.timeline) continue
+      animation.pause()
+      animation.currentTime = ms
+    }
+  }, ms)
+
+// Count-up figures that do not show the value the server rendered.
+const unfinishedFigures = (page) =>
+  page.evaluate(() =>
+    [...document.querySelectorAll('[data-count]')].filter((el) => el.textContent !== el.dataset.count).map((el) => `${el.dataset.count} shows ${el.textContent}`),
+  )
 
 // ---------------------------------------------------------------- LCP element
 for (const vp of [
@@ -109,7 +166,7 @@ for (const vp of [
 
 // ---------------------------------------------------------------- late web fonts (CLS)
 // With the woff2 files delayed, the font swap must not move the layout at Lighthouse's mobile
-// viewport. 360x640 is reported only: the owner decided to keep display: swap (spec row 15).
+// viewport. 360x640 is reported only. Reduced motion isolates the swap from the animations.
 for (const vp of [
   { name: '412x823', width: 412, height: 823, gate: true },
   { name: '360x640', width: 360, height: 640, gate: false },
@@ -154,8 +211,10 @@ for (const textSpacing of [false, true]) {
   }
   const overflow = await page.evaluate(() => {
     const width = document.documentElement.clientWidth
+    // The marquee and the isometric plates are decorative and clipped on purpose. A caret is
+    // an empty box as wide as its role, moved to the end of the line; only its mark shows.
     const wide = [...document.querySelectorAll('main *, header *, footer *')]
-      .filter((el) => el.getBoundingClientRect().right > width + 0.5)
+      .filter((el) => !el.closest('.mq, .iso, .caret') && el.getBoundingClientRect().right > width + 0.5)
       .map((el) => el.id || el.tagName.toLowerCase())
     return { scrollWidth: document.documentElement.scrollWidth, width, wide: [...new Set(wide)].slice(0, 6) }
   })
@@ -167,7 +226,7 @@ for (const textSpacing of [false, true]) {
 // ---------------------------------------------------------------- accessible link names
 // Every link's computed accessible name must equal its visible text (WCAG 2.5.3). Read from
 // Chrome's accessibility tree: Playwright's own snapshots normalise whitespace and would miss
-// names broken up by <wbr> line-break hints.
+// names broken up by line-break hints. "Visible text" leaves out aria-hidden decoration.
 {
   const { context, page } = await newPage({ width: 320, height: 640, mobile: true, reducedMotion: 'reduce' })
   await page.goto(`${BASE}/`, { waitUntil: 'networkidle' })
@@ -181,7 +240,8 @@ for (const textSpacing of [false, true]) {
     const { object } = await cdp.send('DOM.resolveNode', { nodeId })
     const { result } = await cdp.send('Runtime.callFunctionOn', {
       objectId: object.objectId,
-      functionDeclaration: 'function () { return this.textContent.replace(/\\s+/g, " ").trim() }',
+      functionDeclaration:
+        'function () { const c = this.cloneNode(true); c.querySelectorAll("[aria-hidden=true]").forEach((e) => e.remove()); return c.textContent.replace(/\\s+/g, " ").trim() }',
       returnByValue: true,
     })
     if (name !== result.value) mismatches.push(`"${name}" vs text "${result.value}"`)
@@ -212,86 +272,329 @@ for (const textSpacing of [false, true]) {
   check(state.invisible.length === 0, 'C1.js-off.visible', `${state.blocks} blocks visible`, `hidden without JS: ${state.invisible.join(', ')}`)
   check(state.avatarLoaded, 'C1.js-off.avatar', 'avatar renders', 'avatar did not load')
   check(state.copyButtonHidden === true, 'C1.js-off.copy-button', 'copy button stays hidden without JS', 'copy button visible without JS')
+  // The reveals are CSS, so they still run; the figures are never zeroed without the island.
+  await scrollThrough(page)
+  const stuck = await stuckReveals(page)
+  const figures = await unfinishedFigures(page)
+  check(stuck.length === 0 && figures.length === 0, 'C1.js-off.motion', 'reveals finish and figures stay final without JS', JSON.stringify({ stuck, figures }))
   await context.close()
 }
 
 // ---------------------------------------------------------------- motion
+// The page animates on purpose. These gates assert that motion always ends on the finished
+// page, costs no layout stability, and can be switched off three ways: the operating-system
+// preference, the pause switch, and no JavaScript (above).
 {
-  // Reduced motion: nothing animates or transitions, and scrolling is not smooth.
+  // Reduced motion: nothing animates, nothing waits, the pause switch has nothing to do.
   const { context, page } = await newPage({ width: 1280, height: 800, reducedMotion: 'reduce' })
   await page.goto(`${BASE}/`, { waitUntil: 'networkidle' })
-  await page.evaluate(async () => {
-    for (let y = 0; y < document.body.scrollHeight; y += 400) {
-      window.scrollTo(0, y)
-      await new Promise((r) => setTimeout(r, 40))
-    }
-  })
+  await scrollThrough(page, 400, 40)
   const reduced = await page.evaluate(() => ({
     animations: document.getAnimations().length,
-    pending: document.querySelectorAll('.reveal-pending').length,
+    waiting: document.querySelectorAll('.rv-wait').length,
     scrollBehavior: getComputedStyle(document.documentElement).scrollBehavior,
+    pauseShown: getComputedStyle(document.querySelector('.pause')).display !== 'none',
   }))
+  const roles = await shownRoles(page)
+  const stuck = await stuckReveals(page)
+  const figures = await unfinishedFigures(page)
+  const firstRoleOnly = roles[0] === 1 && !roles.slice(1).some(Boolean)
   check(
-    reduced.animations === 0 && reduced.pending === 0 && reduced.scrollBehavior !== 'smooth',
+    reduced.animations === 0 && reduced.waiting === 0 && reduced.scrollBehavior !== 'smooth' && !reduced.pauseShown && firstRoleOnly && stuck.length === 0 && figures.length === 0,
     'T8.reduced-motion',
-    'no animations, no hidden reveals, no smooth scroll',
-    JSON.stringify(reduced),
+    'no animations, everything visible, first role shown, figures final, pause switch hidden',
+    JSON.stringify({ ...reduced, roles, stuck, figures }),
   )
   await context.close()
 }
 {
-  // Motion allowed: below-the-fold blocks reveal once; the proof strip never animates.
+  // The typed role line with a visitor's own text spacing (WCAG 1.4.12) and motion on: each
+  // role is typed out in full, its caret sits at its end, and the others stay out of sight.
   const { context, page } = await newPage({ width: 1280, height: 800 })
   await page.goto(`${BASE}/`, { waitUntil: 'networkidle' })
-  const before = await page.evaluate(() => ({
-    pending: document.querySelectorAll('.reveal-pending').length,
-    aboveFoldPending: [...document.querySelectorAll('.reveal-pending')].filter((el) => el.getBoundingClientRect().top < innerHeight).length,
-  }))
-  await page.evaluate(() => document.getElementById('proof').scrollIntoView())
+  await page.addStyleTag({
+    content: '* { line-height: 1.5 !important; letter-spacing: 0.12em !important; word-spacing: 0.16em !important; } p { margin-bottom: 2em !important; }',
+  })
+  const timing = await page.evaluate(() => {
+    const { delay, duration } = document.querySelector('.role .t1 .tc').getAnimations()[0].effect.getComputedTiming()
+    return { delay, duration, roles: document.querySelectorAll('.role .t').length }
+  })
+  const slot = timing.duration / timing.roles
+  const problems = []
+  for (let i = 0; i < timing.roles; i++) {
+    // 60% into a role's slot it has been typed and is being held.
+    await freezeAt(page, timing.delay + slot * (i + 0.6))
+    const shown = await shownRoles(page)
+    const expected = shown.map((_, n) => (n === i ? 1 : 0))
+    const caret = await page.evaluate((n) => {
+      const text = document.querySelectorAll('.role .tc > span')[n].getBoundingClientRect()
+      const carets = [...document.querySelectorAll('.role .caret')]
+      const mark = parseFloat(getComputedStyle(carets[n], '::before').left)
+      return {
+        gap: Math.round((carets[n].getBoundingClientRect().left + mark - text.right) * 10) / 10,
+        lit: carets.map((c) => Number(getComputedStyle(c).opacity)).join(''),
+        inView: text.right <= innerWidth,
+      }
+    }, i)
+    // The caret is drawn 2 px after the text; only this role's caret may show.
+    if (shown.join() !== expected.join() || Math.abs(caret.gap - 2) > 1 || caret.lit !== expected.join('') || !caret.inView) {
+      problems.push(`role ${i + 1}: shown ${shown.join('/')}, carets lit ${caret.lit}, caret ${caret.gap}px after the text${caret.inView ? '' : ', text runs off the page'}`)
+    }
+  }
+  await freezeAt(page, timing.delay + slot * 0.99)
+  const between = await shownRoles(page)
+  if (between.some(Boolean)) problems.push(`between roles: shown ${between.join('/')}`)
+  check(problems.length === 0, 'T8.typed-role-spacing', `${timing.roles} roles type out in full with text-spacing overrides`, problems.join(' | '))
+  await context.close()
+}
+{
+  // Motion on: the hero has finished arriving 2.4 s after its first paint. A piece is still
+  // arriving while it is transparent, scaled, or moved from its place (the chips keep
+  // bobbing, so their translate is not read).
+  const { context, page } = await newPage({ width: 1440, height: 900 })
+  await page.goto(`${BASE}/`, { waitUntil: 'load' })
+  await page.waitForFunction(() => {
+    const [paint] = performance.getEntriesByName('first-contentful-paint')
+    return paint && performance.now() >= paint.startTime + 2400
+  })
+  const unsettled = await page.evaluate(() => {
+    const at = (value, rest) => value === 'none' || value.split(' ').every((part) => parseFloat(part) === rest)
+    return [...document.querySelectorAll('.hero :is(.status, .hello, .role, .lede, .cta, .trust, .name .l, .stage, .chip)')]
+      .filter((el) => {
+        const style = getComputedStyle(el)
+        const moved = !['none', 'matrix(1, 0, 0, 1, 0, 0)'].includes(style.transform) || !at(style.scale, 1) || (!el.matches('.chip') && !at(style.translate, 0))
+        return Number(style.opacity) < 0.99 || moved
+      })
+      .map((el) => el.className)
+  })
+  check(unsettled.length === 0, 'T8.hero-settle', 'hero fully shown 2.4 s after first paint', `still arriving: ${[...new Set(unsettled)].join(', ')}`)
+
+  // Count-up: untouched until the visitor scrolls (a crawler or a link preview reads the real
+  // numbers); from then on a figure waits at zero once it is within a screen of the fold, and
+  // is back on the server's value once seen.
+  const shown = () => page.evaluate(() => [...document.querySelectorAll('#proof [data-count]')].map((el) => ({ text: el.textContent.trim(), final: el.dataset.count })))
+  const untouched = await unfinishedFigures(page)
+  await page.evaluate(() => window.scrollTo({ top: 2, behavior: 'instant' }))
   await page.waitForTimeout(300)
-  const proof = await page.evaluate(() => {
-    const nodes = [document.querySelector('#proof dl'), ...document.querySelectorAll('#proof dt, #proof dd')]
-    return {
-      animations: document.getAnimations().filter((a) => a.effect?.target && document.getElementById('proof').contains(a.effect.target)).length,
-      moving: nodes.filter((n) => {
-        const s = getComputedStyle(n)
-        return s.animationName !== 'none' || !/^0s(, 0s)*$/.test(s.transitionDuration)
-      }).length,
-      insidePending: !!document.getElementById('proof').closest('[data-reveal]'),
-    }
+  const armed = await shown()
+  for (const selector of ['#proof .wall', '#proof .row2']) {
+    await page.evaluate((sel) => document.querySelector(sel).scrollIntoView({ block: 'center' }), selector)
+    await page.waitForTimeout(1900)
+  }
+  const figures = await unfinishedFigures(page)
+  const waiting = armed.filter((figure) => figure.text === '0').length
+  check(
+    untouched.length === 0 && waiting > 0 && armed.every((figure) => figure.text === '0' || figure.text === figure.final) && figures.length === 0,
+    'T8.count-up',
+    `figures wait for the first scroll, ${waiting} of ${armed.length} near the fold go to 0, all end on their server values`,
+    JSON.stringify({ untouched, armed: armed.map((figure) => figure.text), figures }),
+  )
+
+  // Printing a page whose figures are still waiting at zero puts the real numbers back.
+  const sheet = await context.newPage()
+  await sheet.goto(`${BASE}/`, { waitUntil: 'networkidle' })
+  await sheet.evaluate(() => window.scrollTo({ top: 2, behavior: 'instant' }))
+  await sheet.waitForTimeout(300)
+  const zeroed = (await unfinishedFigures(sheet)).length
+  await sheet.emulateMedia({ media: 'print' })
+  await sheet.waitForTimeout(200)
+  const printed = await unfinishedFigures(sheet)
+  check(zeroed > 0 && printed.length === 0, 'T8.count-up-print', `${zeroed} waiting figures show their real values in print`, JSON.stringify({ zeroed, printed }))
+  // The page is dark and its accent text is a clipped gradient: printed without backgrounds,
+  // those words would be blank. Print must keep its colours.
+  const inks = await sheet.evaluate(() => [...document.querySelectorAll('.grad, .name .l, body')].filter((el) => getComputedStyle(el).printColorAdjust !== 'exact').length)
+  check(inks === 0, 'T8.print-colours', 'gradient text and the ground keep their colours in print', `${inks} element(s) would print without their background`)
+  await context.close()
+}
+for (const vp of [
+  { name: '412x823', width: 412, height: 823, mobile: true },
+  { name: '1440x2000', width: 1440, height: 2000 },
+]) {
+  // Scroll-driven reveals: tied to scroll, and none is left transparent, even at the page end.
+  const { context, page } = await newPage(vp)
+  await page.goto(`${BASE}/`, { waitUntil: 'networkidle' })
+  const driven = await page.evaluate(() => ({
+    supported: CSS.supports('animation-timeline: view()'),
+    timelines: ['.rv', '.layer.rv', '.plate', '.dots .on'].map((sel) => `${sel}=${getComputedStyle(document.querySelector(sel)).animationTimeline}`),
+  }))
+  if (!driven.supported) report('INFO', `T8.scroll-driven.${vp.name}`, 'this Chrome has no scroll-driven animations; the fallback path was exercised instead')
+  else check(driven.timelines.every((t) => !/=auto(,|$)|=$/.test(t)), `T8.scroll-driven.${vp.name}`, driven.timelines.join('  '), `a reveal lost its timeline: ${driven.timelines.join('  ')}`)
+  await scrollThrough(page)
+  const stuck = await stuckReveals(page)
+  check(stuck.length === 0, `T8.reveal-complete.${vp.name}`, 'every block is fully shown after a full scroll', `still transparent: ${stuck.join(', ')}`)
+  await context.close()
+}
+for (const vp of [
+  { name: '412x823', width: 412, height: 823, mobile: true },
+  { name: '1440x900', width: 1440, height: 900 },
+]) {
+  // Layout stability with everything moving: load, wait for the hero, then a slow full scroll.
+  const { context, page } = await newPage(vp)
+  await page.addInitScript(() => {
+    window.__cls = 0
+    new PerformanceObserver((list) => {
+      for (const entry of list.getEntries()) if (!entry.hadRecentInput) window.__cls += entry.value
+    }).observe({ type: 'layout-shift', buffered: true })
   })
-  check(before.aboveFoldPending === 0, 'T8.above-fold', `nothing above the fold waits to animate (${before.pending} below)`, `${before.aboveFoldPending} above-the-fold block(s) hidden for reveal`)
-  check(proof.animations === 0 && proof.moving === 0 && !proof.insidePending, 'T8.proof-static', 'proof strip has no animation or transition', JSON.stringify(proof))
-  await page.evaluate(async () => {
-    for (let y = 0; y < document.body.scrollHeight; y += 300) {
-      window.scrollTo(0, y)
-      await new Promise((r) => setTimeout(r, 60))
-    }
-  })
-  await page.waitForTimeout(600)
-  const left = await page.evaluate(() => document.querySelectorAll('.reveal-pending').length)
-  check(left === 0, 'T8.reveal-complete', 'every reveal ran after scrolling', `${left} block(s) still hidden after a full scroll`)
+  await page.goto(`${BASE}/`, { waitUntil: 'networkidle' })
+  await page.waitForTimeout(2600)
+  await scrollThrough(page, 200, 80)
+  const cls = await page.evaluate(() => window.__cls)
+  check(cls <= 0.05, `T8.motion-cls.${vp.name}`, `CLS ${cls.toFixed(4)} with motion on, load to footer`, `CLS ${cls.toFixed(4)} with motion on (budget 0.05)`)
+  await context.close()
+}
+{
+  // Pause switch (WCAG 2.2.2): second tab stop, Space pauses everything, a click resumes.
+  const { context, page } = await newPage({ width: 1440, height: 900 })
+  await page.goto(`${BASE}/`, { waitUntil: 'networkidle' })
+  const running = await page.evaluate(() => document.getAnimations().length)
+  await page.keyboard.press('Tab')
+  await page.keyboard.press('Tab')
+  const secondStop = await page.evaluate(() => ({ id: document.activeElement?.id, name: document.activeElement?.getAttribute('aria-label') }))
+  await page.keyboard.press('Space')
+  await page.waitForTimeout(200)
+  const paused = await page.evaluate(() => ({
+    checked: document.getElementById('pause-motion').checked,
+    animations: document.getAnimations().length,
+    transparent: [...document.querySelectorAll('.rv')].filter((el) => Number(getComputedStyle(el).opacity) < 0.99).length,
+  }))
+  const figures = await unfinishedFigures(page)
+  await page.locator('.pause').click()
+  await page.waitForTimeout(200)
+  const resumed = await page.evaluate(() => ({
+    checked: document.getElementById('pause-motion').checked,
+    animations: document.getAnimations().length,
+    // Resuming must not play the hero's arrival again.
+    arriving: [...document.querySelectorAll('.hero :is(.status, .lede, .cta, .trust, .chip)')].filter((el) => Number(getComputedStyle(el).opacity) < 0.99).length,
+  }))
+  check(
+    running > 0 && secondStop.id === 'pause-motion' && !!secondStop.name && paused.checked && paused.animations === 0 && paused.transparent === 0 && figures.length === 0 && !resumed.checked && resumed.animations > 0 && resumed.arriving === 0,
+    'T8.pause',
+    `second tab stop "${secondStop.name}"; Space stops ${running} animations and shows everything; a click resumes without replaying the arrival`,
+    JSON.stringify({ running, secondStop, paused, figures, resumed }),
+  )
+
+  // The switch must leave the page where it is: its checkbox is not at the top of the document.
+  const jumps = []
+  for (const [how, toggle] of [
+    ['click', () => page.locator('.pause').click()],
+    ['keyboard', async () => {
+      await page.evaluate(() => document.getElementById('pause-motion').focus())
+      await page.keyboard.press('Space')
+    }],
+  ]) {
+    await page.evaluate(() => window.scrollTo({ top: 3000, behavior: 'instant' }))
+    await page.waitForTimeout(200)
+    await toggle()
+    await page.waitForTimeout(700)
+    const y = await page.evaluate(() => Math.round(scrollY))
+    if (Math.abs(y - 3000) > 2) jumps.push(`${how}: 3000 -> ${y}`)
+  }
+  check(jumps.length === 0, 'T8.pause-in-place', 'using the pause switch does not scroll the page', jumps.join('; '))
   await context.close()
 }
 
-// ---------------------------------------------------------------- 360 px scroll at 4x CPU
+// ---------------------------------------------------------------- keyboard focus on a moving page
+// Tabbing down, a link must not take focus while the block around it is still transparent
+// (the scroll reveal). Tabbing up, focus must not land under the sticky header (WCAG 2.4.11).
+for (const vp of [
+  { name: '412x823', width: 412, height: 823, mobile: true },
+  { name: '1280x800', width: 1280, height: 800 },
+]) {
+  const { context, page } = await newPage(vp)
+  await page.goto(`${BASE}/`, { waitUntil: 'networkidle' })
+  await page.addStyleTag({ content: 'html { scroll-behavior: auto !important; }' })
+  await page.waitForTimeout(2600)
+  const stops = await page.evaluate(() => document.querySelectorAll('a[href], button:not([hidden]), input').length)
+  const focused = () =>
+    page.evaluate(() => {
+      const el = document.activeElement
+      if (!el || el === document.body) return null
+      const box = el.getBoundingClientRect()
+      let opacity = 1
+      for (let p = el; p && p.nodeType === 1; p = p.parentElement) opacity *= Number(getComputedStyle(p).opacity)
+      return {
+        name: (el.getAttribute('aria-label') || el.textContent || el.id).trim().replace(/\s+/g, ' ').slice(0, 30),
+        faded: opacity < 0.95,
+        covered: !el.closest('header') && el.id !== 'pause-motion' && !el.matches('.skip-link') && box.top < document.querySelector('header').getBoundingClientRect().bottom - 1,
+      }
+    })
+  const problems = []
+  for (const [key, direction] of [['Tab', 'down'], ['Shift+Tab', 'up']]) {
+    for (let i = 0; i < stops + 1; i++) {
+      await page.keyboard.press(key)
+      await page.waitForTimeout(60)
+      const stop = await focused()
+      if (stop?.faded) problems.push(`${direction}: "${stop.name}" takes focus while transparent`)
+      if (stop?.covered) problems.push(`${direction}: "${stop.name}" lands under the header`)
+    }
+  }
+  check(problems.length === 0, `T4.focus-seen.${vp.name}`, `${stops} tab stops, down and up: each is visible and clear of the header`, [...new Set(problems)].slice(0, 6).join(' | '))
+  await context.close()
+}
+
+// ---------------------------------------------------------------- main thread at rest
+// Every loop animates opacity or a transform, so the compositor runs it alone. A page that
+// sits still must ask the main thread for nothing: no style recalculation, no layout.
+{
+  const { context, page } = await newPage({ width: 412, height: 823, mobile: true })
+  const cdp = await context.newCDPSession(page)
+  await cdp.send('Performance.enable')
+  const counters = async () => Object.fromEntries((await cdp.send('Performance.getMetrics')).metrics.map((m) => [m.name, m.value]))
+  await page.goto(`${BASE}/`, { waitUntil: 'networkidle' })
+  const busy = []
+  for (const selector of ['.hero', '#proof .wall', '.flagviz', '.cases', '.stackgrid', '#contact']) {
+    await page.evaluate((sel) => document.querySelector(sel).scrollIntoView({ block: 'center', behavior: 'instant' }), selector)
+    await page.waitForTimeout(3000)
+    const before = await counters()
+    await page.waitForTimeout(2000)
+    const after = await counters()
+    const recalcs = after.RecalcStyleCount - before.RecalcStyleCount
+    const layouts = after.LayoutCount - before.LayoutCount
+    if (recalcs > IDLE_RECALCS || layouts > 0) busy.push(`${selector}: ${recalcs} style recalcs, ${layouts} layouts in 2 s`)
+  }
+  check(busy.length === 0, 'T8.idle-main-thread', 'at rest the animations cost no style or layout work', busy.join(' | '))
+  await context.close()
+}
+
+// ---------------------------------------------------------------- main thread while scrolling
+// A full scroll at phone width with motion on. The page animates on purpose, so its frames
+// are not free; what matters is that none of them would hold up a slow phone. The CPU time
+// of every main-thread task is read from a trace (unaffected by whatever else this machine is
+// doing) and multiplied by four for a mid-range phone. Blocking time is what a task takes
+// beyond 50 ms, as in Total Blocking Time.
 {
   const { context, page } = await newPage({ width: 360, height: 640, deviceScaleFactor: 3, mobile: true })
   const cdp = await context.newCDPSession(page)
-  await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 })
   await page.goto(`${BASE}/`, { waitUntil: 'networkidle' })
   await page.waitForTimeout(500)
-  const longTasks = await page.evaluate(async () => {
-    const found = []
-    new PerformanceObserver((list) => found.push(...list.getEntries().map((e) => Math.round(e.duration)))).observe({ type: 'longtask' })
+  const events = []
+  cdp.on('Tracing.dataCollected', ({ value }) => events.push(...value))
+  await cdp.send('Tracing.start', { transferMode: 'ReportEvents', traceConfig: { includedCategories: ['devtools.timeline', 'disabled-by-default-devtools.timeline'] } })
+  await page.evaluate(async () => {
     for (let y = 0; y < document.body.scrollHeight; y += 120) {
-      window.scrollTo(0, y)
+      window.scrollTo({ top: y, behavior: 'instant' })
       await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 16)))
     }
     await new Promise((r) => setTimeout(r, 300))
-    return found
   })
-  check(longTasks.length === 0, 'T8.scroll-360', 'no long task during a full scroll at 4x CPU', `long tasks (ms): ${longTasks.join(', ')}`)
+  const traced = new Promise((resolve) => cdp.once('Tracing.tracingComplete', resolve))
+  await cdp.send('Tracing.end')
+  await traced
+  // The renderer's main thread is the one that recalculates style.
+  const anchor = events.find((e) => e.name === 'UpdateLayoutTree')
+  const tasks = events.filter((e) => e.name === 'RunTask' && e.ph === 'X' && e.pid === anchor?.pid && e.tid === anchor?.tid)
+  const onPhone = tasks.map((e) => ((e.tdur ?? 0) / 1000) * PHONE_SLOWDOWN)
+  const blocking = Math.round(onPhone.reduce((sum, ms) => sum + Math.max(0, ms - 50), 0))
+  const worst = Math.round(Math.max(0, ...onPhone))
+  check(
+    tasks.length > 0 && blocking <= SCROLL_BLOCKING_MS && worst <= SCROLL_WORST_TASK_MS,
+    'T8.scroll-360',
+    `a full scroll blocks for ${blocking} ms on a ${PHONE_SLOWDOWN}x slower phone; worst task ${worst} ms`,
+    tasks.length === 0
+      ? 'no main-thread tasks in the trace'
+      : `a full scroll blocks for ${blocking} ms (budget ${SCROLL_BLOCKING_MS}); worst task ${worst} ms (budget ${SCROLL_WORST_TASK_MS}) on a ${PHONE_SLOWDOWN}x slower phone`,
+  )
   await context.close()
 }
 
