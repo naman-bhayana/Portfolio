@@ -1,4 +1,4 @@
-// Regenerates every brand asset from the avatar master and the bundled Poppins fonts.
+// Regenerates every brand asset from the avatar master and the bundled fonts.
 // Run from the repo root with `npm run assets`. Output is deterministic and every hard
 // constraint (sizes, byte budgets, OG text geometry, icon safe zones) throws when broken.
 
@@ -16,13 +16,19 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 const at = (p) => path.join(ROOT, p)
 const MASTER = at('scripts/assets/src/avatar-master.png')
 
+// The site's tokens (src/styles/base.css).
 const COLOR = {
-  bg: MANIFEST.color, // #0A0C10
-  text: '#E6E8EB',
-  muted: '#9CA3AF',
-  cyan: '#00D0EE',
-  blue: '#0096F7',
+  bg: MANIFEST.color, // #05070B
+  text: '#EEF3F8',
+  cyan: '#00E1FF',
+  blue: '#1A7DFF',
+  grid: 'rgba(120,160,210,.05)',
 }
+const GRADIENT = [
+  [0, '#00E5FF'],
+  [0.55, '#1A8CFF'],
+  [1, '#4F5BFF'],
+]
 
 // ---------------------------------------------------------------- fonts
 
@@ -36,12 +42,10 @@ const SATORI_FONTS = Object.entries(FONT_DATA).map(([weight, data]) => ({
   weight: Number(weight),
   style: 'normal',
 }))
-const OT_FONTS = Object.fromEntries(
-  Object.entries(FONT_DATA).map(([w, buf]) => [
-    w,
-    opentype.parse(buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength)),
-  ]),
-)
+const parseFont = (buf) => opentype.parse(buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength))
+const OT_FONTS = Object.fromEntries(Object.entries(FONT_DATA).map(([w, buf]) => [w, parseFont(buf)]))
+// The accent face. It is drawn as outlines, so satori never needs it.
+const SERIF = parseFont(fs.readFileSync(at('scripts/assets/fonts/InstrumentSerif-Italic.ttf')))
 
 // ---------------------------------------------------------------- helpers
 
@@ -130,24 +134,47 @@ const TEXT_LEFT = 292
 const AVATAR = { left: 738, height: 540, bleed: 22 } // bleed: px hidden below the bottom edge
 const GLOW_FADE = { x0: 740, x1: 860 } // glow is zero left of x0, full right of x1
 
-const [nameFirst, nameLast] = PERSON.name.split(' ')
 const [roleA, roleB] = HERO.eyebrow.split(' · ')
 
-// Spec §3.9 hierarchy: name (88 px), then the role (~34 px), then the cyan headline (~30 px).
-// The role must wrap to fit the square-crop zone, so it breaks at its ' · ' separator (the line
-// break stands in for the dot) and runs at 27 px, the largest size that fits; the headline
-// stays a step smaller. Baselines are relative to the first line; the block is then centred.
+// The card reads like the hero: the greeting and the surname in the serif italic with the
+// brand gradient, the first name in Poppins, then the two roles and one line of proof. The
+// roles break at their ' · ' separator to fit the square-crop zone, at 27 px, the largest
+// size that fits. Baselines are relative to the first line; the block is then centred.
 const OG_LINES = [
-  { text: nameFirst, weight: 700, size: 88, color: COLOR.text, baseline: 0, name: true },
-  { text: nameLast, weight: 700, size: 88, color: COLOR.text, baseline: 92, name: true },
-  { text: roleA, weight: 600, size: 27, color: COLOR.text, baseline: 153 },
-  { text: roleB, weight: 600, size: 27, color: COLOR.text, baseline: 190 },
-  { text: HERO.heading, weight: 600, size: 24, color: COLOR.cyan, baseline: 240 },
+  { text: HERO.greeting, serif: true, size: 46, baseline: 0 },
+  { text: PERSON.firstName, weight: 700, size: 88, color: COLOR.text, baseline: 88, name: true },
+  { text: PERSON.lastName, serif: true, size: 112, baseline: 184, name: true },
+  { text: roleA, weight: 600, size: 27, color: COLOR.text, baseline: 250 },
+  { text: roleB, weight: 600, size: 27, color: COLOR.text, baseline: 287 },
+  { text: HERO.roles[2], weight: 600, size: 24, color: COLOR.cyan, baseline: 338 },
 ]
+
+// opentype.js cannot run this font's ccmp lookups, so serif lines are set glyph by glyph with
+// pair kerning, which is all a greeting and a surname need.
+function serifRun(text, x, baseline, size) {
+  const scale = size / SERIF.unitsPerEm
+  const glyphs = [...text].map((char) => SERIF.charToGlyph(char))
+  const path = new opentype.Path()
+  let pen = x
+  glyphs.forEach((glyph, i) => {
+    check(glyph.index > 0, `the serif face has no glyph for "${[...text][i]}"`)
+    path.extend(glyph.getPath(pen, baseline, size))
+    pen += glyph.advanceWidth * scale
+    if (glyphs[i + 1]) pen += SERIF.getKerningValue(glyph, glyphs[i + 1]) * scale
+  })
+  return { advance: pen - x, path }
+}
 
 // Line geometry from opentype.js (kerned advances and ink bounds), before anything renders.
 function layoutOgText() {
   const lines = OG_LINES.map((line) => {
+    if (line.serif) {
+      // An italic capital leans out to the left of its origin: start the line so that its
+      // ink, not its origin, sits on the text edge.
+      const lean = TEXT_LEFT - serifRun(line.text, TEXT_LEFT, line.baseline, line.size).path.getBoundingBox().x1
+      const { advance, path } = serifRun(line.text, TEXT_LEFT + lean + 2, line.baseline, line.size)
+      return { ...line, advance: advance + lean + 2, ink: path.getBoundingBox(), outline: path.toPathData(2) }
+    }
     const font = OT_FONTS[line.weight]
     const advance = font.getAdvanceWidth(line.text, line.size, { kerning: true })
     const ink = font.getPath(line.text, TEXT_LEFT, line.baseline, line.size, { kerning: true }).getBoundingBox()
@@ -165,8 +192,36 @@ function layoutOgText() {
       y0: l.ink.y1 + shift,
       y1: l.ink.y2 + shift,
     }
-    return { ...l, baseline, box }
+    return { ...l, baseline, box, shift }
   })
+}
+
+// The serif lines as outlines, each filled with the brand gradient across its own width
+// (100deg, as --grad in base.css: left to right, tipped ten degrees down).
+function gradientTextSvg(lines) {
+  const serif = lines.filter((l) => l.serif)
+  const tilt = Math.tan((10 * Math.PI) / 180)
+  const defs = serif.map(
+    (l, i) =>
+      `<linearGradient id="g${i}" gradientUnits="userSpaceOnUse" x1="${l.box.x0.toFixed(1)}" y1="${l.box.y0.toFixed(1)}" ` +
+      `x2="${l.box.x1.toFixed(1)}" y2="${(l.box.y0 + (l.box.x1 - l.box.x0) * tilt).toFixed(1)}">` +
+      `${GRADIENT.map(([offset, color]) => `<stop offset="${offset}" stop-color="${color}"/>`).join('')}</linearGradient>`,
+  )
+  const paths = serif.map((l, i) => `<path fill="url(#g${i})" transform="translate(0 ${l.shift})" d="${l.outline}"/>`)
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${OG.width} ${OG.height}"><defs>${defs.join('')}</defs>${paths.join('')}</svg>`
+}
+
+// The page's ground: the 72 px grid, and the hero's blue light in the top right corner.
+function groundSvg() {
+  const lines = []
+  for (let x = 72; x < OG.width; x += 72) lines.push(`M${x} 0V${OG.height}`)
+  for (let y = 72; y < OG.height; y += 72) lines.push(`M0 ${y}H${OG.width}`)
+  return (
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${OG.width} ${OG.height}">` +
+    `<defs><radialGradient id="r" gradientUnits="userSpaceOnUse" cx="1010" cy="40" r="560" gradientTransform="translate(1010 40) scale(1 .62) translate(-1010 -40)">` +
+    `<stop offset="0" stop-color="#008CFF" stop-opacity=".2"/><stop offset=".7" stop-color="#008CFF" stop-opacity="0"/></radialGradient></defs>` +
+    `<path fill="url(#r)" d="M0 0H${OG.width}V${OG.height}H0Z"/><path fill="none" stroke="${COLOR.grid}" stroke-width="1" d="${lines.join('')}"/></svg>`
+  )
 }
 
 function checkOgGeometry(lines, avatarBox) {
@@ -232,9 +287,9 @@ async function buildOgCard(box) {
   const glow = await buildGlow(alphaCanvas, avatarBox)
   checkGlowClear(glow.raw, lines)
 
-  // Each text line is placed so its baseline lands where opentype.js measured it: with
+  // Each Poppins line is placed so its baseline lands where opentype.js measured it: with
   // lineHeight 1 the font's ascender/descender box is centred on the line box.
-  const textNodes = lines.map((l) => {
+  const textNodes = lines.filter((l) => !l.serif).map((l) => {
     const { ascender, descender, unitsPerEm } = l.font
     const baselineOffset = ((1 - (ascender - descender) / unitsPerEm) / 2 + ascender / unitsPerEm) * l.size
     return {
@@ -263,8 +318,10 @@ async function buildOgCard(box) {
     props: {
       style: { display: 'flex', position: 'relative', width: OG.width, height: OG.height, backgroundColor: COLOR.bg, fontFamily: 'Poppins' },
       children: [
+        image(dataUri(svgToPng(groundSvg(), OG.width)), 0, 0, OG.width, OG.height),
         image(dataUri(glow.png), 0, 0, OG.width, OG.height),
         image(dataUri(visible), AVATAR.left, top, width, height),
+        image(dataUri(svgToPng(gradientTextSvg(lines), OG.width)), 0, 0, OG.width, OG.height),
         ...textNodes,
       ],
     },
