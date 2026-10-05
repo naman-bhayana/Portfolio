@@ -5,11 +5,12 @@ import { useEffect } from 'react'
 const COUNT_MS = 1400
 const BLANK = ' ' // holds an empty digit slot open
 
-// Two enhancements on top of the CSS motion. The page is complete without either:
+// Three things on top of the CSS motion. The page is complete without any of them:
 // 1. the proof figures count up from zero (the server HTML already holds the final values);
-// 2. browsers without scroll-driven animations still get the section reveals.
-// Both only touch what is still below the fold, and neither runs when the visitor has asked
-// for less motion or has paused it.
+// 2. browsers without scroll-driven animations still get the section reveals;
+// 3. the loops are started again once the web fonts are in, so none runs on stale sizes.
+// The first two only touch what is still below the fold, and none of the three runs when the
+// visitor has asked for less motion or has paused it.
 export default function MotionIsland() {
   useEffect(() => {
     if (!('IntersectionObserver' in window)) return
@@ -18,6 +19,26 @@ export default function MotionIsland() {
     const printing = window.matchMedia('print')
     const still = () => reduced.matches || pause?.checked
     if (still()) return
+
+    // Chrome hands a loop to the compositor with its percentages already worked out in pixels,
+    // and keeps those pixels if the box changes size while the loop is still being started. A
+    // web font landing just after the first paint is enough: the typed role's caret then sits
+    // a few pixels off its text for good. Once the fonts have settled, every loop is moved on
+    // by a millisecond, which makes the browser hand it over again with today's sizes.
+    let fontsSettled = 0
+    const resync = () => {
+      for (const animation of document.getAnimations?.() ?? []) {
+        const loops = animation.effect?.getComputedTiming().iterations === Infinity
+        if (loops && animation.timeline === document.timeline && animation.currentTime !== null) animation.currentTime += 1
+      }
+    }
+    // Fonts arrive in batches; one pass after the last of them is enough.
+    const resyncSoon = () => {
+      clearTimeout(fontsSettled)
+      fontsSettled = setTimeout(resync, 200)
+    }
+    document.fonts?.ready.then(resyncSoon)
+    document.fonts?.addEventListener('loadingdone', resyncSoon)
 
     const belowFold = (el) => el.getBoundingClientRect().top > window.innerHeight
     const observers = []
@@ -142,6 +163,8 @@ export default function MotionIsland() {
 
     return () => {
       observers.forEach((observer) => observer.disconnect())
+      document.fonts?.removeEventListener('loadingdone', resyncSoon)
+      clearTimeout(fontsSettled)
       window.removeEventListener('scroll', start)
       pause?.removeEventListener('change', settleIfStill)
       reduced.removeEventListener('change', settleIfStill)

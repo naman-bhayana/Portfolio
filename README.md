@@ -27,6 +27,8 @@ Three rules keep it cheap. Break one and `browser-checks.mjs` fails:
 
 `src/instrumentation-client.js` drops React's `animationiteration` listener; with it, Chrome re-styles every running animation at the end of each loop.
 
+`MotionIsland.jsx` moves every loop on by a millisecond once the web fonts are in. Chrome works a loop's percentages out in pixels as it starts it, and a font that lands in that moment leaves them out of date: the typed role's caret ends up a few pixels off its text.
+
 ## How the page reads as text
 
 Crawlers, answer engines and reader modes take the HTML as plain text, so the page says each thing once and keeps its words apart:

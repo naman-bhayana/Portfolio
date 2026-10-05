@@ -3,10 +3,11 @@
 //
 // Usage: node scripts/qa/browser-checks.mjs <baseUrl> [--shots <dir outside the repo>]
 // Env:   CHROME_PATH (default: the standard Windows install path)
-import { existsSync, mkdirSync } from 'node:fs'
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import path from 'node:path'
 import { chromium } from 'playwright-core'
+import sharp from 'sharp'
 
 const require = createRequire(import.meta.url)
 const AXE_PATH = require.resolve('axe-core/axe.min.js')
@@ -24,6 +25,11 @@ const IDLE_RECALCS = 4
 const PHONE_SLOWDOWN = 4
 const SCROLL_BLOCKING_MS = 250
 const SCROLL_WORST_TASK_MS = 150
+// The typed role line: how long a role must stand complete, and how many pixels the running
+// line may differ from the same moment frozen. In step it differs by none; one web font's
+// worth out of step, by 500 to 1,200 (5 Oct 2026).
+const ROLE_HOLD_MS = 1000
+const ROLE_LIVE_PIXELS = 20
 
 let failures = 0
 const report = (status, id, detail) => {
@@ -71,26 +77,61 @@ const stuckReveals = (page) =>
       .map((el) => el.id || String(el.className)),
   )
 
-// How much of each typed role is on show, 0 to 1: the part of the text inside its clipping box.
-const shownRoles = (page) =>
+// The typed role line held still at one moment of its own clock, with the carets' blink at
+// another. Paused animations are drawn by the main thread from fresh measurements.
+const freezeRoles = (page, at, blinkAt = 0) =>
+  page.evaluate(
+    ({ at, blinkAt }) => {
+      for (const animation of document.querySelector('.role .tw').getAnimations({ subtree: true })) {
+        animation.pause()
+        animation.currentTime = animation.animationName === 'blink' ? blinkAt : at
+      }
+    },
+    { at, blinkAt },
+  )
+
+// When each typed role stands complete, in milliseconds on its animation's clock.
+const roleHolds = (page) =>
   page.evaluate(() =>
     [...document.querySelectorAll('.role .tc')].map((box) => {
-      const clip = box.getBoundingClientRect()
-      const text = box.firstElementChild.getBoundingClientRect()
-      const shown = Math.min(clip.right, text.right) - Math.max(clip.left, text.left)
-      return Math.round((Math.max(0, shown) / text.width) * 100) / 100
+      const effect = box.getAnimations()[0].effect
+      const { delay, duration } = effect.getComputedTiming()
+      const complete = effect.getKeyframes().filter((frame) => parseFloat(frame.translate) === 0)
+      return { start: delay, cycle: duration, from: delay + complete[0].computedOffset * duration, to: delay + complete.at(-1).computedOffset * duration }
     }),
   )
 
-// Stop every time-based animation at one moment on the page's animation clock.
-const freezeAt = (page, ms) =>
-  page.evaluate((ms) => {
-    for (const animation of document.getAnimations()) {
-      if (animation.timeline !== document.timeline) continue
-      animation.pause()
-      animation.currentTime = ms
-    }
-  }, ms)
+// The typed role line at one moment. For each role: how much of its text is inside its
+// clipping box (0 to 1), whether the box and its caret are lit, and how far the caret is drawn
+// from the open end of the text.
+const roleLine = (page) =>
+  page.evaluate(() => {
+    const carets = [...document.querySelectorAll('.role .caret')]
+    const mark = parseFloat(getComputedStyle(carets[0], '::before').left)
+    return [...document.querySelectorAll('.role .tc')].map((box, i) => {
+      const clip = box.getBoundingClientRect()
+      const text = box.firstElementChild.getBoundingClientRect()
+      const end = Math.min(clip.right, text.right)
+      return {
+        shown: Math.round((Math.max(0, end - Math.max(clip.left, text.left)) / text.width) * 100) / 100,
+        lit: Number(getComputedStyle(box).opacity),
+        caret: Number(getComputedStyle(carets[i]).opacity),
+        gap: Math.round((carets[i].getBoundingClientRect().left + mark - end) * 10) / 10,
+        inView: text.right <= innerWidth,
+      }
+    })
+  })
+
+// Pixels that clearly differ between two captures of the same box.
+async function differingPixels(a, b) {
+  const [x, y] = await Promise.all([a, b].map((png) => sharp(png).removeAlpha().raw().toBuffer()))
+  if (x.length !== y.length) return Infinity
+  let count = 0
+  for (let i = 0; i < x.length; i += 3) {
+    if (Math.max(Math.abs(x[i] - y[i]), Math.abs(x[i + 1] - y[i + 1]), Math.abs(x[i + 2] - y[i + 2])) > 40) count++
+  }
+  return count
+}
 
 // Count-up figures that do not show the value the server rendered.
 const unfinishedFigures = (page) =>
@@ -295,10 +336,10 @@ for (const textSpacing of [false, true]) {
     scrollBehavior: getComputedStyle(document.documentElement).scrollBehavior,
     pauseShown: getComputedStyle(document.querySelector('.pause')).display !== 'none',
   }))
-  const roles = await shownRoles(page)
+  const roles = (await roleLine(page)).map((role) => `${role.shown}${role.lit ? '' : ' unlit'}`)
   const stuck = await stuckReveals(page)
   const figures = await unfinishedFigures(page)
-  const firstRoleOnly = roles[0] === 1 && !roles.slice(1).some(Boolean)
+  const firstRoleOnly = roles[0] === '1' && roles.slice(1).every((role) => role === '0 unlit')
   check(
     reduced.animations === 0 && reduced.waiting === 0 && reduced.scrollBehavior !== 'smooth' && !reduced.pauseShown && firstRoleOnly && stuck.length === 0 && figures.length === 0,
     'T8.reduced-motion',
@@ -308,43 +349,105 @@ for (const textSpacing of [false, true]) {
   await context.close()
 }
 {
-  // The typed role line with a visitor's own text spacing (WCAG 1.4.12) and motion on: each
-  // role is typed out in full, its caret sits at its end, and the others stay out of sight.
+  // The typed role line with a visitor's own text spacing (WCAG 1.4.12) and motion on, stepped
+  // through one whole cycle. Each role is typed out in full and stands long enough to read,
+  // its caret rides the end of the text, and no other role or caret shows while it does.
   const { context, page } = await newPage({ width: 1280, height: 800 })
   await page.goto(`${BASE}/`, { waitUntil: 'networkidle' })
   await page.addStyleTag({
     content: '* { line-height: 1.5 !important; letter-spacing: 0.12em !important; word-spacing: 0.16em !important; } p { margin-bottom: 2em !important; }',
   })
-  const timing = await page.evaluate(() => {
-    const { delay, duration } = document.querySelector('.role .t1 .tc').getAnimations()[0].effect.getComputedTiming()
-    return { delay, duration, roles: document.querySelectorAll('.role .t').length }
+  const holds = await roleHolds(page)
+  const STEP = 50
+  const held = holds.map(() => 0)
+  const cleared = holds.map(() => false) // the line stood empty after this role
+  const problems = new Map() // the first of each kind is enough
+  const note = (key, text) => problems.has(key) || problems.set(key, text)
+  let last = null // the role most recently on show
+  for (let at = 0; at < holds[0].cycle; at += STEP) {
+    await freezeRoles(page, holds[0].start + at)
+    const line = await roleLine(page)
+    const onShow = line.flatMap((role, i) => (role.lit && role.shown ? [i] : []))
+    const carets = line.flatMap((role, i) => (role.caret ? [i] : []))
+    if (onShow.length > 1) note('together', `roles ${onShow.map((i) => i + 1).join(' and ')} on show together`)
+    if (carets.length !== 1) note('carets', `${carets.length} carets lit at once`)
+    line.forEach((role, i) => {
+      if (!role.lit && role.shown) note(`away${i}`, `role ${i + 1} is unlit but not put away`)
+    })
+    if (onShow.length === 0) {
+      if (last !== null) cleared[last] = true
+      continue
+    }
+    const [i] = onShow
+    last = i
+    if (carets.length === 1 && carets[0] !== i) note(`caret${i}`, `caret ${carets[0] + 1} lit while role ${i + 1} is on show`)
+    // The caret is drawn 2 px after the last character on show.
+    if (Math.abs(line[i].gap - 2) > 1) note(`gap${i}`, `role ${i + 1}: caret ${line[i].gap}px after the text`)
+    if (!line[i].inView) note(`view${i}`, `role ${i + 1} runs off the page`)
+    if (line[i].shown === 1) held[i] += STEP
+  }
+  held.forEach((ms, i) => {
+    if (ms < ROLE_HOLD_MS) note(`held${i}`, `role ${i + 1} stands complete for ${ms} ms`)
+    if (!cleared[i]) note(`cleared${i}`, `role ${i + 1} is still on show when the next one starts`)
   })
-  const slot = timing.duration / timing.roles
+  check(problems.size === 0, 'T8.typed-role-spacing', `${holds.length} roles type out in full, one at a time, with text-spacing overrides`, [...problems.values()].join(' | '))
+  await context.close()
+}
+{
+  // The same line as a visitor gets it: running on the compositor of a slow phone, nothing
+  // paused. A role is photographed while it stands complete and compared with the same moment
+  // frozen. The two differ when the compositor is still working from positions taken before a
+  // web font arrived, which is why MotionIsland.jsx starts the loops again once the fonts are
+  // in. The first role stands when the page rests; the second starts out hidden.
+  const { context, page } = await newPage({ width: 1280, height: 800, deviceScaleFactor: 2 })
+  const cdp = await context.newCDPSession(page)
+  await cdp.send('Emulation.setCPUThrottlingRate', { rate: PHONE_SLOWDOWN })
+  await page.goto(`${BASE}/`, { waitUntil: 'commit' })
+  await page.waitForFunction(() => document.querySelector('.role .t1 .tc')?.getAnimations().length > 0)
+  const holds = (await roleHolds(page)).slice(0, 2)
+  const clock = () =>
+    page.evaluate(() => {
+      const line = document.querySelector('.role .tw')
+      const blink = line.getAnimations({ subtree: true }).find((animation) => animation.animationName === 'blink')
+      const period = blink.effect.getComputedTiming().duration
+      return { role: line.querySelector('.tc').getAnimations()[0].currentTime, blink: blink.currentTime % period, period }
+    })
   const problems = []
-  for (let i = 0; i < timing.roles; i++) {
-    // 60% into a role's slot it has been typed and is being held.
-    await freezeAt(page, timing.delay + slot * (i + 0.6))
-    const shown = await shownRoles(page)
-    const expected = shown.map((_, n) => (n === i ? 1 : 0))
-    const caret = await page.evaluate((n) => {
-      const text = document.querySelectorAll('.role .tc > span')[n].getBoundingClientRect()
-      const carets = [...document.querySelectorAll('.role .caret')]
-      const mark = parseFloat(getComputedStyle(carets[n], '::before').left)
-      return {
-        gap: Math.round((carets[n].getBoundingClientRect().left + mark - text.right) * 10) / 10,
-        lit: carets.map((c) => Number(getComputedStyle(c).opacity)).join(''),
-        inView: text.right <= innerWidth,
-      }
-    }, i)
-    // The caret is drawn 2 px after the text; only this role's caret may show.
-    if (shown.join() !== expected.join() || Math.abs(caret.gap - 2) > 1 || caret.lit !== expected.join('') || !caret.inView) {
-      problems.push(`role ${i + 1}: shown ${shown.join('/')}, carets lit ${caret.lit}, caret ${caret.gap}px after the text${caret.inView ? '' : ', text runs off the page'}`)
+  const live = []
+  let clip
+  let period
+  for (const [i, hold] of holds.entries()) {
+    // Aim for the caret's next "on" half once the role is complete.
+    const now = await clock()
+    period = now.period
+    const typed = Math.max(0, hold.from + 120 - now.role)
+    await page.waitForTimeout(typed + ((period - ((now.blink + typed) % period)) % period))
+    clip ??= await page.evaluate(() => {
+      const { left, top, width, height } = document.querySelector('.role').getBoundingClientRect()
+      return { x: Math.floor(left) - 4, y: Math.floor(top) - 4, width: Math.ceil(width) + 8, height: Math.ceil(height) + 8 }
+    })
+    live.push(await page.screenshot({ clip }))
+    const taken = (await clock()).role
+    if (taken > hold.to) problems.push(`role ${i + 1} was photographed ${Math.round(taken - hold.to)} ms after it stopped standing complete`)
+  }
+  await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 })
+  let caretSeen = 0
+  for (const [i, hold] of holds.entries()) {
+    const frozen = []
+    for (const blinkAt of [period * 0.25, period * 0.75]) {
+      await freezeRoles(page, (hold.from + hold.to) / 2, blinkAt)
+      frozen.push(await page.screenshot({ clip }))
+    }
+    const [caretOn, caretOff] = await Promise.all(frozen.map((frame) => differingPixels(live[i], frame)))
+    if (caretOn <= ROLE_LIVE_PIXELS) caretSeen++
+    else if (caretOff > ROLE_LIVE_PIXELS) problems.push(`role ${i + 1} differs from the same moment frozen by ${Math.min(caretOn, caretOff)} px`)
+    if (SHOTS) {
+      writeFileSync(path.join(SHOTS, `typed-role-${i + 1}-live.png`), live[i])
+      writeFileSync(path.join(SHOTS, `typed-role-${i + 1}-frozen.png`), frozen[0])
     }
   }
-  await freezeAt(page, timing.delay + slot * 0.99)
-  const between = await shownRoles(page)
-  if (between.some(Boolean)) problems.push(`between roles: shown ${between.join('/')}`)
-  check(problems.length === 0, 'T8.typed-role-spacing', `${timing.roles} roles type out in full with text-spacing overrides`, problems.join(' | '))
+  if (problems.length === 0 && caretSeen === 0) problems.push('the caret was never caught lit, so its place went unchecked')
+  check(problems.length === 0, 'T8.typed-role-live', `the running line matches the frozen one for ${holds.length} roles on a ${PHONE_SLOWDOWN}x slower CPU (caret lit in ${caretSeen})`, problems.join(' | '))
   await context.close()
 }
 {

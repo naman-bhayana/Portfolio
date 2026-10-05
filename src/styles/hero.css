@@ -133,7 +133,8 @@
 
 /* The roles share one grid cell, so the line keeps its size while they type and can still
    wrap when a visitor widens the text spacing. A role is hidden by moving its clipping box
-   (.tc) one way and its text the other; only the first one is on show when nothing moves. */
+   (.tc) one way and its text the other, and is transparent as well, so nothing shows if the
+   two ever disagree by a pixel. Only the first one is on show when nothing moves. */
 .tw {
   display: inline-grid;
   min-width: 0;
@@ -149,6 +150,7 @@
   display: block;
   overflow: clip;
   translate: -100%;
+  opacity: 0;
 }
 
 .tc > span {
@@ -159,6 +161,10 @@
 .t1 .tc,
 .t1 .tc > span {
   translate: none;
+}
+
+.t1 .tc {
+  opacity: 1;
 }
 
 /* Each role has a caret: a box as wide as the role, so moving it by its own width lands on
