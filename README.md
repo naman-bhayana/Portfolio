@@ -17,13 +17,17 @@ npm run lint
 
 ## How the page moves
 
-The styles are in `src/styles/`, one file per section, with every animation in `motion.css`. The motion is CSS: the page is complete in the server HTML and reads the same with JavaScript off, with reduced motion, or with the pause switch in the header.
+The styles are in `src/styles/`, one file per section, with every animation in `motion.css`. The page is complete in the server HTML and reads the same with JavaScript off, with reduced motion, or with the pause switch in the header.
 
-Three rules keep it cheap. Break one and `browser-checks.mjs` fails:
+Three rules keep the loops cheap. Break one and `browser-checks.mjs` fails:
 
 - Anything that loops animates only `opacity` or a transform, so it runs off the main thread.
 - Loops are staggered with negative delays, and the hero's arrival is one batch of equal-length animations (see `Hero.jsx`). Positive delays wake the main thread at every start and finish.
-- Scroll reveals fill backwards only, so text is drawn on the pixel grid once a block has arrived.
+- Arrivals fill backwards only, so text is drawn on the pixel grid once a block has arrived.
+
+Below the hero, a block arrives once as the reader reaches it. `MotionIsland.jsx` marks the page (`html.rv-on`) and the blocks still below the fold (`.rv-wait`); a block coming into view plays its arrival (`.rv-in`) and is let go of once it has played. Headlines arrive word by word. Without JavaScript nothing waits. The parts tied to scroll (the lights behind each scene, the deck of cases, the rail, the progress line) are CSS scroll-driven animations with no script at all.
+
+`MotionIsland.jsx` also draws the particle field under the page, flies the 400 dots of the proof stage into their grid, scrambles and counts the figures, and tilts the avatar stage and the plates towards the pointer. All of it stops on its own: the field sleeps 8 s after the last input and wakes on the next, the tilt and the pointer light only ease while the pointer moves, and none of it reads the DOM in a frame. A frame loop that never rests would keep the main thread updating every CSS loop on the page each frame, which is what `T8.idle-main-thread` measures. The pause switch stops it all.
 
 `src/instrumentation-client.js` drops React's `animationiteration` listener; with it, Chrome re-styles every running animation at the end of each loop.
 
@@ -34,10 +38,15 @@ Three rules keep it cheap. Break one and `browser-checks.mjs` fails:
 Crawlers, answer engines and reader modes take the HTML as plain text, so the page says each thing once and keeps its words apart:
 
 - Neighbouring inline elements get a space between them (`spaced()` in `src/lib/spaced.js`), even where a flex gap already separates them on screen.
-- Decoration that repeats what the text says, or only labels a drawing, is drawn by CSS from a `data-t` attribute: the letters of the name, the typed role line, the marquee's second copy, the diagram labels.
+- Decoration that repeats what the text says is drawn by CSS from a `data-t` attribute: the letters of the name, the typed role line, the marquee's other copies. A case's wordmark is an image that only draws the name; the name is text beside it.
 - A proof figure is real text once and a labelled graphic to screen readers, so the count-up never changes what is read out. The figures only start from zero after the first scroll.
+- Every client mark on the wall is named by its alt text; its descriptor is text a pointer uncovers.
 
-`verify-site.mjs` fails if any text is glued to its neighbour.
+`verify-site.mjs` fails if any text is glued to its neighbour, and if any dash stands between words (ranges are "30-40%" or "2023 to 2024").
+
+## The studio's address
+
+The page links nexerah.com. Its Organization node joins the structured data only once `NEXERAH_LIVE` is set in `site.js`, which `verify-site.mjs` checks against the live address; until the domain answers, the HTTP check warns.
 
 ## Checks
 
