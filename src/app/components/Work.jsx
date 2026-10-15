@@ -1,126 +1,150 @@
 import { WORK } from '@/content/site'
+import { LOGO_WIDTHS, optimised, srcSet } from '@/lib/images'
 import { spaced } from '@/lib/spaced'
-import Icon from './Icon'
-import SectionHead from './SectionHead'
-import { DIAGRAMS, Shot } from './Visuals'
+import Shot from './Shot'
 
-const CARD_SIZES = '(max-width: 960px) 92vw, 400px'
-const FLAGSHIP_SIZES = '(max-width: 960px) 86vw, 480px'
+const CARD_SIZES = '(max-width: 960px) 92vw, 380px'
+const FLAGSHIP_SIZES = '(max-width: 960px) 86vw, 560px'
 
-// "Live", "Code" and "Site" repeat down the page, so each link carries a hidden hint
-// that says which build it belongs to.
-function BuildLink({ link }) {
+// A case is headed by its wordmark. The name is there as text for everything that reads the
+// HTML; the image only draws it.
+function Wordmark({ build }) {
+  const { mark } = build
   return (
-    <a className="lk" href={link.href}>
-      {link.label}
-      {link.hint && <span className="sr"> {link.hint}</span>} <Icon name="external" small />
-    </a>
+    <>
+      {/* eslint-disable-next-line @next/next/no-img-element -- optimised URLs built in lib/images */}
+      <img
+        className={`wm wm-${mark.id}`}
+        src={optimised(mark.file, LOGO_WIDTHS[1])}
+        srcSet={srcSet(mark.file, LOGO_WIDTHS)}
+        sizes="(max-width: 600px) 150px, 200px"
+        width={mark.width}
+        height={mark.height}
+        alt=""
+        aria-hidden="true"
+        decoding="async"
+      />
+      <span className="sr">{build.name}</span>
+    </>
   )
 }
 
+const Tags = ({ tags }) => <p className="tags">{spaced(tags.map((tag) => <span key={tag}>{tag}</span>))}</p>
+
+// The flagship plate: the real brand card with one light sweep and the 14-segment stage bar,
+// beside the text. It tilts a little towards the pointer (data-tilt, MotionIsland).
 function Flagship({ build }) {
   return (
-    <article className="flag rv">
-      <div className="flagbody">
-        <div className="tags">
-          {spaced(
-            build.tags.map((tag, i) => (
-              <span key={tag} className={i === 0 ? 'tag hot' : 'tag'}>
-                {tag}
-              </span>
-            )),
-          )}
+    <article className="flag spotcard tilt" data-tilt="2.5" data-rv="flag" id={build.id} aria-labelledby="flag-heading">
+      <div className="flagart">
+        <div className="card para-soft">
+          <Shot image={build.image} sizes={FLAGSHIP_SIZES} />
         </div>
+        <div className="stagebar">
+          <div className="segs" aria-hidden="true">
+            {Array.from({ length: build.stages.count }, (_, i) => (
+              <i key={i} />
+            ))}
+          </div>
+          <p className="cap">{build.stages.text}</p>
+        </div>
+      </div>
+      <div className="flagtext">
         <div className="flagname">
-          <h3>{build.name}</h3>
+          <h3 id="flag-heading" className="h3big">
+            {build.name}
+          </h3>{' '}
           <a className="ext" href={build.link.href}>
-            {build.link.label} <Icon name="external" small />
+            {build.link.label}
           </a>
         </div>
-        <p className="lead">{build.summary}</p>
-        <ul className="mods">
+        <p className="flagsum">{build.summary}</p>
+        <ul className="mods" role="list">
           {build.modules.map((module) => (
             <li key={module}>{module}</li>
           ))}
           <li className="next">{build.next}</li>
         </ul>
-      </div>
-      <div className="flagviz">
-        <Shot image={build.image} sizes={FLAGSHIP_SIZES} />
-        {/* --n and --i time the run of light along the stages (see motion.css). */}
-        <div className="stages" aria-hidden="true" style={{ '--n': build.stages.count }}>
-          {Array.from({ length: build.stages.count }, (_, i) => (
-            <i key={i} style={{ '--i': i }} />
-          ))}
-        </div>
-        <p className="stagecap">
-          <b>{build.stages.strong}</b> {build.stages.text}
+        <Tags tags={build.tags} />
+        <p className="quiet">
+          <a href={build.team.href}>{build.team.label}</a>
         </p>
       </div>
     </article>
   )
 }
 
-function CaseCard({ build, stagger }) {
-  const Diagram = DIAGRAMS[build.visual]
+// The deck: five cases, each sticky, each pinned a step lower than the one before, so the
+// next slides over the last as the page scrolls (work.css).
+function Case({ build }) {
   return (
-    <article className={`case rv${stagger ? ` s${stagger + 1}` : ''}`}>
-      {build.image ? (
-        <div className="cviz pic">
+    <article className="case spotcard tilt" data-tilt="2" data-rv="seq" id={build.id} aria-labelledby={`${build.id}-heading`}>
+      <div className="casehead">
+        <h3 id={`${build.id}-heading`} className="casename">
+          <Wordmark build={build} />
+        </h3>
+        <Tags tags={build.tags} />
+      </div>
+      <div className="casetext">
+        {/* One paragraph: the role line opens it, set larger, so it is not a heading in disguise. */}
+        <p className="mech">
+          {build.role && (
+            <>
+              <span className="role2">{build.role}</span>{' '}
+            </>
+          )}
+          {build.mech}
+        </p>
+      </div>
+      {build.image && (
+        <div className="caseart">
           <Shot image={build.image} sizes={CARD_SIZES} />
         </div>
-      ) : (
-        <Diagram />
       )}
-      <div className="cbody">
-        <div className="tags">
+      {build.links.length > 0 && (
+        <p className="caselink">
           {spaced(
-            build.tags.map((tag, i) => (
-              <span key={tag} className={build.highlight && i === 0 ? 'tag beta' : 'tag'}>
-                {tag}
-              </span>
+            build.links.map((link) => (
+              <a key={link.href} className="ext" href={link.href}>
+                {link.label}
+              </a>
             )),
           )}
-        </div>
-        <h3>{build.name}</h3>
-        <p>{build.summary}</p>
-        {build.links.length > 0 ? (
-          <div className="clinks">{spaced(build.links.map((link) => <BuildLink key={link.href} link={link} />))}</div>
-        ) : (
-          <p className="pv">{build.note}</p>
-        )}
-      </div>
+        </p>
+      )}
     </article>
   )
 }
 
 export default function Work() {
-  // Numbering runs on from the flagship (01) and the cards.
-  const firstIndex = WORK.cards.length + 2
   return (
-    <section className="sec" id="work" aria-labelledby="work-heading">
+    <section className="scene work" id="work" aria-labelledby="work-heading">
+      <div className="light light-work para" aria-hidden="true" />
       <div className="wrap">
-        <SectionHead id="work-heading" kicker={WORK.kicker} heading={WORK.heading} sub={WORK.sub} />
+        <div className="headrow" data-rv="seq">
+          <h2 id="work-heading" className="h2 shine">
+            {WORK.heading.lead}
+            <span className="emc">{WORK.heading.em}</span>
+          </h2>
+          <p className="sub">{WORK.sub}</p>
+        </div>
         <Flagship build={WORK.flagship} />
-        <div className="cases">
-          {WORK.cards.map((build, i) => (
-            <CaseCard key={build.id} build={build} stagger={i % 3} />
+        <div className="deck">
+          {WORK.cards.map((build) => (
+            <Case key={build.id} build={build} />
           ))}
         </div>
-        <p className="mono idxh rv">{WORK.indexLabel}</p>
-        <div className="idx">
-          {WORK.index.map((build, i) => (
-            <article className="row rv" key={build.id}>
-              <span className="n" aria-hidden="true" data-t={String(firstIndex + i).padStart(2, '0')} />
-              <h3>{build.name}</h3>
-              <span className="k">
-                {build.category}
-                {build.result && <> <em>{build.result}</em></>}
-              </span>{' '}
-              <span className="d">{build.summary}</span>{' '}
-              <span className="lks">{spaced(build.links.map((link) => <BuildLink key={link.href} link={link} />))}</span>
-            </article>
-          ))}
+        <div className="index" data-rv="seq">
+          <p className="h3">{WORK.indexLabel}</p>
+          <ul className="ix" role="list">
+            {WORK.index.map((row) => (
+              <li key={row.sector}>
+                <h3 className="ixname">{spaced(row.builds.map((build) => <span key={build.id}>{build.name}</span>))}</h3>
+                <p className="ixsector">{row.sector}</p>
+                <p className="ixwhat">{row.summary}</p>
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
     </section>

@@ -1,187 +1,131 @@
-/* About and the ship log. */
+/* About: the portrait beside the quote, the bio and the ship log. */
 
 .about {
+  padding: var(--pad) 0;
+}
+
+.light-about {
+  background: radial-gradient(700px 560px at 24% 40%, rgba(26, 125, 255, .12), transparent 70%);
+}
+
+.aboutgrid {
   display: grid;
-  grid-template-columns: minmax(0, .8fr) minmax(0, 1fr);
-  gap: 64px;
-  align-items: center;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  gap: 32px 80px;
+  align-items: start;
 }
 
-.frame {
+.portrait {
+  grid-row: 1 / span 2;
+  max-width: 400px;
+}
+
+/* The photo is graded to the page: cooler, with a dark bleed at the bottom edge. It drifts a
+   little inside its frame as the page scrolls (motion.css), so it is cut taller than the frame. */
+.pframe {
   position: relative;
-  aspect-ratio: 1;
-  border-radius: 28px;
+  aspect-ratio: 4 / 5;
   overflow: clip;
-  border: 1px solid var(--line2);
-  box-shadow: 0 50px 120px -50px rgba(40, 90, 255, .6);
+  border-radius: 24px;
+  border: 1px solid var(--line);
+  background: rgba(10, 14, 22, .9);
 }
 
-.frame>img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.badge {
+.pimg {
   position: absolute;
-  left: 16px;
-  bottom: 16px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 16px 10px 10px;
-  border-radius: 999px;
-  background: rgba(6, 9, 14, .82);
-  border: 1px solid var(--line2);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-}
-
-.badge img {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
+  left: 0;
+  top: -5%;
+  width: 100%;
+  height: 110%;
   object-fit: cover;
-  object-position: 50% 10%;
-  background: #14253A;
+  filter: saturate(.85) contrast(1.05);
 }
 
-.badge strong {
-  display: block;
-  font-size: 14px;
+.pframe::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(5, 7, 11, 0) 50%, rgba(5, 7, 11, .94) 100%), linear-gradient(rgba(20, 60, 140, .16), rgba(20, 60, 140, .16));
+  pointer-events: none;
+}
+
+.pcap {
+  margin-top: 14px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.pcap strong {
+  color: var(--fg);
   font-weight: 600;
-  line-height: 1.25;
 }
 
-.badge small {
-  display: block;
-  font-size: 12px;
-  line-height: 1.3;
-  color: var(--muted);
+.abouttext {
+  grid-column: 2;
 }
 
-.quote {
-  margin-top: 20px;
-  font: italic 400 clamp(30px, 3.5vw, 50px)/1.08 var(--serif);
-  letter-spacing: -.01em;
-  text-wrap: balance;
-}
-
-.quote span {
-  color: var(--muted);
-}
-
-.bio {
-  margin-top: 24px;
-  max-width: 620px;
-  font-size: 16.5px;
-  color: var(--soft);
-  text-wrap: pretty;
-}
-
-.bio a {
+.person {
+  margin-top: 22px;
+  font: italic 400 clamp(22px, 1.9vw, 28px)/1.3 var(--serif);
   color: var(--cyan);
-  text-decoration: underline;
-  text-underline-offset: 4px;
+}
+
+.abouttext .body {
+  margin-top: 16px;
 }
 
 .facts {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 26px;
-}
-
-.fact {
-  padding: 9px 14px;
-  border-radius: 999px;
-  border: 1px solid var(--line2);
-  font-size: 13.5px;
+  gap: 6px 26px;
+  margin-top: 20px;
+  font: 500 12.5px/1.5 var(--mono);
+  letter-spacing: .08em;
   color: var(--soft);
 }
 
-.note {
-  margin-top: 22px;
+.disclosure {
+  margin-top: 14px;
   font-size: 13px;
+  line-height: 1.5;
   color: var(--dim);
 }
 
-.tlh {
-  margin-top: 88px;
+.log {
+  grid-column: 2;
 }
 
-.tl {
-  position: relative;
+.ledger {
+  margin-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.ledger > li {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  margin-top: 26px;
+  grid-template-columns: 130px minmax(0, 1fr) minmax(0, 1.4fr);
+  gap: 4px 28px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
 }
 
-.tl::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 7px;
-  height: 1px;
-  background: var(--line2);
+.lyear {
+  font: 500 12.5px/1.6 var(--mono);
+  letter-spacing: .06em;
+  color: var(--fg);
 }
 
-.prog {
-  position: absolute;
-  left: 0;
-  top: 6px;
-  width: 100%;
-  height: 3px;
-  border-radius: 3px;
-  background: var(--grad);
-  transform-origin: left center;
-}
-
-.ev {
-  position: relative;
-  padding: 38px 22px 0 0;
-}
-
-.ev::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 15px;
-  height: 15px;
-  border-radius: 50%;
-  background: var(--bg);
-  border: 2px solid var(--cyan);
-  box-shadow: 0 0 14px rgba(0, 225, 255, .6);
-}
-
-.ev.nextev::before {
-  border-style: dashed;
-  box-shadow: none;
-}
-
-.ev .yr {
-  display: block;
-  font: 500 12px/1.3 var(--mono);
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  color: var(--cyan);
-}
-
-.ev b {
-  display: block;
-  margin-top: 12px;
-  font-size: 17px;
+.lwho {
+  font-size: 15.5px;
   font-weight: 600;
+  line-height: 1.4;
   letter-spacing: -.01em;
-  line-height: 1.3;
+  color: var(--fg);
 }
 
-.ev .ds {
-  display: block;
-  margin-top: 6px;
-  font-size: 13.5px;
-  line-height: 1.45;
+.lwhat {
+  font-size: 14.5px;
+  line-height: 1.5;
   color: var(--muted);
+  text-wrap: pretty;
 }

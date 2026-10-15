@@ -5,8 +5,10 @@ export default function SiteFooter() {
   return (
     <footer className="foot">
       <div className="wrap footin">
-        <p>{FOOTER.line}</p>
-        <nav className="footl" aria-label="Footer">
+        <p className="footline">
+          <span>{FOOTER.line}</span> <span>{FOOTER.roles}</span>
+        </p>
+        <nav className="footl" aria-label="Elsewhere">
           {spaced(
             FOOTER.links.map((link) => (
               <a key={link.label} href={link.href} rel={link.me ? 'me' : undefined}>

@@ -1,71 +1,65 @@
-import { ABOUT, AVATAR, TIMELINE } from '@/content/site'
-import { THUMB_WIDTH, optimised, srcSet } from '@/lib/images'
+import { ABOUT, TIMELINE } from '@/content/site'
+import { optimised, srcSet } from '@/lib/images'
+import { spaced } from '@/lib/spaced'
 
 export default function About() {
-  const { illustration } = ABOUT
+  const { portrait } = ABOUT
   return (
-    <section className="sec" id="about" aria-labelledby="about-heading">
+    <section className="scene about" id="about" aria-labelledby="about-heading">
+      <div className="light light-about para" aria-hidden="true" />
       <div className="wrap">
-        <div className="about">
-          <figure className="frame rv">
-            {/* eslint-disable-next-line @next/next/no-img-element -- optimised URLs built in lib/images */}
-            <img
-              src={optimised(illustration.src, 768)}
-              srcSet={srcSet(illustration.src)}
-              sizes="(max-width: 960px) 92vw, 520px"
-              width={illustration.width}
-              height={illustration.height}
-              alt={illustration.alt}
-              loading="lazy"
-              decoding="async"
-            />
-            <figcaption className="badge">
+        <div className="aboutgrid">
+          <figure className="portrait" data-rv="one">
+            <div className="pframe">
               {/* eslint-disable-next-line @next/next/no-img-element -- optimised URLs built in lib/images */}
-              <img src={optimised(AVATAR.src, THUMB_WIDTH)} width={44} height={44} alt="" loading="lazy" decoding="async" />
-              <span>
-                <strong>{ABOUT.badge.name}</strong> <small>{ABOUT.badge.line}</small>
-              </span>
+              <img
+                className="pimg para-img"
+                src={optimised(portrait.src, 768)}
+                srcSet={srcSet(portrait.src)}
+                sizes="(max-width: 600px) 240px, 400px"
+                width={portrait.width}
+                height={portrait.height}
+                alt={portrait.alt}
+                loading="lazy"
+                decoding="async"
+              />
+            </div>
+            <figcaption className="pcap">
+              <strong>{ABOUT.caption.name}</strong> · {ABOUT.caption.line}
             </figcaption>
           </figure>
-          <div className="rv s2">
-            <h2 id="about-heading" className="kick">
-              {ABOUT.kicker}
+          <div className="abouttext" data-rv="seq">
+            <h2 id="about-heading" className="h2b">
+              {ABOUT.quote.lead} <span className="emw">{ABOUT.quote.rest}</span>
             </h2>
-            <p className="quote">
-              {ABOUT.quote.lead} <span>{ABOUT.quote.rest}</span>
-            </p>
-            <p className="bio">
+            {/* A line, not a paragraph: set this large, a <p> reads to an accessibility checker as a heading in disguise. */}
+            <div className="person">{ABOUT.person}</div>
+            <p className="body">
               {ABOUT.bio.map((part) =>
                 typeof part === 'string' ? (
                   part
                 ) : (
-                  <a key={part.href} href={part.href}>
+                  <a key={part.href} className="inl" href={part.href}>
                     {part.text}
                   </a>
                 ),
               )}
             </p>
-            <p className="bio">{ABOUT.markets}</p>
-            <ul className="facts">
-              {ABOUT.facts.map((fact) => (
-                <li key={fact} className="fact">
-                  {fact}
+            <p className="facts">{spaced(ABOUT.facts.map((fact) => <span key={fact}>{fact}</span>))}</p>
+            <p className="disclosure">{ABOUT.disclosure}</p>
+          </div>
+          <div className="log" data-rv="seq">
+            <p className="eyebrow">{TIMELINE.label}</p>
+            <ol className="ledger" role="list">
+              {TIMELINE.events.map((event) => (
+                <li key={event.when}>
+                  <span className="lyear">{event.when}</span> <span className="lwho">{event.who}</span>{' '}
+                  <span className="lwhat">{event.what}</span>
                 </li>
               ))}
-            </ul>
-            <p className="note">{ABOUT.disclosure}</p>
+            </ol>
           </div>
         </div>
-
-        <h3 className="mono tlh rv">{TIMELINE.label}</h3>
-        <ol className="tl rv">
-          <li className="prog" aria-hidden="true" />
-          {TIMELINE.events.map((event) => (
-            <li key={event.name} className={event.next ? 'ev nextev' : 'ev'}>
-              <span className="yr">{event.when}</span> <b>{event.name}</b> <span className="ds">{event.detail}</span>
-            </li>
-          ))}
-        </ol>
       </div>
     </section>
   )

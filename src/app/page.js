@@ -1,13 +1,14 @@
 import { OG_IMAGE, PERSON, SHARE } from '@/content/site'
 import { serializeGraph } from '@/lib/structured-data'
 import About from './components/About'
+import ClientWall from './components/ClientWall'
 import Contact from './components/Contact'
 import Hero from './components/Hero'
+import Infra from './components/Infra'
 import Marquee from './components/Marquee'
 import MotionIsland from './components/MotionIsland'
-import Nexerah from './components/Nexerah'
-import ProofWall from './components/ProofWall'
-import Stack from './components/Stack'
+import Proof from './components/Proof'
+import Studio from './components/Studio'
 import Work from './components/Work'
 
 // Page-specific metadata lives here so other routes never inherit this canonical or card.
@@ -37,12 +38,13 @@ export default function Home() {
   return (
     <>
       <Hero />
+      <ClientWall />
       <Marquee />
-      <ProofWall />
+      <Proof />
       <Work />
-      <Stack />
+      <Infra />
+      <Studio />
       <About />
-      <Nexerah />
       <Contact />
       <MotionIsland />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeGraph() }} />

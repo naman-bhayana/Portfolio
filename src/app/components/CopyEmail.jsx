@@ -7,7 +7,7 @@ const subscribe = () => () => {}
 // Progressive enhancement over the mailto link. The button is hidden in the server HTML
 // (useless without JavaScript) and appears once the page hydrates. The status region is
 // in the DOM from the start so screen readers announce the result (WCAG 4.1.3).
-export default function CopyEmail({ email, targetId, labels }) {
+export default function CopyEmail({ email, targetId, labels, className = 'pill pill-ghost' }) {
   const hydrated = useSyncExternalStore(
     subscribe,
     () => true,
@@ -48,7 +48,7 @@ export default function CopyEmail({ email, targetId, labels }) {
   // Both elements join the row of contact buttons; CSS puts the status on its own line.
   return (
     <>
-      <button type="button" className="pill pill-ghost" onClick={copy} hidden={!hydrated} data-copy-email>
+      <button type="button" className={className} onClick={copy} hidden={!hydrated} data-copy-email>
         {labels.button}
       </button>
       <p role="status" className="copystatus">

@@ -1,0 +1,145 @@
+/* The client wall: the hero's closing band. Marks only, each at the height that gives it the
+   same visual weight as the others (public/logos files are optical boxes: centring the file
+   centres the mark). The descriptor sits under the mark and shows under the pointer. */
+
+.wall {
+  position: relative;
+  z-index: 1;
+  border-top: 1px solid var(--line);
+  background: rgba(8, 12, 18, .6);
+}
+
+/* One light crosses the band once it has arrived (motion.css). */
+.wall::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 40%, rgba(0, 225, 255, .10) 50%, transparent 60%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.wgrid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  grid-auto-rows: 84px;
+}
+
+.wlabel {
+  grid-column: span 2;
+  display: flex;
+  align-items: center;
+  padding-right: 24px;
+}
+
+.wcell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wgrid > li:nth-child(n+5) {
+  border-top: 1px solid var(--line);
+}
+
+/* A short rule between neighbouring marks, never at the start of a row. */
+.wcell::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 1px;
+  height: 36px;
+  margin-top: -18px;
+  background: var(--line);
+  display: none;
+}
+
+.wgrid > li:nth-child(3)::before,
+.wgrid > li:nth-child(4)::before,
+.wgrid > li:nth-child(6)::before,
+.wgrid > li:nth-child(7)::before,
+.wgrid > li:nth-child(8)::before,
+.wgrid > li:nth-child(9)::before,
+.wgrid > li:nth-child(11)::before,
+.wgrid > li:nth-child(12)::before,
+.wgrid > li:nth-child(13)::before,
+.wgrid > li:nth-child(14)::before {
+  display: block;
+}
+
+.lg {
+  width: auto;
+  max-width: none;
+}
+
+.lg-ideasiq {
+  height: 25.8px;
+}
+
+.lg-investbeans {
+  height: 30px;
+}
+
+.lg-artize {
+  height: 23.1px;
+}
+
+.lg-docpad {
+  height: 24.1px;
+}
+
+.lg-prozone {
+  height: 18px;
+}
+
+.lg-myleadsiq {
+  height: 27.1px;
+}
+
+.lg-sigmabites {
+  height: 16px;
+}
+
+.lg-sterlingnaturals {
+  height: 41.9px;
+}
+
+.lg-newgramophone {
+  height: 33.6px;
+}
+
+.lg-techlive {
+  height: 40.1px;
+}
+
+.lg-wandernest {
+  height: 28.7px;
+}
+
+.lg-plinko {
+  height: 20.5px;
+}
+
+.lg-allianzexports {
+  height: 23.8px;
+}
+
+.wdesc {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 8px;
+  text-align: center;
+  font: 500 12px/1.3 var(--mono);
+  letter-spacing: .06em;
+  color: var(--muted);
+  opacity: 0;
+  transition: opacity .25s;
+  pointer-events: none;
+}
+
+.wcell:hover .wdesc {
+  opacity: 1;
+}

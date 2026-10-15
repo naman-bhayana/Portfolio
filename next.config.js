@@ -1,5 +1,5 @@
 const { RESUME_DRIVE_URL } = require('./src/content/site.js')
-const { IMAGE_QUALITY, IMAGE_WIDTHS, THUMB_WIDTH } = require('./src/lib/images.js')
+const { IMAGE_QUALITY, IMAGE_WIDTHS, LOGO_WIDTHS } = require('./src/lib/images.js')
 
 // Report-only first. A static page cannot carry a per-request nonce, so inline scripts are
 // allowed; promote this to Content-Security-Policy after a clean week in production.
@@ -40,11 +40,12 @@ const nextConfig = {
     formats: ['image/avif', 'image/webp'],
     // The optimiser serves the widths the page asks for (src/lib/images.js) and nothing else.
     deviceSizes: IMAGE_WIDTHS,
-    imageSizes: [THUMB_WIDTH],
+    imageSizes: LOGO_WIDTHS,
     qualities: [IMAGE_QUALITY],
     localPatterns: [
       { pathname: '/images/**', search: '' },
       { pathname: '/work/**', search: '' },
+      { pathname: '/logos/**', search: '' },
     ],
   },
   async headers() {

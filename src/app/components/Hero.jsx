@@ -1,6 +1,5 @@
 import { AVATAR, HERO, PERSON } from '@/content/site'
 import { optimised, srcSet } from '@/lib/images'
-import { spaced } from '@/lib/spaced'
 import Icon from './Icon'
 import TypedRole from './TypedRole'
 
@@ -24,12 +23,9 @@ function arrivals() {
     ['.d2', 'rise', 0.95, 0.8],
     ['.d3', 'rise', 1.1, 0.8],
     ['.d4', 'rise', 1.25, 0.8],
-    ['.d5', 'rise', 1.4, 0.8],
     ['.stage', 'settle', 0.1, 1.1],
     ['.c1', 'pop', 1, 0.7, 'bob 6s ease-in-out infinite'],
-    ['.c2', 'pop', 1.15, 0.7, 'bob 6s ease-in-out -2s infinite'],
     ['.c3', 'pop', 1.3, 0.7, 'bob 6s ease-in-out -4s infinite'],
-    ['.c4', 'pop', 1.45, 0.7, 'bob 6s ease-in-out -1s infinite'],
   ]
 }
 
@@ -72,6 +68,7 @@ function letters(word, gradient = false) {
 
 // Everything here is in the server HTML and visible without JavaScript; the motion is CSS.
 // The avatar is the largest element on first paint, so it loads eagerly at high priority.
+// The stage tilts towards the pointer (MotionIsland, data-tilt is the angle in degrees).
 export default function Hero() {
   const { chips } = HERO
   return (
@@ -79,12 +76,6 @@ export default function Hero() {
       <style dangerouslySetInnerHTML={{ __html: arrivalCss() }} />
       <div className="wrap herogrid">
         <div className="herotext">
-          <p className="status d1">
-            <span className="pulse" aria-hidden="true" />
-            <span>
-              <strong className="nw">{HERO.status[0]}</strong> <span className="nw">· {HERO.status[1]}</span>
-            </span>
-          </p>
           <h1 id="hero-heading" className="h1">
             <span className="hello grad d1">{HERO.greeting}</span> <span className="sr">{PERSON.name}</span>
             <span className="name" aria-hidden="true">
@@ -102,12 +93,9 @@ export default function Hero() {
               {HERO.secondaryCta.label}
             </a>
           </div>
-          <div className="trust d5">
-            <span className="mono">{HERO.trustLabel}</span>{' '}
-            {spaced(HERO.trust.map((name) => <b key={name}>{name}</b>))}
-          </div>
         </div>
-        <div className="stage">
+        <div className="stage tilt" data-tilt="6">
+          <div className="spot" aria-hidden="true" />
           <div className="orbit2" aria-hidden="true" />
           <div className="orbit" aria-hidden="true" />
           <div className="disc" aria-hidden="true" />
@@ -127,22 +115,11 @@ export default function Hero() {
           </div>
           <div className="chip c1">
             <span className="dm" aria-hidden="true" />
-            <span>
-              <b>{chips.models.value}</b> {chips.models.label}
-            </span>
-          </div>
-          <div className="chip c2">
-            <span className="k">{chips.agent.tag}</span> <span>{chips.agent.label}</span>
+            <span>{chips.runtime}</span>
           </div>
           <div className="chip c3">
             <span className="pulse" aria-hidden="true" />
             <span>{chips.voice}</span>
-          </div>
-          <div className="chip c4">
-            <span className="k" aria-hidden="true">
-              <span data-t={chips.launch.from} /> <Icon name="arrow" small /> <span data-t={chips.launch.to} />
-            </span>
-            <span>{chips.launch.label}</span>
           </div>
         </div>
       </div>

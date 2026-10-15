@@ -1,4 +1,4 @@
-import { AVATAR, ENTITY, HERO, PERSON, SITE_URL, UPDATED } from '@/content/site'
+import { AVATAR, ENTITY, HERO, NEXERAH_LIVE, PERSON, SITE_URL, UPDATED } from '@/content/site'
 
 const HOME = `${SITE_URL}/`
 const ID = {
@@ -8,8 +8,18 @@ const ID = {
 }
 
 // Person + ProfilePage + WebSite. Every value is backed by visible text on the page.
-// Nexerah gets no Organization node until nexerah.com answers 200.
+// Nexerah's Organization node joins only once NEXERAH_LIVE is set in site.js, that is, once
+// nexerah.com answers 200: a node for an address that does not resolve is worse than none.
 export function buildGraph() {
+  const studio = NEXERAH_LIVE
+    ? {
+        '@type': 'Organization',
+        '@id': ENTITY.studio.id,
+        name: ENTITY.studio.name,
+        url: ENTITY.studio.url,
+        founder: { '@id': ID.person },
+      }
+    : null
   return {
     '@context': 'https://schema.org',
     '@graph': [
@@ -27,6 +37,7 @@ export function buildGraph() {
           name: ENTITY.employer.name,
           url: ENTITY.employer.url,
         },
+        ...(studio ? { affiliation: { '@id': studio['@id'] } } : {}),
         email: `mailto:${PERSON.email}`,
         sameAs: [PERSON.linkedin, PERSON.github, PERSON.x, PERSON.instagram, ENTITY.employerProfile],
         alumniOf: { '@type': 'CollegeOrUniversity', name: ENTITY.alumniOf },
@@ -50,6 +61,7 @@ export function buildGraph() {
         inLanguage: 'en',
         publisher: { '@id': ID.person },
       },
+      ...(studio ? [studio] : []),
     ],
   }
 }

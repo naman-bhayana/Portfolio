@@ -2,6 +2,7 @@ import { Instrument_Serif, JetBrains_Mono, Poppins } from 'next/font/google'
 
 // Self-hosted by next/font; each face becomes a CSS variable that base.css reads.
 // The first screen is set in Poppins 400, 600 and 700 and the serif, so those are preloaded.
+// 700 also sets every figure and heading further down: nothing on the page needs 800.
 const poppins = Poppins({
   weight: ['400', '600', '700'],
   subsets: ['latin'],
@@ -9,15 +10,6 @@ const poppins = Poppins({
   variable: '--font-poppins',
 })
 
-// Poppins 800 only sets the big figures further down the page. It joins the same family
-// without a preload, so it is not fetched ahead of the avatar.
-const poppinsHeavy = Poppins({
-  weight: '800',
-  subsets: ['latin'],
-  display: 'swap',
-  preload: false,
-  variable: '--font-poppins-heavy',
-})
 
 const serif = Instrument_Serif({
   weight: '400',
@@ -39,4 +31,4 @@ const mono = JetBrains_Mono({
   variable: '--font-mono',
 })
 
-export const fontVariables = `${poppins.variable} ${poppinsHeavy.variable} ${serif.variable} ${mono.variable}`
+export const fontVariables = `${poppins.variable} ${serif.variable} ${mono.variable}`

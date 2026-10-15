@@ -6,11 +6,12 @@ import { fontVariables } from './fonts'
 import '@/styles/base.css'
 import '@/styles/chrome.css'
 import '@/styles/hero.css'
+import '@/styles/wall.css'
 import '@/styles/proof.css'
 import '@/styles/work.css'
-import '@/styles/stack.css'
+import '@/styles/infra.css'
+import '@/styles/studio.css'
 import '@/styles/about.css'
-import '@/styles/nexerah.css'
 import '@/styles/contact.css'
 import '@/styles/responsive.css'
 import '@/styles/motion.css'
@@ -43,11 +44,23 @@ export default function RootLayout({ children }) {
             before .nb because motion.css reaches the page through a sibling selector. */}
         <input id="pause-motion" className="sr" type="checkbox" role="switch" aria-label={MOTION.pause} />
         <div className="nb">
+          {/* The ground under every section: a particle field MotionIsland draws, two slow
+              lights, a film grain and the reading-progress line. All decoration, all fixed,
+              and all outside <main>, so nothing that reads the page meets them. */}
+          <canvas className="field" aria-hidden="true" />
+          <div className="ambient" aria-hidden="true">
+            <i className="orb orb-a" />
+            <i className="orb orb-b" />
+          </div>
+          <div className="grain" aria-hidden="true" />
+          <div className="progress" aria-hidden="true" />
           <SiteHeader />
           <main id="main" tabIndex={-1}>
             {children}
           </main>
           <SiteFooter />
+          {/* The pointer light, moved by MotionIsland on devices with a mouse. */}
+          <div className="cursor" aria-hidden="true" />
         </div>
       </body>
     </html>
