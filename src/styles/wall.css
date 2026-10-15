@@ -56,17 +56,45 @@
   display: none;
 }
 
-.wgrid > li:nth-child(3)::before,
-.wgrid > li:nth-child(4)::before,
-.wgrid > li:nth-child(6)::before,
-.wgrid > li:nth-child(7)::before,
-.wgrid > li:nth-child(8)::before,
-.wgrid > li:nth-child(9)::before,
-.wgrid > li:nth-child(11)::before,
-.wgrid > li:nth-child(12)::before,
-.wgrid > li:nth-child(13)::before,
-.wgrid > li:nth-child(14)::before {
-  display: block;
+/* Which cells start a row depends on the columns, so each layout lists its own: five columns
+   with the label taking two, three with the label taking two, then two with the label taking one. */
+@media (min-width: 1161px) {
+  .wgrid > li:nth-child(3)::before,
+  .wgrid > li:nth-child(4)::before,
+  .wgrid > li:nth-child(6)::before,
+  .wgrid > li:nth-child(7)::before,
+  .wgrid > li:nth-child(8)::before,
+  .wgrid > li:nth-child(9)::before,
+  .wgrid > li:nth-child(11)::before,
+  .wgrid > li:nth-child(12)::before,
+  .wgrid > li:nth-child(13)::before,
+  .wgrid > li:nth-child(14)::before {
+    display: block;
+  }
+}
+
+@media (min-width: 601px) and (max-width: 1160px) {
+  .wgrid > li:nth-child(4)::before,
+  .wgrid > li:nth-child(5)::before,
+  .wgrid > li:nth-child(7)::before,
+  .wgrid > li:nth-child(8)::before,
+  .wgrid > li:nth-child(10)::before,
+  .wgrid > li:nth-child(11)::before,
+  .wgrid > li:nth-child(13)::before,
+  .wgrid > li:nth-child(14)::before {
+    display: block;
+  }
+}
+
+@media (max-width: 600px) {
+  .wgrid > li:nth-child(4)::before,
+  .wgrid > li:nth-child(6)::before,
+  .wgrid > li:nth-child(8)::before,
+  .wgrid > li:nth-child(10)::before,
+  .wgrid > li:nth-child(12)::before,
+  .wgrid > li:nth-child(14)::before {
+    display: block;
+  }
 }
 
 .lg {

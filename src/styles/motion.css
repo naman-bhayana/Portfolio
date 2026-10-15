@@ -333,58 +333,54 @@
       animation-timeline: view();
       animation-range: entry 0% exit 100%;
     }
-    /* The deck recedes plate by plate as the next one slides over. */
+    /* The deck: a case recedes while the next one covers it, driven by the next one's view
+       timeline. The range opens when the next case's top meets this one's bottom (this one is
+       pinned at --top and is --h tall) and closes when the next one is pinned, a --step lower:
+       a case never dims while any of it is still uncovered. Fill backwards; past the range,
+       the receded state is the resting style below. */
     .case:not(:last-child) {
-      transform: scale(.965);
+      animation: recede linear backwards;
+      animation-range: cover calc(100vh - var(--top) - var(--h)) cover calc(100vh - var(--top) - var(--step));
     }
     .case:not(:last-child)::after {
-      opacity: .94;
+      animation: veil linear backwards;
+      animation-range: cover calc(100vh - var(--top) - var(--h)) cover calc(100vh - var(--top) - var(--step));
     }
-    .case:nth-child(1) {
-      animation: recede linear backwards;
-      animation-timeline: --c2;
-      animation-range: entry 0% cover calc(100vh - 108px);
-    }
-    .case:nth-child(2) {
-      animation: recede linear backwards;
-      animation-timeline: --c3;
-      animation-range: entry 0% cover calc(100vh - 120px);
-    }
-    .case:nth-child(3) {
-      animation: recede linear backwards;
-      animation-timeline: --c4;
-      animation-range: entry 0% cover calc(100vh - 132px);
-    }
-    .case:nth-child(4) {
-      animation: recede linear backwards;
-      animation-timeline: --c5;
-      animation-range: entry 0% cover calc(100vh - 144px);
-    }
+    .case:nth-child(1),
     .case:nth-child(1)::after {
-      animation: veil linear backwards;
       animation-timeline: --c2;
-      animation-range: entry 0% cover calc(100vh - 108px);
     }
+    .case:nth-child(2),
     .case:nth-child(2)::after {
-      animation: veil linear backwards;
       animation-timeline: --c3;
-      animation-range: entry 0% cover calc(100vh - 120px);
     }
+    .case:nth-child(3),
     .case:nth-child(3)::after {
-      animation: veil linear backwards;
       animation-timeline: --c4;
-      animation-range: entry 0% cover calc(100vh - 132px);
     }
+    .case:nth-child(4),
     .case:nth-child(4)::after {
-      animation: veil linear backwards;
       animation-timeline: --c5;
-      animation-range: entry 0% cover calc(100vh - 144px);
     }
     /* The rail lights up across as the reader reaches it. */
     .rail::after {
       animation: fill linear backwards;
       animation-timeline: view();
       animation-range: entry 30% cover 55%;
+    }
+  }
+}
+
+/* A covered case rests receded, but only on screen and only while motion runs: paused, printed
+   or with less motion asked for, every case is shown as it is. :where() keeps the specificity
+   low enough for a focused case (below) to come forward. */
+@media screen and (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    :where(#pause-motion:not(:checked)) ~ .nb .case:not(:last-child) {
+      transform: scale(.965);
+    }
+    :where(#pause-motion:not(:checked)) ~ .nb .case:not(:last-child)::after {
+      opacity: .94;
     }
   }
 }

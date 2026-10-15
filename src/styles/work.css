@@ -120,10 +120,6 @@
   background: var(--cyan);
 }
 
-.mods li.next {
-  color: var(--dim);
-}
-
 .tags {
   display: flex;
   flex-wrap: wrap;
@@ -156,10 +152,12 @@
 
 /* ---------------------------------------------------------------- the deck */
 
-/* Five cases, each sticky, each pinned a step lower than the one before. As the next case
-   slides over, the previous one recedes: it scales down a touch and a flat dark veil (its
-   ::after) fades over it. The receded state is the plate's resting style; motion.css runs the
-   animation from bright to receded, driven by the next plate's view timeline. */
+/* Five cases, each sticky, each pinned a step lower than the one before and clear of the
+   sticky header (--top0 per breakpoint, responsive.css). As the next case slides over, the
+   previous one recedes: it scales down a touch and a flat dark veil (its ::after) fades over
+   it, from the moment the two meet (--h, measured by MotionIsland) to the moment the next one
+   is pinned (motion.css). The cases are opaque, so a covered case never shows through, with
+   or without the veil. */
 .deck {
   position: relative;
   margin-top: 12px;
@@ -168,7 +166,10 @@
 }
 
 .case {
-  --top: 96px;
+  --top0: 96px;
+  --step: 12px;
+  --h: 224px;
+  --top: var(--top0);
   position: sticky;
   top: var(--top);
   display: grid;
@@ -180,7 +181,7 @@
   padding: 30px 44px;
   border: 1px solid var(--line2);
   border-radius: 24px;
-  background: rgba(13, 18, 27, .92);
+  background: #0C111A;
   transform-origin: 50% 0;
 }
 
@@ -196,43 +197,34 @@
 }
 
 .case:nth-child(2) {
-  --top: 108px;
+  --top: calc(var(--top0) + var(--step));
   view-timeline-name: --c2;
 }
 
 .case:nth-child(3) {
-  --top: 120px;
+  --top: calc(var(--top0) + 2 * var(--step));
   view-timeline-name: --c3;
 }
 
 .case:nth-child(4) {
-  --top: 132px;
+  --top: calc(var(--top0) + 3 * var(--step));
   view-timeline-name: --c4;
 }
 
 .case:nth-child(5) {
-  --top: 144px;
+  --top: calc(var(--top0) + 4 * var(--step));
   view-timeline-name: --c5;
 }
 
+/* The three shades of the prototype's translucent plates, composited on the page ground. */
 .case:nth-child(2),
 .case:nth-child(4) {
-  background: rgba(10, 14, 22, .92);
+  background: #0A0D15;
 }
 
 .case:nth-child(3),
 .case:nth-child(5) {
-  background: rgba(16, 22, 31, .92);
-}
-
-/* A case holding keyboard focus comes to the top of the stack, unveiled (WCAG 2.4.11). */
-.case:focus-within {
-  z-index: 5;
-  transform: none;
-}
-
-.case:focus-within::after {
-  opacity: 0;
+  background: #0F151D;
 }
 
 .casehead,

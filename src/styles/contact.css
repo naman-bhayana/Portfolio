@@ -14,6 +14,12 @@
   max-width: 1040px;
 }
 
+/* The gradient phrase keeps a hair of room at its end, as in the approved design: without it the
+   balanced headline tips "the" onto the second line once it is split into words. */
+.h2c .grad {
+  padding-right: .06em;
+}
+
 .cbody {
   margin: 24px auto 0;
   max-width: 600px;
@@ -73,11 +79,15 @@
   color: var(--fg);
 }
 
-/* Copy-email result. Always in the page so screen readers announce it; on its own line. */
+/* Copy-email result. Always in the page so screen readers announce it, and never shown: the
+   button's own label says "Copied" (CopyEmail), so nothing moves when it changes. */
 .copystatus {
-  flex: 1 1 100%;
-  font-size: 14px;
-  color: var(--muted);
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .cacts {

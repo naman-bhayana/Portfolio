@@ -105,7 +105,7 @@ main:focus {
   max-width: 100%;
 }
 
-.nb :where(p, h1, h2, h3, ul, ol, dl, dd, figure) {
+.nb :where(p, h1, h2, h3, h4, ul, ol, dl, dd, figure) {
   margin: 0;
 }
 
@@ -432,6 +432,13 @@ main:focus {
 
 /* The words of a split headline, so each can arrive on its own. */
 .wd {
+  display: inline-block;
+}
+
+/* An accent phrase sets as one unit, as it does once the headline is split into words for its
+   arrival (MotionIsland), so a headline wraps the same with motion, without it, or with no
+   script at all. */
+:is(.h2, .h2b, .h2c) > :is(.emc, .emw, .grad) {
   display: inline-block;
 }
 

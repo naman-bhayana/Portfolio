@@ -140,6 +140,8 @@ export const CAPABILITIES = [
 // the same figure as plain text (llms.txt, QA, and the name a screen reader is given for it);
 // `say` replaces that name where the plain text would be read out badly. The one figure in
 // `wall` has the stage; the four in `cells` follow it. These are the only figures on the page.
+// `llms`, here and in WORK, is a first-person line turned into the third person for llms.txt,
+// where "I" would be nobody: that file describes him, the page speaks as him.
 export const PROOF = {
   heading: { lead: 'What’s running ', em: 'today.' },
   sub: 'Figures from live products and client work. Nothing here is a projection.',
@@ -150,6 +152,7 @@ export const PROOF = {
       value: '400+',
       parts: [400, '+'],
       label: 'models behind one gateway I architected. Every organisation gets its own access tier and policy is set once for all of them.',
+      llms: 'models behind one gateway he architected. Every organisation gets its own access tier and policy is set once for all of them.',
       caption: 'Each dot is a model.',
     },
   ],
@@ -202,6 +205,7 @@ export const WORK = {
     link: { href: 'https://ideasiq.ai/', label: 'ideasiq.ai' },
     summary:
       'I lead the engineering team at ideasIQ and own the AI architecture behind a platform that takes an organisation’s ideas from raw submission to scored, strategy-ready deliverables.',
+    llms: 'He leads the engineering team at ideasIQ and owns the AI architecture behind a platform that takes an organisation’s ideas from raw submission to scored, strategy-ready deliverables.',
     modules: [
       'Agent runtime, built in-house',
       'Multi-agent research pipeline',
@@ -248,6 +252,7 @@ export const WORK = {
       tags: ['Fintech', 'Market analytics', 'Live'],
       role: 'Subscription market analytics.',
       mech: 'I led engineering on the data pipelines, the indicators behind its decision tools and billing.',
+      llms: 'Subscription market analytics. He led engineering on the data pipelines, the indicators behind its decision tools and billing.',
       links: [{ label: 'investbeans.com', href: 'https://investbeans.com/' }],
     },
     {
@@ -266,6 +271,7 @@ export const WORK = {
       tags: ['Industrial', 'Hardware integration'],
       role: 'A 2021 Electron app that emissions-testing centres run their gas analysers and smoke meters through.',
       mech: 'I brought it back into service: Node 20 and current serial drivers, the smoke meter’s 53-byte frame and reliable port resets.',
+      llms: 'A 2021 Electron app that emissions-testing centres run their gas analysers and smoke meters through. He brought it back into service: Node 20 and current serial drivers, the smoke meter’s 53-byte frame and reliable port resets.',
       links: [],
     },
     {
@@ -427,7 +433,7 @@ export const CONTACT = {
   write: 'Write to me',
   resumeLabel: 'Resume',
   microline: 'NDA before we talk, if you want one. Delhi NCR · US, EU and AU hours.',
-  copy: { button: 'Copy', done: 'Email address copied', fallback: 'Press Ctrl+C or Cmd+C to copy' },
+  copy: { button: 'Copy', copied: 'Copied', hint: 'email address', done: 'Email address copied', fallback: 'Press Ctrl+C or Cmd+C to copy' },
 }
 
 export const FOOTER = {

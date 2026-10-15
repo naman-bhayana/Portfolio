@@ -1,6 +1,5 @@
 import { CONTACT, MAILTO, PERSON, RESUME_DRIVE_URL, RESUME_PATH } from '@/content/site'
 import CopyEmail from './CopyEmail'
-import Icon from './Icon'
 
 // No form: the address itself is the call to action, with a mailto and a copy button.
 export default function Contact() {
@@ -10,7 +9,7 @@ export default function Contact() {
       <div className="wrap contactin" data-rv="seq">
         <h2 id="contact-heading" className="h2c">
           {CONTACT.heading.lead}
-          <span className="em grad">{CONTACT.heading.em}</span>
+          <span className="grad">{CONTACT.heading.em}</span>
         </h2>
         <p className="cbody">{CONTACT.body}</p>
         <p className="cextra">{CONTACT.extra}</p>
@@ -22,7 +21,7 @@ export default function Contact() {
         </div>
         <p className="cacts">
           <a className="pill pill-primary" href={MAILTO}>
-            {CONTACT.write} <Icon name="arrow" />
+            {CONTACT.write}
           </a>
           {RESUME_DRIVE_URL && (
             <>

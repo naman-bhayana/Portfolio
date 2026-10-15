@@ -49,7 +49,7 @@ export default function About() {
             <p className="disclosure">{ABOUT.disclosure}</p>
           </div>
           <div className="log" data-rv="seq">
-            <p className="eyebrow">{TIMELINE.label}</p>
+            <h3 className="eyebrow">{TIMELINE.label}</h3>
             <ol className="ledger" role="list">
               {TIMELINE.events.map((event) => (
                 <li key={event.when}>

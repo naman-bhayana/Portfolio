@@ -65,13 +65,14 @@
   width: min(100%, 340px);
 }
 
-/* 400 dots, 20 by 20: one dot in the centre of each tile of a repeating gradient, so the grid
-   costs the layout nothing. With motion on they fly in on a canvas first (MotionIsland,
-   which lands them on the same tile centres); the grid fades in once they have landed. */
+/* 400 dots, 20 by 20: a fine pinpoint in the centre of each tile of a repeating gradient, so
+   the grid reads as a texture and costs the layout nothing. With motion on they fly in on a
+   canvas first (MotionIsland), shrinking onto the same tile centres; the grid fades in once
+   they have landed. */
 .dotfield {
   aspect-ratio: 1;
   width: 100%;
-  background-image: radial-gradient(circle, rgba(0, 225, 255, .78) 2.5px, transparent 3.5px);
+  background-image: radial-gradient(circle, rgba(0, 225, 255, .78) .55px, transparent 1.15px);
   background-size: 5% 5%;
   transition: opacity .5s;
 }

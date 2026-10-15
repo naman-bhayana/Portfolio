@@ -1,10 +1,15 @@
 import { WORK } from '@/content/site'
-import { LOGO_WIDTHS, optimised, srcSet } from '@/lib/images'
+import { andList } from '@/lib/and-list'
+import { IMAGE_WIDTHS, LOGO_WIDTHS, optimised, srcSet } from '@/lib/images'
 import { spaced } from '@/lib/spaced'
 import Shot from './Shot'
 
 const CARD_SIZES = '(max-width: 960px) 92vw, 380px'
 const FLAGSHIP_SIZES = '(max-width: 960px) 86vw, 560px'
+// A case's wordmark is drawn up to 290 px wide on a desktop and 230 px on a phone (heights in
+// work.css times each mark's aspect), so a 3x phone needs about 690 px of it.
+const WORDMARK_SIZES = '(max-width: 600px) 230px, 290px'
+const WORDMARK_WIDTHS = [...LOGO_WIDTHS, ...IMAGE_WIDTHS.slice(0, 2)]
 
 // A case is headed by its wordmark. The name is there as text for everything that reads the
 // HTML; the image only draws it.
@@ -16,8 +21,8 @@ function Wordmark({ build }) {
       <img
         className={`wm wm-${mark.id}`}
         src={optimised(mark.file, LOGO_WIDTHS[1])}
-        srcSet={srcSet(mark.file, LOGO_WIDTHS)}
-        sizes="(max-width: 600px) 150px, 200px"
+        srcSet={srcSet(mark.file, WORDMARK_WIDTHS)}
+        sizes={WORDMARK_SIZES}
         width={mark.width}
         height={mark.height}
         alt=""
@@ -26,6 +31,27 @@ function Wordmark({ build }) {
       />
       <span className="sr">{build.name}</span>
     </>
+  )
+}
+
+// A row of the index that groups several builds is read as a list ("A, B and C") and drawn as
+// names set apart. The drawn names are CSS (data-t), so the text holds each name once.
+function IndexName({ builds }) {
+  const names = builds.map((build) => build.name)
+  if (names.length === 1) {
+    return (
+      <h4 className="ixname">
+        <span>{names[0]}</span>
+      </h4>
+    )
+  }
+  return (
+    <h4 className="ixname">
+      <span className="sr">{andList(names)}</span>
+      {names.map((name) => (
+        <span key={name} aria-hidden="true" data-t={name} />
+      ))}
+    </h4>
   )
 }
 
@@ -135,11 +161,11 @@ export default function Work() {
           ))}
         </div>
         <div className="index" data-rv="seq">
-          <p className="h3">{WORK.indexLabel}</p>
+          <h3 className="h3">{WORK.indexLabel}</h3>
           <ul className="ix" role="list">
             {WORK.index.map((row) => (
               <li key={row.sector}>
-                <h3 className="ixname">{spaced(row.builds.map((build) => <span key={build.id}>{build.name}</span>))}</h3>
+                <IndexName builds={row.builds} />
                 <p className="ixsector">{row.sector}</p>
                 <p className="ixwhat">{row.summary}</p>
               </li>
