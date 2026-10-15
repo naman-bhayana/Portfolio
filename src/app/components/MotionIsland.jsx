@@ -457,6 +457,20 @@ export default function MotionIsland() {
       on(window, 'resize', setRail, { passive: true })
     }
 
+    // ---------------------------------------------------------------- far scroll-driven parts
+    // A scroll-driven animation whose subject is several screens away is serviced by Chrome
+    // on the main thread, every frame, and every other loop's timing is updated with it. So
+    // the lights, the brand card, the portrait and the cases are paused while they are more
+    // than a screen and a half from the viewport (motion.css), and resumed on the way back.
+    const far = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) entry.target.classList.toggle('far', !entry.isIntersecting)
+      },
+      { rootMargin: '150% 0px 150% 0px' },
+    )
+    observers.push(far)
+    for (const el of document.querySelectorAll('.light, .para-soft, .para-img, .case')) far.observe(el)
+
     // ---------------------------------------------------------------- the nav
     const hero = document.querySelector('.hero')
     const pairs = [...document.querySelectorAll('.nav .links a')].flatMap((a) => {

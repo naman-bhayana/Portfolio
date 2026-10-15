@@ -389,6 +389,18 @@
   }
 }
 
+/* A scroll-driven part more than a screen and a half from the viewport lets go of its animation
+   (MotionIsland sets .far): Chrome services a view-timeline animation whose subject is that far
+   away on the main thread, every frame, and updates every other loop with it. Pausing is not
+   enough, the timeline stays attached; only the name is dropped, so the timeline is kept and
+   the animation returns, at the right point, before the part is back on screen. */
+.far,
+.far::after,
+.case.far,
+.case.far::after {
+  animation-name: none;
+}
+
 /* A case holding keyboard focus comes to the top of the stack, unveiled (WCAG 2.4.11). */
 .deck .case:focus-within {
   z-index: 5;
