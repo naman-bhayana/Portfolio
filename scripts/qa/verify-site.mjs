@@ -36,6 +36,7 @@ process.emitWarning = (w, ...rest) => {
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
 const SITE = await import(pathToFileURL(path.join(REPO_ROOT, 'src', 'content', 'site.js')).href)
+const { andList } = await import(pathToFileURL(path.join(REPO_ROOT, 'src', 'lib', 'and-list.js')).href)
 const { SITE_URL, UPDATED, PERSON, HEAD, HERO, WALL, CAPABILITIES, PROOF, WORK, BUILDS, INFRA, ABOUT, TIMELINE } = SITE
 const { STUDIO, CONTACT, FOOTER, NEXERAH_URL, NEXERAH_LIVE } = SITE
 const { OG_IMAGE, SHARE, AVATAR, RESUME_PATH, RESUME_DRIVE_URL } = SITE
@@ -294,12 +295,12 @@ await section('C1', async () => {
   // Work headings: every build, in page order
   const names = BUILDS.map((i) => i.name)
   const workRoot = body.querySelector('#work')
-  const h3s = (workRoot || body).querySelectorAll('h3').map((h) => norm(h.text))
-  // An index row names its builds in one heading, so the headings are read as one run of names.
-  const run = h3s.join(' ')
-  const want = names.join(' ')
-  check(!!workRoot && run === want, 'C1.work-h3', `#work h3s read ${names.length} builds in order`,
-    workRoot ? `#work h3s read ${q(run, 120)}, expected ${q(want, 120)}` : 'no #work section')
+  // The flagship and the cases are h3s; the index rows are h4s under the index's own h3, and a
+  // row that groups builds names them as one list ("A, B and C").
+  const headings = (workRoot || body).querySelectorAll('h3, h4').map((h) => norm(h.text)).filter((t) => t !== norm(WORK.indexLabel))
+  const want = [WORK.flagship.name, ...WORK.cards.map((c) => c.name), ...WORK.index.map((r) => andList(r.builds.map((b) => b.name)))]
+  check(!!workRoot && JSON.stringify(headings) === JSON.stringify(want), 'C1.work-h3', `#work headings name all ${names.length} builds in order`,
+    workRoot ? `#work headings are [${headings.join(' | ')}], expected [${want.join(' | ')}]` : 'no #work section')
 
   // The number of builds is typed into the copy by hand, as a figure and as a word. Hold
   // every mention to the length of the list.
@@ -346,7 +347,8 @@ await section('C1', async () => {
 
   // Every copy leaf. CONTACT.copy holds interaction states (copied / fallback) that only exist
   // after hydration, so it is excluded. The Resume link is rendered only once RESUME_DRIVE_URL
-  // is set in site.js. `alt` leaves are image descriptions; `visual` names a drawn diagram.
+  // is set in site.js. `alt` leaves are image descriptions; `visual` names a drawn diagram;
+  // `llms` lines are the third-person versions written for llms.txt only.
   // A leaf also counts when CSS draws it from data-t (decoration) or it names something for
   // screen readers.
   const groups = { HERO, AVATAR, WALL, CAPABILITIES, PROOF, WORK, INFRA, STUDIO, ABOUT, TIMELINE, CONTACT, FOOTER }
@@ -357,7 +359,7 @@ await section('C1', async () => {
   const missing = []
   for (const [g, v] of Object.entries(groups)) {
     for (const leaf of stringLeaves(v, g)) {
-      if (!isCopyLeaf(leaf) || leaf.key === 'visual' || leaf.path.startsWith('CONTACT.copy')) continue
+      if (!isCopyLeaf(leaf) || leaf.key === 'visual' || leaf.key === 'llms' || leaf.path.startsWith('CONTACT.copy')) continue
       if (leaf.path === 'CONTACT.resumeLabel' && !RESUME_DRIVE_URL) continue
       total++
       const value = norm(leaf.value)
@@ -670,7 +672,17 @@ await section('LD', async () => {
     check(!!org && org.url === NEXERAH_URL && live.status === 200, 'LD.nexerah', `Organization Nexerah at ${NEXERAH_URL}, which answers 200`,
       !org ? 'NEXERAH_LIVE is set but the graph has no Nexerah Organization node' : `${NEXERAH_URL} -> ${fetchErr(live)}: unset NEXERAH_LIVE until it answers 200`)
   } else {
-    check(!org, 'LD.nexerah', 'no Nexerah Organization node while NEXERAH_LIVE is unset', 'a Nexerah Organization node is in the graph but NEXERAH_LIVE is unset')
+    // Nor any other nexerah.com address in the graph: the Person's mailto is the one exception.
+    const stray = []
+    const walkLd = (v, p) => {
+      if (typeof v === 'string') {
+        if (/nexerah\.com/i.test(v) && !(p.endsWith('.email') && v.startsWith('mailto:'))) stray.push(p)
+      } else if (Array.isArray(v)) v.forEach((x, i) => walkLd(x, `${p}[${i}]`))
+      else if (v && typeof v === 'object') for (const [k, x] of Object.entries(v)) walkLd(x, `${p}.${k}`)
+    }
+    walkLd(ld, '$')
+    check(!org && !stray.length, 'LD.nexerah', 'no Nexerah node and no nexerah.com address but the email while NEXERAH_LIVE is unset',
+      [org && 'a Nexerah Organization node is in the graph', ...stray.slice(0, 4).map((p) => `${p} holds nexerah.com`)].filter(Boolean).join('; '))
   }
 
   if (page) {
@@ -738,6 +750,10 @@ await section('T7', async () => {
     const missingWork = BUILDS.filter((i) => !llms.text.includes(i.name)).map((i) => i.name)
     if (missingWork.length) problems.push(`work items missing: ${missingWork.join(', ')}`)
     if (llms.text.includes('/work')) problems.push("contains '/work'")
+    // The file describes him; the page's first person would be nobody's here. Link targets are
+    // left out of the test.
+    const firstPerson = lines.filter((l) => /(^|[^\p{L}’'])(I|I’m|I’ve|I’d|I’ll|my|me|mine)(?![\p{L}’'])/u.test(l.replace(/\]\([^)]*\)/g, ']')))
+    if (firstPerson.length) problems.push(`${firstPerson.length} line(s) in the first person, first ${q(firstPerson[0].trim(), 70)}`)
     const linkItems = sectionLines.filter((l) => /^\s*- \[/.test(l)).length
     const detailItems = (firstH2 === -1 ? lines : lines.slice(0, firstH2)).filter((l) => /^\s*- /.test(l)).length
     check(!problems.length, 'T7.llms', `200 text/plain, ${linkItems} link items, ${detailItems} detail items`, problems.join('; '))
@@ -772,6 +788,22 @@ await section('T7', async () => {
   }
   const av = await get(at(AVATAR.src))
   check(av.status === 200 && av.contentType.startsWith('image/png'), 'T7.avatar', `${AVATAR.src} 200 image/png`, `${AVATAR.src} -> ${fetchErr(av)} ${av.contentType}`)
+
+  // Every image the page asks for, in every srcset width, is served: the optimiser answers only
+  // for the widths, qualities and paths next.config.js allows.
+  const imageUrls = new Set()
+  for (const img of doc.querySelectorAll('img')) {
+    for (const attr of ['src', 'srcset']) {
+      for (const part of (img.getAttribute(attr) || '').split(',')) {
+        const u = part.trim().split(/\s+/)[0]
+        if (u) imageUrls.add(u.replace(/&amp;/g, '&'))
+      }
+    }
+  }
+  const imageRes = await Promise.all([...imageUrls].map(async (u) => [u, await get(toBase(u))]))
+  const badImages = imageRes.filter(([, r]) => r.status !== 200 || !r.contentType.startsWith('image/'))
+  check(imageUrls.size > 0 && !badImages.length, 'T7.images', `${imageUrls.size} image URLs from src and srcset return 200 image/*`,
+    `${badImages.length} of ${imageUrls.size} image URLs fail: ${badImages.slice(0, 4).map(([u, r]) => `${u} -> ${fetchErr(r)} ${r.contentType}`).join('; ')}`)
 
   // same-site URLs listed in sitemap.xml and llms.txt
   const urls = [...new Set([...sitemapLocs, ...llmsUrls].filter(isSameSite))]

@@ -567,7 +567,12 @@ for (const vp of [
   const paused = await page.evaluate(() => ({
     checked: document.getElementById('pause-motion').checked,
     animations: document.getAnimations().length,
-    transparent: [...document.querySelectorAll('[data-rv]')].flatMap((el) => [el, ...el.children]).filter((el) => Number(getComputedStyle(el).opacity) < 0.99).length,
+    // Everything an arrival or the deck could hold back: the blocks and their parts, the words
+    // of split headlines, the wall's marks, and the veil over every case.
+    transparent: [...document.querySelectorAll('[data-rv]')]
+      .flatMap((el) => [el, ...el.children, ...el.querySelectorAll('.wcell, .wd, .node, .flagtext > *')])
+      .filter((el) => Number(getComputedStyle(el).opacity) < 0.99).length,
+    veiled: [...document.querySelectorAll('.case')].filter((el) => Number(getComputedStyle(el, '::after').opacity) > 0.01).length,
   }))
   const figures = await unfinishedFigures(page)
   await page.locator('.pause').click()
@@ -579,7 +584,7 @@ for (const vp of [
     arriving: [...document.querySelectorAll('.hero :is(.lede, .cta, .chip)')].filter((el) => Number(getComputedStyle(el).opacity) < 0.99).length,
   }))
   check(
-    running > 0 && secondStop.id === 'pause-motion' && !!secondStop.name && paused.checked && paused.animations === 0 && paused.transparent === 0 && figures.length === 0 && !resumed.checked && resumed.animations > 0 && resumed.arriving === 0,
+    running > 0 && secondStop.id === 'pause-motion' && !!secondStop.name && paused.checked && paused.animations === 0 && paused.transparent === 0 && paused.veiled === 0 && figures.length === 0 && !resumed.checked && resumed.animations > 0 && resumed.arriving === 0,
     'T8.pause',
     `second tab stop "${secondStop.name}"; Space stops ${running} animations and shows everything; a click resumes without replaying the arrival`,
     JSON.stringify({ running, secondStop, paused, figures, resumed }),
@@ -646,9 +651,9 @@ for (const vp of [
 
 // ---------------------------------------------------------------- main thread at rest
 // Every loop animates opacity or a transform, so the compositor runs it alone, and the particle
-// field sleeps once the visitor rests. A page that sits still must ask the main thread for
-// nothing: no style recalculation, no layout. (A frame loop that kept running would also make
-// Chrome update every CSS loop on the main thread each frame.)
+// field draws in a worker (MotionIsland). A page that sits still must ask the main thread for
+// nothing: no style recalculation, no layout. (A frame loop on the main thread would also make
+// Chrome update every CSS loop there, each frame.)
 {
   const { context, page } = await newPage({ width: 412, height: 823, mobile: true })
   const cdp = await context.newCDPSession(page)
@@ -658,8 +663,8 @@ for (const vp of [
   const busy = []
   for (const selector of ['.hero', '#proof .pstage', '.flag', '.deck', '.rail', '#contact']) {
     await page.evaluate((sel) => document.querySelector(sel).scrollIntoView({ block: 'center', behavior: 'instant' }), selector)
-    // The particle field runs for 8 s after the last input (the scroll above), then sleeps.
-    await page.waitForTimeout(9500)
+    // The particle field keeps drifting, in its worker; the main thread must rest all the same.
+    await page.waitForTimeout(3000)
     const before = await counters()
     await page.waitForTimeout(2000)
     const after = await counters()
