@@ -214,7 +214,9 @@ export default function MotionIsland() {
     // A block below the fold waits (.rv-wait) and plays in when it comes into view (.rv-in).
     // Once every one-shot animation inside it has played, the block lets go of the class, so
     // nothing stays on a moving layer. A block that takes keyboard focus first is shown at once.
-    html.classList.add('rv-on')
+    // The blocks are marked once the browser is idle, after hydration and the first layout.
+    const whenIdle = window.requestIdleCallback ?? ((cb) => setTimeout(cb, 50))
+    const cancelIdle = window.cancelIdleCallback ?? clearTimeout
     // Headline words, so each can arrive on its own.
     const splitWords = (el) => {
       let n = 0
@@ -225,8 +227,12 @@ export default function MotionIsland() {
         span.append(node)
         return span
       }
+      // Elements become one word each and text is split at its spaces. Anything else goes:
+      // React leaves a comment between two text nodes, and wrapped as a word that empty box
+      // can start a line and push the space after it into view.
       const parts = [...el.childNodes].flatMap((node) => {
-        if (node.nodeType !== Node.TEXT_NODE) return [word(node)]
+        if (node.nodeType === Node.ELEMENT_NODE) return [word(node)]
+        if (node.nodeType !== Node.TEXT_NODE) return []
         return node.textContent.split(/(\s+)/).flatMap((part) => (!part ? [] : /^\s+$/.test(part) ? [' '] : [word(document.createTextNode(part))]))
       })
       el.replaceChildren(...parts)
@@ -243,11 +249,18 @@ export default function MotionIsland() {
       if (block.classList.contains('pstage')) assemble(block)
     }
     const arriving = onEnter({ rootMargin: '0px 0px -10% 0px', threshold: 0.12 }, (blocks) => blocks.forEach(reveal))
-    for (const block of [...document.querySelectorAll('[data-rv]')].filter(belowFold)) {
-      block.querySelectorAll(':scope > .h2, :scope > .h2b, :scope > .h2c').forEach(splitWords)
-      block.classList.add('rv-wait')
-      arriving.observe(block)
-    }
+    const idleHandle = whenIdle(
+      () => {
+        if (still()) return
+        html.classList.add('rv-on')
+        for (const block of [...document.querySelectorAll('[data-rv]')].filter(belowFold)) {
+          block.querySelectorAll(':scope > .h2, :scope > .h2b, :scope > .h2c').forEach(splitWords)
+          block.classList.add('rv-wait')
+          arriving.observe(block)
+        }
+      },
+      { timeout: 2000 },
+    )
     const revealFocused = (event) => {
       const block = event.target.closest?.('.rv-wait')
       if (!block) return
@@ -354,16 +367,18 @@ export default function MotionIsland() {
         ctx.fill()
       }
     }
+    // The field starts on the visitor's first scroll, touch, key or pointer move, not at load:
+    // the hero is already moving, and the first seconds belong to the page's own rendering.
     const wake = () => {
       F.idle = performance.now()
-      if (field && !F.raf && !still() && !document.hidden) F.raf = requestAnimationFrame(step)
+      if (!field || F.raf || still() || document.hidden) return
+      if (!F.ctx) sizeField()
+      F.raf = requestAnimationFrame(step)
     }
     if (field) {
-      sizeField()
-      wake()
       // A phone's address bar changes the height on every scroll; only a real change resizes.
       on(window, 'resize', () => {
-        if (window.innerWidth !== F.W || Math.abs(window.innerHeight - F.H) > 160) sizeField()
+        if (F.ctx && (window.innerWidth !== F.W || Math.abs(window.innerHeight - F.H) > 160)) sizeField()
         wake()
       }, { passive: true })
       on(document, 'visibilitychange', wake)
@@ -388,12 +403,12 @@ export default function MotionIsland() {
     const tilts = []
     let tiltRaf = 0
     if (hover) {
+      // The light appears where the pointer first moves, and follows it from there.
       const cursor = document.querySelector('.cursor')
-      cursor?.classList.add('on')
-      let cx = window.innerWidth / 2
-      let cy = window.innerHeight / 2
-      let tx = cx
-      let ty = cy
+      let cx = 0
+      let cy = 0
+      let tx = 0
+      let ty = 0
       let lastCursor = ''
       const loop = () => {
         tiltRaf = 0
@@ -444,6 +459,11 @@ export default function MotionIsland() {
       on(document, 'pointermove', (e) => {
         tx = e.clientX
         ty = e.clientY
+        if (cursor && !cursor.classList.contains('on')) {
+          cx = tx
+          cy = ty
+          cursor.classList.add('on')
+        }
         run()
       }, { passive: true })
     }
@@ -530,6 +550,7 @@ export default function MotionIsland() {
     on(window, 'beforeprint', settle)
 
     return () => {
+      cancelIdle(idleHandle)
       observers.forEach((observer) => observer.disconnect())
       listeners.forEach((off) => off())
       document.fonts?.removeEventListener('loadingdone', resyncSoon)

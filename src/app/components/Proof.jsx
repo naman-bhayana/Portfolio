@@ -1,7 +1,5 @@
 import { PROOF } from '@/content/site'
 
-const DOTS = 400 // one per model, as the caption says
-
 // A figure as it is drawn. Numbers carry data-count: MotionIsland scrambles and counts them
 // up, and the server HTML already holds the final value for everyone else. A unit ("+", "%",
 // "-stage") is set in the serif; a plain hyphen stays in the figure's own face.
@@ -45,8 +43,9 @@ export default function Proof() {
           </h2>
           <p className="sub">{PROOF.sub}</p>
         </div>
-        {/* The stage: the one figure that gets a visual, a dot per model. MotionIsland flies
-            the dots in from across the stage on a canvas; the grid of dots is the still state. */}
+        {/* The stage: the one figure that gets a visual, a dot per model. The 400 dots are one
+            repeating gradient (proof.css), not 400 elements; MotionIsland flies them in from
+            across the stage on a canvas first, and the grid is the still state. */}
         <div className="pstage" data-rv="stage">
           <div className="hfig">
             <div className="phalo" aria-hidden="true" />
@@ -57,11 +56,7 @@ export default function Proof() {
             <p className="src">{models.source}</p>
           </div>
           <figure className="fieldwrap">
-            <div className="dotfield" aria-hidden="true">
-              {Array.from({ length: DOTS }, (_, i) => (
-                <i key={i} />
-              ))}
-            </div>
+            <div className="dotfield" aria-hidden="true" />
             <figcaption className="cap">{models.caption}</figcaption>
           </figure>
         </div>
