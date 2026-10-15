@@ -35,14 +35,17 @@ const list = (items, max = 6) => `${items.slice(0, max).join(' | ')}${items.leng
 
 const MOTION = /^(animation(-.+)?|view-timeline(-.+)?|scroll-timeline(-.+)?|timeline-scope)$/
 const squash = (text) => text.replace(/\s+/g, '').replace(/"/g, "'").toLowerCase()
-// Spacing, the minifier's one-colon ::before / ::after and its dropped `*` before a
-// pseudo-element are not differences.
+// Spacing, the minifier's one-colon ::before / ::after, its dropped `*` before a
+// pseudo-element, its unquoted attribute values and its :first-child are not differences.
 const selectorKey = (selector) =>
   selector
     .replace(/\s+/g, ' ')
     .replace(/\s*([>~+,])\s*/g, '$1')
     .replace(/::(before|after)/g, ':$1')
     .replace(/(^|[ >~+])\*(?=:)/g, '$1')
+    .replace(/\[([\w-]+)=["']?([\w-]+)["']?\]/g, '[$1=$2]')
+    .replace(/:nth-child\(1\)/g, ':first-child')
+    .replace(/:nth-last-child\(1\)/g, ':last-child')
     .trim()
     .toLowerCase()
 const isKeyframeStep = (rule) => rule.parent?.type === 'atrule' && /keyframes$/.test(rule.parent.name)

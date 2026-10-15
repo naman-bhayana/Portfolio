@@ -69,10 +69,12 @@ async function scrollThrough(page, step = 300, pause = 60) {
   await page.waitForTimeout(500)
 }
 
-// Reveal blocks that have been reached (at or above the viewport) but are not fully opaque.
+// Arrival blocks, and the parts of them the arrival moves, that have been reached (at or above
+// the viewport) but are not fully opaque.
 const stuckReveals = (page) =>
   page.evaluate(() =>
-    [...document.querySelectorAll('.rv')]
+    [...document.querySelectorAll('[data-rv]')]
+      .flatMap((el) => [el, ...el.children, ...el.querySelectorAll('.wcell, .node, .flagtext > *')])
       .filter((el) => el.getBoundingClientRect().top < innerHeight && Number(getComputedStyle(el).opacity) < 0.99)
       .map((el) => el.id || String(el.className)),
   )
@@ -252,10 +254,10 @@ for (const textSpacing of [false, true]) {
   }
   const overflow = await page.evaluate(() => {
     const width = document.documentElement.clientWidth
-    // The marquee and the isometric plates are decorative and clipped on purpose. A caret is
-    // an empty box as wide as its role, moved to the end of the line; only its mark shows.
+    // The marquee and the scenes' lights are decorative and clipped on purpose. A caret is an
+    // empty box as wide as its role, moved to the end of the line; only its mark shows.
     const wide = [...document.querySelectorAll('main *, header *, footer *')]
-      .filter((el) => !el.closest('.mq, .iso, .caret') && el.getBoundingClientRect().right > width + 0.5)
+      .filter((el) => !el.closest('.mq, .caret, .light, .phalo') && el.getBoundingClientRect().right > width + 0.5)
       .map((el) => el.id || el.tagName.toLowerCase())
     return { scrollWidth: document.documentElement.scrollWidth, width, wide: [...new Set(wide)].slice(0, 6) }
   })
@@ -404,6 +406,8 @@ for (const textSpacing of [false, true]) {
   await cdp.send('Emulation.setCPUThrottlingRate', { rate: PHONE_SLOWDOWN })
   await page.goto(`${BASE}/`, { waitUntil: 'commit' })
   await page.waitForFunction(() => document.querySelector('.role .t1 .tc')?.getAnimations().length > 0)
+  // The particle field drifts behind the line; the frames are compared without it.
+  await page.addStyleTag({ content: '.field, .ambient { display: none !important; }' })
   const holds = (await roleHolds(page)).slice(0, 2)
   const clock = () =>
     page.evaluate(() => {
@@ -462,10 +466,14 @@ for (const textSpacing of [false, true]) {
   })
   const unsettled = await page.evaluate(() => {
     const at = (value, rest) => value === 'none' || value.split(' ').every((part) => parseFloat(part) === rest)
-    return [...document.querySelectorAll('.hero :is(.status, .hello, .role, .lede, .cta, .trust, .name .l, .stage, .chip)')]
+    return [...document.querySelectorAll('.hero :is(.hello, .role, .lede, .cta, .name .l, .stage, .chip)')]
       .filter((el) => {
         const style = getComputedStyle(el)
-        const moved = !['none', 'matrix(1, 0, 0, 1, 0, 0)'].includes(style.transform) || !at(style.scale, 1) || (!el.matches('.chip') && !at(style.translate, 0))
+        // The letters arrive by transform; everything else by translate, scale and opacity. The
+        // chips keep bobbing and stand proud of the stage, so neither is read for them.
+        const moved = el.matches('.name .l')
+          ? !['none', 'matrix(1, 0, 0, 1, 0, 0)'].includes(style.transform)
+          : !at(style.scale, 1) || (!el.matches('.chip') && !at(style.translate, 0))
         return Number(style.opacity) < 0.99 || moved
       })
       .map((el) => el.className)
@@ -480,7 +488,7 @@ for (const textSpacing of [false, true]) {
   await page.evaluate(() => window.scrollTo({ top: 2, behavior: 'instant' }))
   await page.waitForTimeout(300)
   const armed = await shown()
-  for (const selector of ['#proof .wall', '#proof .row2']) {
+  for (const selector of ['#proof .pstage', '#proof .figs']) {
     await page.evaluate((sel) => document.querySelector(sel).scrollIntoView({ block: 'center' }), selector)
     await page.waitForTimeout(1900)
   }
@@ -518,7 +526,7 @@ for (const vp of [
   await page.goto(`${BASE}/`, { waitUntil: 'networkidle' })
   const driven = await page.evaluate(() => ({
     supported: CSS.supports('animation-timeline: view()'),
-    timelines: ['.rv', '.layer.rv', '.plate', '.dots .on'].map((sel) => `${sel}=${getComputedStyle(document.querySelector(sel)).animationTimeline}`),
+    timelines: ['.light', '.case', '.progress', '.pimg'].map((sel) => `${sel}=${getComputedStyle(document.querySelector(sel)).animationTimeline}`),
   }))
   if (!driven.supported) report('INFO', `T8.scroll-driven.${vp.name}`, 'this Chrome has no scroll-driven animations; the fallback path was exercised instead')
   else check(driven.timelines.every((t) => !/=auto(,|$)|=$/.test(t)), `T8.scroll-driven.${vp.name}`, driven.timelines.join('  '), `a reveal lost its timeline: ${driven.timelines.join('  ')}`)
@@ -559,7 +567,7 @@ for (const vp of [
   const paused = await page.evaluate(() => ({
     checked: document.getElementById('pause-motion').checked,
     animations: document.getAnimations().length,
-    transparent: [...document.querySelectorAll('.rv')].filter((el) => Number(getComputedStyle(el).opacity) < 0.99).length,
+    transparent: [...document.querySelectorAll('[data-rv]')].flatMap((el) => [el, ...el.children]).filter((el) => Number(getComputedStyle(el).opacity) < 0.99).length,
   }))
   const figures = await unfinishedFigures(page)
   await page.locator('.pause').click()
@@ -568,7 +576,7 @@ for (const vp of [
     checked: document.getElementById('pause-motion').checked,
     animations: document.getAnimations().length,
     // Resuming must not play the hero's arrival again.
-    arriving: [...document.querySelectorAll('.hero :is(.status, .lede, .cta, .trust, .chip)')].filter((el) => Number(getComputedStyle(el).opacity) < 0.99).length,
+    arriving: [...document.querySelectorAll('.hero :is(.lede, .cta, .chip)')].filter((el) => Number(getComputedStyle(el).opacity) < 0.99).length,
   }))
   check(
     running > 0 && secondStop.id === 'pause-motion' && !!secondStop.name && paused.checked && paused.animations === 0 && paused.transparent === 0 && figures.length === 0 && !resumed.checked && resumed.animations > 0 && resumed.arriving === 0,
@@ -637,8 +645,10 @@ for (const vp of [
 }
 
 // ---------------------------------------------------------------- main thread at rest
-// Every loop animates opacity or a transform, so the compositor runs it alone. A page that
-// sits still must ask the main thread for nothing: no style recalculation, no layout.
+// Every loop animates opacity or a transform, so the compositor runs it alone, and the particle
+// field sleeps once the visitor rests. A page that sits still must ask the main thread for
+// nothing: no style recalculation, no layout. (A frame loop that kept running would also make
+// Chrome update every CSS loop on the main thread each frame.)
 {
   const { context, page } = await newPage({ width: 412, height: 823, mobile: true })
   const cdp = await context.newCDPSession(page)
@@ -646,9 +656,10 @@ for (const vp of [
   const counters = async () => Object.fromEntries((await cdp.send('Performance.getMetrics')).metrics.map((m) => [m.name, m.value]))
   await page.goto(`${BASE}/`, { waitUntil: 'networkidle' })
   const busy = []
-  for (const selector of ['.hero', '#proof .wall', '.flagviz', '.cases', '.stackgrid', '#contact']) {
+  for (const selector of ['.hero', '#proof .pstage', '.flag', '.deck', '.rail', '#contact']) {
     await page.evaluate((sel) => document.querySelector(sel).scrollIntoView({ block: 'center', behavior: 'instant' }), selector)
-    await page.waitForTimeout(3000)
+    // The particle field runs for 8 s after the last input (the scroll above), then sleeps.
+    await page.waitForTimeout(9500)
     const before = await counters()
     await page.waitForTimeout(2000)
     const after = await counters()

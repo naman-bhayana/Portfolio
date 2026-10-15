@@ -36,8 +36,8 @@ process.emitWarning = (w, ...rest) => {
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
 const SITE = await import(pathToFileURL(path.join(REPO_ROOT, 'src', 'content', 'site.js')).href)
-const { SITE_URL, UPDATED, PERSON, HEAD, HERO, CAPABILITIES, PROOF, WORK, BUILDS, STACK, ABOUT, TIMELINE } = SITE
-const { NEXERAH, CONTACT, FOOTER } = SITE
+const { SITE_URL, UPDATED, PERSON, HEAD, HERO, WALL, CAPABILITIES, PROOF, WORK, BUILDS, INFRA, ABOUT, TIMELINE } = SITE
+const { STUDIO, CONTACT, FOOTER, NEXERAH_URL, NEXERAH_LIVE } = SITE
 const { OG_IMAGE, SHARE, AVATAR, RESUME_PATH, RESUME_DRIVE_URL } = SITE
 
 // ---------------------------------------------------------------- arguments
@@ -242,15 +242,11 @@ await section('C1', async () => {
   check(!glued.length, 'C1.text-flow', 'no text is glued to its neighbour in the HTML',
     `${glued.length} place(s) read as one word: ${glued.slice(0, 6).map((j) => q(j)).join(', ')}`)
 
-  const all = body.querySelectorAll('*')
-  const h1Index = h1s.length ? all.indexOf(h1s[0]) : -1
-  const eyebrowIndex = all.findIndex((e) => tagOf(e) === 'p' && norm(e.text) === HERO.eyebrow)
-  check(
-    eyebrowIndex >= 0 && h1Index >= 0 && eyebrowIndex < h1Index,
-    'C1.eyebrow',
-    'status <p> precedes the h1',
-    eyebrowIndex < 0 ? `no <p> with text ${q(HERO.eyebrow)}` : 'status <p> does not precede the h1',
-  )
+  // The client wall: every mark, in order, named by its alt text.
+  const wallMarks = body.querySelectorAll('.wall img').map((img) => norm(img.getAttribute('alt') ?? ''))
+  const wallNames = WALL.marks.map((m) => m.name)
+  check(JSON.stringify(wallMarks) === JSON.stringify(wallNames), 'C1.wall', `${wallNames.length} marks in order`,
+    `wall marks are [${wallMarks.join(', ')}], expected [${wallNames.join(', ')}]`)
 
   const header = body.querySelector('header')
   check(header && textOf(header).includes(PERSON.name), 'C1.header', `header contains ${q(PERSON.name)}`,
@@ -299,41 +295,45 @@ await section('C1', async () => {
   const names = BUILDS.map((i) => i.name)
   const workRoot = body.querySelector('#work')
   const h3s = (workRoot || body).querySelectorAll('h3').map((h) => norm(h.text))
-  if (workRoot) {
-    check(JSON.stringify(h3s) === JSON.stringify(names), 'C1.work-h3', `#work h3s ${names.join(', ')}`,
-      `#work h3s are [${h3s.join(', ')}], expected [${names.join(', ')}]`)
-  } else {
-    const seq = h3s.filter((t) => names.includes(t))
-    check(JSON.stringify(seq) === JSON.stringify(names), 'C1.work-h3', `h3s ${names.join(', ')} in order (no #work section found)`,
-      `h3s matching work items are [${seq.join(', ')}], expected [${names.join(', ')}]; no #work section`)
-  }
+  // An index row names its builds in one heading, so the headings are read as one run of names.
+  const run = h3s.join(' ')
+  const want = names.join(' ')
+  check(!!workRoot && run === want, 'C1.work-h3', `#work h3s read ${names.length} builds in order`,
+    workRoot ? `#work h3s read ${q(run, 120)}, expected ${q(want, 120)}` : 'no #work section')
 
   // The number of builds is typed into the copy by hand, as a figure and as a word. Hold
   // every mention to the length of the list.
   const NUMBER_WORDS = 'zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty'.split(' ')
-  const asFigure = new RegExp(`\\b${names.length}\\b`)
   const asWord = new RegExp(`\\b${NUMBER_WORDS[names.length] ?? names.length}\\b`, 'i')
   const mentions = {
-    'PROOF.cells[0].value': asFigure.test(PROOF.cells[0].value),
-    'HERO.roles': HERO.roles.some((role) => asFigure.test(role)),
-    'HERO.rolesSummary': asFigure.test(HERO.rolesSummary),
-    'WORK.heading': asWord.test(WORK.heading.lead + WORK.heading.em),
+    'WORK.indexLabel': asWord.test(WORK.indexLabel),
+    'ABOUT.bio': asWord.test(ABOUT.bio.map((s) => (typeof s === 'string' ? s : s.text)).join('')),
   }
   const stale = Object.keys(mentions).filter((place) => !mentions[place])
   check(!stale.length, 'C1.build-count', `${names.length} builds, and the copy says so in ${Object.keys(mentions).length} places`,
     `there are ${names.length} builds, but ${stale.join(', ')} says otherwise`)
 
-  // Nexerah block and footer
-  const nex = [
-    ['heading', NEXERAH.heading.lead + NEXERAH.heading.em],
-    ['body', NEXERAH.body],
-    ['status', NEXERAH.status],
-    ['availability', NEXERAH.availability],
-    ['cta.label', NEXERAH.cta.label],
-    ['domainNote', NEXERAH.domainNote],
+  // The studio block, and its address linked from there and the footer only
+  const studio = [
+    ['heading', STUDIO.heading.lead + STUDIO.heading.em],
+    ['body', STUDIO.body],
+    ['methodHeading', STUDIO.methodHeading],
+    ['priced', STUDIO.priced],
+    ...STUDIO.practices.map((p, i) => [`practices[${i}].name`, p.name]),
+    ...STUDIO.steps.map((s, i) => [`steps[${i}].name`, s.name]),
+    ...STUDIO.terms.map((t, i) => [`terms[${i}].name`, t.name]),
   ]
-  const missingNex = nex.filter(([, v]) => !bodyText.includes(norm(v))).map(([k]) => k)
-  check(!missingNex.length, 'C1.nexerah', 'heading, body, status, availability, cta, domainNote present', `missing NEXERAH.${missingNex.join(', NEXERAH.')}`)
+  const missingStudio = studio.filter(([, v]) => !bodyText.includes(norm(v))).map(([k]) => k)
+  check(!missingStudio.length, 'C1.studio', `heading, body, ${STUDIO.practices.length} practices, ${STUDIO.steps.length} steps, ${STUDIO.terms.length} terms present`,
+    `missing STUDIO.${missingStudio.join(', STUDIO.')}`)
+  const within = (el, test) => {
+    for (let p = el; p && p !== body; p = p.parentNode) if (test(p)) return true
+    return false
+  }
+  const studioLinks = body.querySelectorAll(`a[href="${NEXERAH_URL}"]`)
+  const studioStray = studioLinks.filter((a) => !within(a, (p) => p.id === 'nexerah' || tagOf(p) === 'footer'))
+  check(studioLinks.length >= 2 && !studioStray.length, 'C1.studio-link', `${studioLinks.length} links to ${NEXERAH_URL}, all in #nexerah or the footer`,
+    `${studioLinks.length} link(s) to ${NEXERAH_URL}, ${studioStray.length} outside #nexerah and the footer`)
   const footer = body.querySelector('footer')
   check(bodyText.includes(norm(FOOTER.line)), 'C1.footer', 'FOOTER.line present', `missing ${q(FOOTER.line)}`)
   if (footer && bodyText.includes(norm(FOOTER.line)) && !textOf(footer).includes(norm(FOOTER.line))) warn('C1.footer-place', 'FOOTER.line is not inside <footer>')
@@ -349,7 +349,7 @@ await section('C1', async () => {
   // is set in site.js. `alt` leaves are image descriptions; `visual` names a drawn diagram.
   // A leaf also counts when CSS draws it from data-t (decoration) or it names something for
   // screen readers.
-  const groups = { HERO, AVATAR, CAPABILITIES, PROOF, WORK, STACK, ABOUT, TIMELINE, NEXERAH, CONTACT, FOOTER }
+  const groups = { HERO, AVATAR, WALL, CAPABILITIES, PROOF, WORK, INFRA, STUDIO, ABOUT, TIMELINE, CONTACT, FOOTER }
   const alts = new Set(body.querySelectorAll('img').map((img) => norm(img.getAttribute('alt') ?? '')))
   const drawn = new Set(body.querySelectorAll('[data-t]').map((el) => norm(el.getAttribute('data-t'))))
   const named = new Set(body.querySelectorAll('[aria-label]').map((el) => norm(el.getAttribute('aria-label'))))
@@ -486,6 +486,8 @@ await section('C4', async () => {
   // Every voice rule applies to all public text (title, meta, structured data, alt text,
   // llms.txt, manifest), not only the page body.
   scan('C4.exclamation', /!/, voice)
+  // No dash of any kind stands between words: ranges are "30-40%" or "2023 to 2024".
+  scan('C4.dash', /[\u2013\u2014]/, voice, 'en or em dash')
   scan('C4.new-delhi', /\bNew\s+Delhi\b/i, voice)
   const H = '[-\\u2010\\u2011]'
   const MON = '(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec)[a-z]*\\.?'
@@ -660,18 +662,16 @@ await section('LD', async () => {
       `worksFor @id=${q(id ?? '')} name=${q(wf?.name ?? '')}`)
   }
 
-  const bad = []
-  const walk = (v, p) => {
-    if (typeof v === 'string') {
-      if (/nexerah\.com/i.test(v)) bad.push(`${p} contains nexerah.com`)
-    } else if (Array.isArray(v)) v.forEach((x, i) => walk(x, `${p}[${i}]`))
-    else if (v && typeof v === 'object') {
-      if (typeof v.name === 'string' && /nexerah/i.test(v.name)) bad.push(`${p}.name ${q(v.name)}`)
-      for (const [k, x] of Object.entries(v)) walk(x, `${p}.${k}`)
-    }
+  // The studio's Organization node is in the graph only while NEXERAH_LIVE says its address
+  // answers, and never otherwise. The Person's email is the studio's either way.
+  const org = graph.find((n) => ldTypes(n).includes('Organization') && /nexerah/i.test(String(n.name ?? '')))
+  if (NEXERAH_LIVE) {
+    const live = await get(NEXERAH_URL)
+    check(!!org && org.url === NEXERAH_URL && live.status === 200, 'LD.nexerah', `Organization Nexerah at ${NEXERAH_URL}, which answers 200`,
+      !org ? 'NEXERAH_LIVE is set but the graph has no Nexerah Organization node' : `${NEXERAH_URL} -> ${fetchErr(live)}: unset NEXERAH_LIVE until it answers 200`)
+  } else {
+    check(!org, 'LD.nexerah', 'no Nexerah Organization node while NEXERAH_LIVE is unset', 'a Nexerah Organization node is in the graph but NEXERAH_LIVE is unset')
   }
-  walk(ld, '$')
-  check(!bad.length, 'LD.no-nexerah', 'no Nexerah-named node, no nexerah.com URL', bad.slice(0, 5).join('; '))
 
   if (page) {
     const dm = String(page.dateModified ?? '')
@@ -795,6 +795,11 @@ await section('T7', async () => {
   else if (!rs.location) fail('T7.resume', `${RESUME_PATH} -> ${rs.status} without a redirect`)
   else if (!DRIVE_RE.test(rs.location)) fail('T7.resume', `${RESUME_PATH} -> ${rs.status} Location does not match DRIVE_FILE_PATTERN`)
   else check(rs.status === 307, 'T7.resume', `${RESUME_PATH} 307 to a Drive file`, `${RESUME_PATH} -> ${rs.status}, expected 307`)
+
+  // The page links the studio's address. Until it answers, that is the owner's to fix (DNS).
+  const studioSite = await get(NEXERAH_URL)
+  if (studioSite.status === 200) pass('T7.nexerah', `${NEXERAH_URL} 200`)
+  else warn('T7.nexerah', `${NEXERAH_URL} -> ${fetchErr(studioSite)}; the page links it, so point the domain at the studio before launch`)
 
   for (const p of ['/api/send', '/this-path-should-not-exist']) {
     const r = await get(at(p), { redirect: 'manual' })
