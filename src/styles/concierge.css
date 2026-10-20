@@ -1,0 +1,1226 @@
+/* The concierge (NEXT_PUBLIC_CONCIERGE=on). Classes start with cg-. States: .cg cg-on, cg-fold,
+   cg-hide, cg-open; .cg-panel cg-live, cg-voicebar, cg-sheet. Loops and arrivals are in motion.css. */
+
+.nb {
+  --cg-gap: 20px;
+  --cg-glass: rgba(8, 12, 19, .8);
+  --cg-glass-strong: rgba(7, 10, 16, .93);
+  --cg-cyan-soft: rgba(0, 225, 255, .08);
+  --cg-cyan-edge: rgba(0, 225, 255, .45);
+  --cg-rose: #FF8A98;
+  --cg-rose-soft: rgba(255, 92, 112, .14);
+}
+
+.nb .cg svg,
+.nb .cg-entry svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ---------------------------------------------------------------- launcher */
+
+/* Out of sight and the tab order until it arrives, and while open or at Contact. */
+.nb .cg-launch {
+  position: fixed;
+  z-index: 65;
+  right: calc(var(--cg-gap) + env(safe-area-inset-right, 0px));
+  bottom: calc(var(--cg-gap) + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 58px;
+  margin: 0;
+  padding: 6px 22px 6px 6px;
+  border: 1px solid var(--line2);
+  border-radius: 999px;
+  background: var(--cg-glass);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  backdrop-filter: blur(16px) saturate(150%);
+  box-shadow: 0 24px 60px -24px rgba(0, 0, 0, .95), inset 0 1px 0 rgba(255, 255, 255, .05);
+  color: var(--fg);
+  font-family: var(--display);
+  cursor: pointer;
+  opacity: 0;
+  translate: 0 16px;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity .55s var(--ease), translate .55s var(--ease), visibility 0s linear .55s, padding .45s var(--ease), gap .45s var(--ease), border-color .3s ease, box-shadow .3s ease;
+}
+
+.nb .cg.cg-on .cg-launch {
+  opacity: 1;
+  translate: 0 0;
+  visibility: visible;
+  pointer-events: auto;
+  transition-delay: 0s;
+}
+
+.nb .cg.cg-on.cg-open .cg-launch,
+.nb .cg.cg-on.cg-hide .cg-launch {
+  opacity: 0;
+  translate: 0 16px;
+  visibility: hidden;
+  pointer-events: none;
+  transition-delay: 0s, 0s, .55s, 0s, 0s, 0s, 0s;
+}
+
+.nb .cg-launch:hover {
+  border-color: var(--cg-cyan-edge);
+  box-shadow: 0 24px 60px -24px rgba(0, 0, 0, .95), 0 0 0 4px rgba(0, 225, 255, .06), 0 0 40px -8px rgba(0, 225, 255, .42);
+}
+
+.nb .cg-disc {
+  position: relative;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border: 1.5px solid transparent;
+  border-radius: 50%;
+  background: linear-gradient(var(--plate), var(--plate)) padding-box, var(--grad) border-box;
+  box-shadow: 0 0 24px -6px rgba(0, 190, 255, .6);
+}
+
+/* The waveform; its pulse is in motion.css. */
+.nb .cg-bars {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 20px;
+}
+
+.nb .cg-bars i {
+  display: block;
+  width: 3px;
+  height: 18px;
+  border-radius: 2px;
+  background: var(--gradbtn);
+}
+
+.nb .cg-bars i:nth-child(1) {
+  height: 10px;
+}
+
+.nb .cg-bars i:nth-child(3) {
+  height: 13px;
+}
+
+.nb .cg-bars i:nth-child(4) {
+  height: 8px;
+}
+
+/* The label is drawn from data-t (base.css); the button's name is its aria-label. */
+.nb .cg-ltext {
+  display: grid;
+  gap: 5px;
+  max-width: 240px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-align: left;
+  transition: max-width .45s var(--ease), opacity .3s ease;
+}
+
+.nb .cg-lname {
+  font: 600 14px/1 var(--display);
+  color: var(--fg);
+}
+
+.nb .cg-ltag {
+  font: 500 12px/1 var(--mono);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* Past the hero the label folds; hover or focus opens it. Phones show the disc only. */
+@media (min-width: 601px) {
+  .nb .cg.cg-fold .cg-launch {
+    gap: 0;
+    padding-right: 6px;
+  }
+
+  .nb .cg.cg-fold .cg-ltext {
+    max-width: 0;
+    opacity: 0;
+  }
+
+  .nb .cg.cg-fold .cg-launch:hover,
+  .nb .cg.cg-fold .cg-launch:focus-visible {
+    gap: 12px;
+    padding-right: 22px;
+  }
+
+  .nb .cg.cg-fold .cg-launch:hover .cg-ltext,
+  .nb .cg.cg-fold .cg-launch:focus-visible .cg-ltext {
+    max-width: 240px;
+    opacity: 1;
+  }
+}
+
+/* ---------------------------------------------------------------- quick questions */
+
+.nb .cg-peek {
+  position: fixed;
+  z-index: 65;
+  right: calc(var(--cg-gap) + env(safe-area-inset-right, 0px));
+  bottom: calc(var(--cg-gap) + 72px + env(safe-area-inset-bottom, 0px));
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+  max-width: calc(100vw - 2 * var(--cg-gap));
+}
+
+.nb .cg-peekhead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-right: 2px;
+}
+
+.nb .cg-eyebrow {
+  margin: 0;
+  font: 500 12px/1 var(--mono);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.nb .cg-x {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: rgba(8, 12, 19, .7);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.nb .cg-x:hover {
+  border-color: var(--line2);
+  color: var(--fg);
+}
+
+.nb .cg-x svg {
+  width: 13px;
+  height: 13px;
+}
+
+.nb .cg-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 44px;
+  margin: 0;
+  padding: 10px 18px 10px 16px;
+  border: 1px solid var(--line2);
+  border-radius: 999px;
+  background: rgba(10, 15, 23, .86);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  color: var(--fg);
+  font: 600 13.5px/1.25 var(--display);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color .25s ease, background-color .25s ease, translate .3s var(--ease);
+}
+
+/* The rotating banner's cyan diamond. */
+.nb .cg-chip::before {
+  content: "";
+  flex: none;
+  width: 7px;
+  height: 7px;
+  rotate: 45deg;
+  background: var(--cyan);
+  box-shadow: 0 0 10px rgba(0, 225, 255, .8);
+}
+
+.nb .cg-chip:hover {
+  border-color: var(--cg-cyan-edge);
+  background: rgba(14, 22, 34, .94);
+}
+
+.nb .cg-peek .cg-chip:hover {
+  translate: -4px 0;
+}
+
+.nb .cg-chip.cg-chip-voice::before {
+  display: none;
+}
+
+.nb .cg-chip-voice svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  color: var(--cyan);
+}
+
+.nb .cg-launch:focus-visible,
+.nb .cg-x:focus-visible,
+.nb .cg-chip:focus-visible,
+.nb .cg-icon:focus-visible,
+.nb .cg-round:focus-visible,
+.nb .cg-talk:focus-visible,
+.nb .cg-type:focus-visible,
+.nb .cg-btn:focus-visible,
+.nb .cg-sendbtn:focus-visible,
+.nb .cg-send:focus-visible,
+.nb .cg-later:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 3px;
+}
+
+/* ---------------------------------------------------------------- panel */
+
+.nb .cg-panel {
+  position: fixed;
+  z-index: 66;
+  right: calc(var(--cg-gap) + env(safe-area-inset-right, 0px));
+  bottom: calc(var(--cg-gap) + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  width: min(400px, calc(100vw - 2 * var(--cg-gap)));
+  max-height: min(680px, calc(100vh - 2 * var(--cg-gap) - 76px));
+  overflow: hidden;
+  border: 1px solid var(--line2);
+  border-radius: 26px;
+  background: var(--cg-glass-strong);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  backdrop-filter: blur(22px) saturate(150%);
+  box-shadow: 0 40px 120px -40px #000, 0 0 0 1px rgba(0, 225, 255, .04), inset 0 1px 0 rgba(255, 255, 255, .05);
+  color: var(--fg);
+  transform-origin: 100% 100%;
+}
+
+.nb .cg-panel::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 28px;
+  right: 28px;
+  height: 1px;
+  background: var(--grad);
+  opacity: .85;
+}
+
+.nb .cg-grab {
+  display: none;
+}
+
+.nb .cg-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 14px 14px 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.nb .cg-av {
+  position: relative;
+  flex: none;
+  width: 42px;
+  height: 42px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 225, 255, .35);
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 38%, #0D2B47 0%, #05070B 72%);
+  box-shadow: 0 0 20px -6px rgba(0, 190, 255, .7);
+}
+
+.nb .cg-av img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  object-fit: cover;
+  object-position: 50% 18%;
+  scale: 1.55;
+  translate: 0 12%;
+}
+
+.nb .cg-htext {
+  flex: 1;
+  min-width: 0;
+}
+
+.nb .cg-title {
+  margin: 0;
+  font: 600 15px/1.2 var(--display);
+  letter-spacing: 0;
+  color: var(--fg);
+}
+
+.nb .cg-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 5px 0 0;
+  font: 500 12px/1 var(--mono);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.nb .cg-dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--cyan);
+  box-shadow: 0 0 8px rgba(0, 225, 255, .9);
+}
+
+.nb .cg-panel[data-state="speaking"] .cg-dot {
+  background: #6FA8FF;
+  box-shadow: 0 0 8px rgba(111, 168, 255, .9);
+}
+
+.nb .cg-icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--soft);
+  cursor: pointer;
+  transition: border-color .2s ease, color .2s ease;
+}
+
+.nb .cg-icon:hover {
+  border-color: var(--cg-cyan-edge);
+  color: var(--fg);
+}
+
+.nb .cg-icon svg {
+  width: 15px;
+  height: 15px;
+}
+
+.nb .cg-body {
+  display: grid;
+  flex: 1 1 auto;
+  align-content: start;
+  gap: 18px;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 20px 18px 18px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 170, 200, .25) transparent;
+}
+
+/* start */
+.nb .cg-start {
+  display: grid;
+  gap: 18px;
+}
+
+.nb .cg-hello {
+  margin: 2px 0 0;
+  font: 600 21px/1.3 var(--display);
+  letter-spacing: -.01em;
+  color: var(--fg);
+  text-wrap: balance;
+}
+
+.nb .cg-hello em {
+  display: block;
+  margin-top: 2px;
+  font: italic 400 27px/1.15 var(--serif);
+  letter-spacing: 0;
+  background: var(--grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.nb .cg-chips {
+  display: grid;
+  gap: 8px;
+}
+
+.nb .cg-chips .cg-chip {
+  width: 100%;
+  background: rgba(255, 255, 255, .025);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.nb .cg-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.nb .cg-talk,
+.nb .cg-type {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 50px;
+  margin: 0;
+  border-radius: 999px;
+  font: 600 15px/1 var(--display);
+  cursor: pointer;
+  transition: box-shadow .3s ease, border-color .25s ease, translate .25s var(--ease);
+}
+
+.nb .cg-talk {
+  border: 0;
+  background: var(--gradbtn);
+  color: #021018;
+  box-shadow: 0 12px 34px -10px rgba(0, 170, 255, .65);
+}
+
+.nb .cg-talk:hover {
+  translate: 0 -1px;
+  box-shadow: 0 18px 46px -10px rgba(0, 170, 255, .95);
+}
+
+.nb .cg-type {
+  border: 1px solid var(--line2);
+  background: rgba(255, 255, 255, .03);
+  color: var(--fg);
+}
+
+.nb .cg-type:hover {
+  border-color: var(--cg-cyan-edge);
+}
+
+.nb .cg-talk svg,
+.nb .cg-type svg {
+  width: 18px;
+  height: 18px;
+}
+
+.nb .cg-consent {
+  margin: 0;
+  font: 400 12.5px/1.55 var(--display);
+  color: var(--dim);
+}
+
+/* conversation */
+.nb .cg-log {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.nb .cg-log:empty {
+  display: none;
+}
+
+.nb .cg-msg {
+  max-width: 94%;
+  margin: 0;
+  font: 400 14.5px/1.6 var(--display);
+  color: var(--fg);
+  overflow-wrap: anywhere;
+}
+
+.nb .cg-agent {
+  justify-self: start;
+}
+
+.nb .cg-user {
+  justify-self: end;
+  padding: 10px 14px;
+  border: 1px solid rgba(0, 225, 255, .22);
+  border-radius: 18px 18px 6px 18px;
+  background: rgba(0, 225, 255, .07);
+}
+
+.nb .cg-act {
+  display: inline-flex;
+  justify-self: start;
+  align-items: center;
+  gap: 9px;
+  max-width: 100%;
+  padding: 7px 12px;
+  border: 1px solid rgba(0, 225, 255, .2);
+  border-radius: 999px;
+  background: rgba(0, 225, 255, .05);
+  font: 500 12px/1.3 var(--mono);
+  letter-spacing: .04em;
+  color: var(--cyan);
+}
+
+.nb .cg-act::before {
+  content: "";
+  flex: none;
+  width: 6px;
+  height: 6px;
+  rotate: 45deg;
+  background: currentColor;
+}
+
+/* typing dots (loop in motion.css) */
+.nb .cg-typing {
+  display: inline-flex;
+  justify-self: start;
+  gap: 5px;
+  padding: 8px 2px;
+}
+
+.nb .cg-typing i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--muted);
+}
+
+.nb .cg-end-line {
+  justify-self: center;
+  font: 500 12px/1 var(--mono);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.nb .cg-again {
+  justify-self: center;
+}
+
+/* notice cards */
+.nb .cg-card {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--line2);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, .025);
+}
+
+.nb .cg-card.cg-warn {
+  border-color: rgba(255, 138, 152, .38);
+  background: rgba(255, 92, 112, .05);
+}
+
+.nb .cg-card h3 {
+  margin: 0;
+  font: 600 15px/1.3 var(--display);
+  color: var(--fg);
+}
+
+.nb .cg-card p {
+  margin: 0;
+  font: 400 13.5px/1.55 var(--display);
+  color: var(--soft);
+}
+
+.nb .cg-cardacts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.nb .cg-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 42px;
+  margin: 0;
+  padding: 0 18px;
+  border: 1px solid var(--line2);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .03);
+  color: var(--fg);
+  font: 600 14px/1 var(--display);
+  cursor: pointer;
+}
+
+.nb .cg-btn:hover {
+  border-color: var(--cg-cyan-edge);
+}
+
+.nb .cg-btn.cg-primary {
+  border: 0;
+  background: var(--gradbtn);
+  color: #021018;
+}
+
+.nb .cg-card .cg-mail {
+  font: 500 14px/1.4 var(--mono);
+  color: var(--fg);
+  user-select: all;
+  overflow-wrap: anywhere;
+}
+
+/* consent under the microphone card's buttons */
+.nb .cg-card .cg-consent {
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  font: 400 12.5px/1.55 var(--display);
+  color: var(--dim);
+}
+
+/* voice: pinned while the conversation scrolls under it */
+.nb .cg-voice {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 2px 0 10px;
+  background: var(--cg-glass-strong);
+}
+
+.nb .cg-orb {
+  display: block;
+  width: 176px;
+  height: 176px;
+  transition: width .4s var(--ease), height .4s var(--ease);
+}
+
+.nb .cg-compact .cg-orb {
+  width: 92px;
+  height: 92px;
+}
+
+.nb .cg-caption {
+  min-height: 2.6em;
+  max-width: 30ch;
+  margin: 0;
+  font: italic 400 22px/1.3 var(--serif);
+  text-align: center;
+  color: var(--fg);
+  text-wrap: balance;
+}
+
+.nb .cg-compact .cg-caption {
+  min-height: 0;
+  font-size: 18px;
+}
+
+/* Unsaid words stay readable (6.6:1): on a phone the caption is the only transcript. */
+.nb .cg-caption .cg-w {
+  opacity: .6;
+  transition: opacity .25s ease;
+}
+
+.nb .cg-caption .cg-w.cg-said {
+  opacity: 1;
+}
+
+.nb .cg-heard {
+  min-height: 1.45em;
+  max-width: 34ch;
+  margin: 0;
+  font: 500 12.5px/1.45 var(--mono);
+  letter-spacing: .02em;
+  text-align: center;
+  color: var(--muted);
+}
+
+/* footer: the composer, or the voice controls */
+.nb .cg-foot {
+  flex: none;
+  padding: 12px 12px 14px;
+  border-top: 1px solid var(--line);
+}
+
+.nb .cg-compose {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.nb .cg-input {
+  flex: 1;
+  min-width: 0;
+  min-height: 46px;
+  max-height: 132px;
+  margin: 0;
+  padding: 12px 14px;
+  resize: none;
+  border: 1px solid var(--line2);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, .03);
+  color: var(--fg);
+  font: 400 15px/1.45 var(--display);
+}
+
+.nb .cg-input::placeholder {
+  color: var(--dim);
+}
+
+.nb .cg-input:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+
+.nb .cg-sendbtn {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--gradbtn);
+  color: #021018;
+  cursor: pointer;
+  box-shadow: 0 10px 28px -10px rgba(0, 170, 255, .7);
+}
+
+/* Unavailable, not disabled: it keeps focus (Panel.jsx). */
+.nb .cg-sendbtn[aria-disabled="true"] {
+  opacity: .45;
+  cursor: default;
+  box-shadow: none;
+}
+
+.nb .cg-sendbtn svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2.1;
+}
+
+.nb .cg-vctl {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+}
+
+.nb .cg-round {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  border: 1px solid var(--line2);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .03);
+  color: var(--fg);
+  cursor: pointer;
+}
+
+.nb .cg-round:hover {
+  border-color: var(--cg-cyan-edge);
+}
+
+.nb .cg-round svg {
+  width: 20px;
+  height: 20px;
+}
+
+.nb .cg-round[aria-pressed="true"] {
+  border-color: var(--cg-cyan-edge);
+  background: var(--cg-cyan-soft);
+  color: var(--cyan);
+}
+
+.nb .cg-round.cg-end {
+  border-color: rgba(255, 138, 152, .4);
+  background: var(--cg-rose-soft);
+  color: var(--cg-rose);
+}
+
+/* the brief */
+.nb .cg-brief {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 16px;
+  border: 1px solid var(--line2);
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgba(0, 225, 255, .055), rgba(255, 255, 255, .012));
+}
+
+.nb .cg-briefhead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.nb .cg-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.nb .cg-field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.nb .cg-field label {
+  font: 500 12px/1 var(--mono);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.nb .cg-field input,
+.nb .cg-field textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line2);
+  border-radius: 12px;
+  background: rgba(5, 7, 11, .6);
+  color: var(--fg);
+  font: 400 14.5px/1.4 var(--display);
+}
+
+.nb .cg-field textarea {
+  min-height: 46px;
+  resize: vertical;
+}
+
+.nb .cg-field input:focus-visible,
+.nb .cg-field textarea:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 1px;
+}
+
+.nb .cg-field [aria-invalid="true"] {
+  border-color: var(--cg-rose);
+}
+
+.nb .cg-err {
+  margin: 0;
+  font: 400 12.5px/1.4 var(--display);
+  color: var(--cg-rose);
+}
+
+.nb .cg-err:empty {
+  display: none;
+}
+
+.nb .cg-briefacts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.nb .cg-send {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 44px;
+  margin: 0;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--gradbtn);
+  color: #021018;
+  font: 600 14.5px/1 var(--display);
+  cursor: pointer;
+  box-shadow: 0 12px 30px -12px rgba(0, 170, 255, .75);
+}
+
+.nb .cg-send svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2.1;
+}
+
+.nb .cg-later {
+  height: 44px;
+  margin: 0;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: 500 14px/1 var(--display);
+  text-decoration: underline;
+  text-decoration-color: rgba(147, 160, 177, .45);
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.nb .cg-note {
+  margin: 0;
+  font: 400 12.5px/1.5 var(--display);
+  color: var(--dim);
+}
+
+.nb .cg-sent {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid rgba(0, 225, 255, .3);
+  border-radius: 18px;
+  background: rgba(0, 225, 255, .06);
+}
+
+.nb .cg-sent:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 3px;
+}
+
+.nb .cg-check {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--gradbtn);
+  color: #021018;
+}
+
+.nb .cg-check svg {
+  width: 15px;
+  height: 15px;
+  stroke-width: 2.4;
+}
+
+.nb .cg-sent strong {
+  display: block;
+  font: 600 14.5px/1.3 var(--display);
+  color: var(--fg);
+}
+
+.nb .cg-sent span:not(.cg-check) {
+  display: block;
+  margin-top: 3px;
+  font: 400 13px/1.5 var(--display);
+  color: var(--soft);
+}
+
+/* ---------------------------------------------------------------- shows while it tells */
+
+/* The ring round what the concierge shows, under the sticky header. Fade in motion.css. */
+.nb .cg-ring {
+  position: absolute;
+  z-index: 29;
+  border: 1.5px solid rgba(0, 225, 255, .85);
+  border-radius: 22px;
+  box-shadow: 0 0 0 6px rgba(0, 225, 255, .08), 0 0 46px rgba(0, 225, 255, .3);
+  pointer-events: none;
+}
+
+/* ---------------------------------------------------------------- the Contact entry */
+
+.nb .cg-entry {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  max-width: 760px;
+  margin: 30px auto 0;
+  padding-top: 26px;
+  border-top: 1px solid var(--line);
+}
+
+.nb .cg-entryline {
+  margin: 0;
+  font: 400 15.5px/1.5 var(--display);
+  color: var(--soft);
+}
+
+.nb .cg-entryline em {
+  font: italic 400 20px/1 var(--serif);
+  color: var(--fg);
+}
+
+.nb .cg-entrychips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* ---------------------------------------------------------------- phones */
+
+@media (max-width: 600px) {
+  .nb {
+    --cg-gap: 14px;
+  }
+
+  .nb .cg-launch {
+    gap: 0;
+    height: 56px;
+    padding: 4px;
+  }
+
+  .nb .cg-ltext {
+    display: none;
+  }
+
+  .nb .cg-peek {
+    left: calc(var(--cg-gap) + env(safe-area-inset-left, 0px));
+    bottom: calc(var(--cg-gap) + 68px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .nb .cg-panel {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: auto;
+    max-height: 86svh;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    border-width: 1px 0 0;
+    border-radius: 24px 24px 0 0;
+    transform-origin: 50% 100%;
+  }
+
+  /* In a conversation the sheet drops to about half height. */
+  .nb .cg-panel.cg-live {
+    max-height: 58svh;
+  }
+
+  .nb .cg-grab {
+    display: block;
+    width: 40px;
+    height: 4px;
+    margin: 8px auto -4px;
+    border-radius: 2px;
+    background: var(--line2);
+  }
+
+  .nb .cg-head {
+    padding: 12px 12px 12px 16px;
+  }
+
+  /* 16 px or more, so iOS does not zoom the page into a field. */
+  .nb .cg-input,
+  .nb .cg-field input,
+  .nb .cg-field textarea {
+    font-size: 16px;
+  }
+
+  .nb .cg-pair {
+    grid-template-columns: 1fr;
+  }
+
+  .nb .cg-entry {
+    justify-items: start;
+    margin-left: 0;
+  }
+
+  .nb .cg-entrychips {
+    justify-content: flex-start;
+  }
+
+  /* Voice on a phone: a slim bar; screen readers keep the transcript. */
+  .nb .cg-panel.cg-voicebar {
+    max-height: none;
+  }
+
+  .nb .cg-voicebar .cg-head,
+  .nb .cg-voicebar .cg-grab {
+    display: none;
+  }
+
+  .nb .cg-voicebar .cg-log > * {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .nb .cg-voicebar .cg-body {
+    padding: 14px 16px 4px;
+  }
+
+  .nb .cg-voicebar .cg-voice {
+    grid-template-columns: 64px minmax(0, 1fr);
+    justify-items: start;
+    align-items: center;
+    gap: 4px 14px;
+    padding-bottom: 2px;
+  }
+
+  .nb .cg-voicebar .cg-orb {
+    grid-row: span 2;
+    width: 64px;
+    height: 64px;
+  }
+
+  .nb .cg-voicebar .cg-caption {
+    display: -webkit-box;
+    min-height: 0;
+    max-width: none;
+    overflow: hidden;
+    font-size: 17px;
+    text-align: left;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+
+  .nb .cg-voicebar .cg-heard {
+    min-height: 0;
+    text-align: left;
+  }
+
+  .nb .cg-voicebar .cg-foot {
+    padding: 8px 12px 12px;
+    border-top: 0;
+  }
+
+  .nb .cg-voicebar .cg-round {
+    width: 46px;
+    height: 46px;
+  }
+}
+
+/* ---------------------------------------------------------------- stillness */
+
+/* Reduced motion: nothing glides (loops and arrivals: motion.css). */
+@media (prefers-reduced-motion: reduce) {
+  .nb .cg-launch,
+  .nb .cg-ltext,
+  .nb .cg-chip,
+  .nb .cg-icon,
+  .nb .cg-talk,
+  .nb .cg-type,
+  .nb .cg-orb,
+  .nb .cg-caption .cg-w {
+    transition: none;
+  }
+}
+
+/* Forced colours drop the gradients and glass: borders keep the shapes. */
+@media (forced-colors: active) {
+  .nb .cg-disc,
+  .nb .cg-talk,
+  .nb .cg-btn.cg-primary,
+  .nb .cg-sendbtn,
+  .nb .cg-send,
+  .nb .cg-check {
+    border: 1px solid CanvasText;
+  }
+
+  .nb .cg-bars i,
+  .nb .cg-chip::before,
+  .nb .cg-act::before,
+  .nb .cg-dot {
+    forced-color-adjust: none;
+    background: CanvasText;
+  }
+}
+
+@media print {
+  .nb .cg,
+  .nb .cg-entry,
+  .nb .cg-ring {
+    display: none !important;
+  }
+}

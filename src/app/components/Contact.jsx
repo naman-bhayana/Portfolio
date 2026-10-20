@@ -1,5 +1,8 @@
-import { CONTACT, MAILTO, PERSON, RESUME_DRIVE_URL, RESUME_PATH } from '@/content/site'
+import { CONCIERGE, CONTACT, MAILTO, PERSON, RESUME_DRIVE_URL, RESUME_PATH } from '@/content/site'
 import CopyEmail from './CopyEmail'
+
+// The concierge's inline entry, only in a build made with NEXT_PUBLIC_CONCIERGE=on (see layout.js).
+const ConciergeEntry = process.env.NEXT_PUBLIC_CONCIERGE === 'on' ? require('./ConciergeEntry').default : null
 
 // No form: the address itself is the call to action, with a mailto and a copy button.
 export default function Contact() {
@@ -32,6 +35,7 @@ export default function Contact() {
             </>
           )}
         </p>
+        {ConciergeEntry && <ConciergeEntry text={CONCIERGE.entry} chips={CONCIERGE.chips} />}
         <p className="micro">{CONTACT.microline}</p>
       </div>
     </section>

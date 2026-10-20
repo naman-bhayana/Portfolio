@@ -437,6 +437,150 @@ export const CONTACT = {
   copy: { button: 'Copy', copied: 'Copied', hint: 'email address', done: 'Email address copied', fallback: 'Press Ctrl+C or Cmd+C to copy' },
 }
 
+// The concierge, shown only when NEXT_PUBLIC_CONCIERGE is 'on': an AI assistant that answers by
+// voice or text, shows the part of the page it talks about and passes Naman a brief. The
+// launcher and the Contact entry are drawn from `launcher`, `peek`, `chips` and `entry`; the
+// panel loads on intent and reads the rest. `places` names the parts of the page the concierge
+// can show and `areas` the parts get_page_context reports to the agent.
+// The agent itself (prompt, knowledge, voice) is configured outside this repo.
+export const CONCIERGE = {
+  launcher: {
+    label: 'Talk to my concierge, an AI assistant, by voice or text',
+    name: 'Talk to my concierge',
+    tag: 'AI · voice or text',
+  },
+  peek: { label: 'Quick questions', hide: 'Hide quick questions' },
+  chips: [
+    { id: 'help', label: 'How can Naman help me?' },
+    { id: 'problem', label: 'Here’s my problem' },
+    { id: 'engagement', label: 'How does an engagement work?' },
+  ],
+  entry: { lead: 'Not sure it’s a fit yet?', em: 'Talk it through with my AI concierge first.', talk: 'Talk instead' },
+  title: 'Naman’s concierge',
+  close: 'Close the concierge',
+  hello: { lead: 'Tell me what you’re building.', em: 'I’ll tell you how Naman can help.' },
+  talk: 'Talk',
+  type: 'Type',
+  // Shown on the start screen, in the microphone explainer, and at the top of every conversation
+  // until the visitor's first turn.
+  consent:
+    'An AI assistant, not Naman. ElevenLabs transcribes the conversation and deletes it after 30 days. Naman gets a copy by email so he can reply. Please don’t share anything sensitive.',
+  log: 'Conversation',
+  input: { label: 'Message the concierge', placeholder: 'Write a message', send: 'Send' },
+  // The mute button keeps its name; aria-pressed says whether it is on.
+  controls: {
+    toVoice: 'Switch to voice',
+    toText: 'Switch to typing',
+    mute: 'Mute the microphone',
+    end: 'End the conversation',
+  },
+  status: {
+    ready: 'AI assistant · ready',
+    text: 'AI assistant · text',
+    typing: 'Typing',
+    connecting: 'Connecting',
+    listening: 'Listening',
+    speaking: 'Speaking',
+    thinking: 'Thinking',
+    muted: 'Muted',
+    blocked: 'Microphone blocked',
+    resting: 'Resting',
+  },
+  // The agent's first line, passed to it as {{greeting}}. A chip in text mode has none: the chip
+  // is sent as the visitor's first message instead.
+  greetings: {
+    launcher: 'Hi, I’m Naman’s AI concierge. What are you working on?',
+    help: 'Happy to. What does your company do and what would you fix first?',
+    problem: 'Go ahead, I’m listening. What’s the problem and what does your team do?',
+    resume: 'I’m listening. Go ahead.',
+  },
+  mic: {
+    title: 'One permission first',
+    text: 'Your browser will ask to use your microphone. Nothing is heard until you allow it. You can switch to typing at any time.',
+    allow: 'Allow microphone',
+  },
+  blocked: {
+    title: 'Microphone blocked',
+    text: 'Your browser is blocking the microphone. Allow it from the icon in the address bar or keep going by typing.',
+  },
+  nomic: { title: 'No microphone found', text: 'Your browser can’t find a microphone. Connect one and try again. Typing works too.' },
+  busy: { title: 'Microphone busy', text: 'Another app is using the microphone. Close it and try again. Typing works too.' },
+  typeInstead: 'Type instead',
+  retry: 'Try again',
+  resting: {
+    title: 'The concierge is resting',
+    text: 'It’s taking a break right now. Write to Naman instead and he’ll reply within one business day.',
+    copy: 'Copy the address',
+    copied: 'Address copied',
+  },
+  brief: {
+    heading: 'Your brief for Naman',
+    name: 'Name',
+    company: 'Company',
+    email: 'Email',
+    building: 'What you’re building',
+    stuck: 'Where it’s stuck',
+    timeline: 'Timeline',
+    send: 'Send to Naman',
+    later: 'Not now',
+    note: `It goes to ${PERSON.email}, with your email as the reply address.`,
+    noName: 'Add your name so Naman knows who to reply to.',
+    noEmail: 'That email doesn’t look complete. Check it and send again.',
+    sent: 'Brief sent to Naman',
+    sentLine: 'He reads every brief and replies within one business day.',
+  },
+  ended: 'Conversation ended',
+  callEnded: 'Call ended',
+  again: 'Start again',
+  // Shown in the conversation when the concierge scrolls the page: "On screen · The Sprint".
+  shown: 'On screen',
+  places: {
+    top: 'The opening',
+    proof: 'Live figures',
+    figure_400_models: '400+ models behind one gateway',
+    figure_200_signals: '200+ buying signals a day',
+    figure_30_40_manual_work: '30 to 40% less manual work',
+    figure_14_stage_agent: 'The 14-stage research agent',
+    figure_11_sources: '11 live signal sources',
+    work: 'The work',
+    ideasiq: 'ideasIQ',
+    myleadsiq: 'myLeadsIQ',
+    investbeans: 'InvestBeans',
+    docpad: 'DocPad',
+    prozone: 'Prozone',
+    artize_dental: 'Artize Dental',
+    more_builds: 'All sixteen builds',
+    stack: 'The stack',
+    node_evals: 'Evals and guardrails',
+    node_model_gateway: 'Model gateway',
+    studio: 'Nexerah',
+    practice_ai_products: 'AI products and agents',
+    practice_automation: 'Automation',
+    practice_growth: 'Growth engine',
+    method: 'How an engagement runs',
+    step_sprint: 'The Sprint',
+    terms: 'The terms',
+    about: 'About Naman',
+    contact: 'Contact',
+  },
+  areas: {
+    top: 'the opening',
+    wall: 'the wall of clients',
+    proof: 'the live figures',
+    work: 'the work',
+    stack: 'the stack',
+    studio: 'the studio',
+    about: 'about Naman',
+    contact: 'contact',
+  },
+  // What the agent hears when the visitor answers the brief card (session.js writes the sent
+  // one), and the context a new session gets when the visitor switches between typing and talking.
+  notSent: '[Brief not sent] The visitor chose not to send it yet.',
+  switched: 'The visitor switched between typing and talking. The conversation so far:',
+  visitor: 'Visitor',
+  agent: 'Concierge',
+}
+
 export const FOOTER = {
   line: `© ${updatedYear} Naman Bhayana`,
   roles: HERO.eyebrow,

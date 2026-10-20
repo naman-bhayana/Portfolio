@@ -3,9 +3,13 @@
 //
 // Usage: node scripts/qa/browser-checks.mjs <baseUrl> [--shots <dir outside the repo>]
 // Env:   CHROME_PATH (default: the standard Windows install path)
+//
+// The concierge's gates (C9) run when the served page carries it (a build made with
+// NEXT_PUBLIC_CONCIERGE=on) and are reported as skipped otherwise.
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import path from 'node:path'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { chromium } from 'playwright-core'
 import sharp from 'sharp'
 
@@ -13,6 +17,7 @@ const require = createRequire(import.meta.url)
 const AXE_PATH = require.resolve('axe-core/axe.min.js')
 const CHROME = process.env.CHROME_PATH || 'C:/Program Files/Google/Chrome/Application/chrome.exe'
 const BASE = (process.argv[2] || 'http://127.0.0.1:3000').replace(/\/$/, '')
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
 const shotsArg = process.argv.indexOf('--shots')
 const SHOTS = shotsArg > -1 ? process.argv[shotsArg + 1] : null
 if (SHOTS) mkdirSync(SHOTS, { recursive: true })
@@ -42,6 +47,15 @@ if (!existsSync(CHROME)) {
   console.error(`Chrome not found at ${CHROME}. Set CHROME_PATH.`)
   process.exit(2)
 }
+
+// The concierge is in the served page when its Contact entry is: an element marked
+// data-concierge, hidden until the page hydrates. On such a build the gates that measure the page
+// wait for its launcher first, so they measure the page as a visitor gets it.
+const served = await fetch(`${BASE}/`)
+  .then((r) => r.text())
+  .catch(() => '')
+const CONCIERGE = /<[a-z][^>]*\sdata-concierge[\s=>]/i.test(served)
+
 const browser = await chromium.launch({ executablePath: CHROME, headless: true })
 
 async function newPage({ width, height, deviceScaleFactor = 1, javaScriptEnabled = true, reducedMotion = 'no-preference', mobile = false }) {
@@ -57,6 +71,18 @@ async function newPage({ width, height, deviceScaleFactor = 1, javaScriptEnabled
 }
 
 // ---------------------------------------------------------------- shared probes
+// On a concierge build: wait until its launcher has arrived (after the hero, on the first scroll
+// or once the browser is idle) and faded in (0.55 s). A launcher that never arrives fails as such.
+async function withLauncher(page, id) {
+  if (!CONCIERGE) return
+  try {
+    await page.waitForFunction(() => document.querySelector('.cg.cg-on'), null, { timeout: 15000 })
+    await page.waitForTimeout(700)
+  } catch {
+    report('FAIL', `${id}.launcher`, 'the concierge launcher never arrived (no .cg.cg-on within 15 s)')
+  }
+}
+
 // Scroll from top to bottom in steps, the way a reader would, and rest at the very end.
 // Driven from here, not from a timer in the page, so it also works with JavaScript disabled.
 async function scrollThrough(page, step = 300, pause = 60) {
@@ -151,6 +177,7 @@ for (const vp of [
   // never scrolls, so the reveal would otherwise leave them in their pre-reveal state).
   const { context, page } = await newPage({ ...vp, reducedMotion: 'reduce' })
   await page.goto(`${BASE}/`, { waitUntil: 'networkidle' })
+  await withLauncher(page, `T3.lcp.${vp.name}`)
   const lcp = await page.evaluate(
     () =>
       new Promise((resolve) => {
@@ -185,6 +212,8 @@ for (const vp of [
 ]) {
   const { context, page } = await newPage({ ...vp, reducedMotion: 'reduce' })
   await page.goto(`${BASE}/`, { waitUntil: 'networkidle' })
+  // The concierge's launcher is audited with the page; its open panel in C9.concierge-axe.
+  await withLauncher(page, `T4.axe.${vp.name}`)
   await page.addScriptTag({ path: AXE_PATH })
   const run = (values) =>
     page.evaluate(
@@ -331,6 +360,7 @@ for (const textSpacing of [false, true]) {
   // Reduced motion: nothing animates, nothing waits, the pause switch has nothing to do.
   const { context, page } = await newPage({ width: 1280, height: 800, reducedMotion: 'reduce' })
   await page.goto(`${BASE}/`, { waitUntil: 'networkidle' })
+  await withLauncher(page, 'T8.reduced-motion')
   await scrollThrough(page, 400, 40)
   const reduced = await page.evaluate(() => ({
     animations: document.getAnimations().length,
@@ -342,11 +372,25 @@ for (const textSpacing of [false, true]) {
   const stuck = await stuckReveals(page)
   const figures = await unfinishedFigures(page)
   const firstRoleOnly = roles[0] === '1' && roles.slice(1).every((role) => role === '0 unlit')
+  // At the page end the concierge's launcher has stepped aside for Contact, so it is measured on
+  // screen as well: at the top, and folded further down. Nothing may move there either.
+  const launcher = []
+  if (CONCIERGE) {
+    for (const top of [0, 1600]) {
+      await page.evaluate((y) => window.scrollTo(0, y), top)
+      await page.waitForTimeout(400)
+      const state = await page.evaluate(() => {
+        const el = document.getElementById('cg-launch')
+        return { shown: !!el && getComputedStyle(el).visibility === 'visible', animations: document.getAnimations().length }
+      })
+      if (!state.shown || state.animations) launcher.push({ top, ...state })
+    }
+  }
   check(
-    reduced.animations === 0 && reduced.waiting === 0 && reduced.scrollBehavior !== 'smooth' && !reduced.pauseShown && firstRoleOnly && stuck.length === 0 && figures.length === 0,
+    reduced.animations === 0 && reduced.waiting === 0 && reduced.scrollBehavior !== 'smooth' && !reduced.pauseShown && firstRoleOnly && stuck.length === 0 && figures.length === 0 && launcher.length === 0,
     'T8.reduced-motion',
-    'no animations, everything visible, first role shown, figures final, pause switch hidden',
-    JSON.stringify({ ...reduced, roles, stuck, figures }),
+    `no animations${CONCIERGE ? ' (the concierge launcher on screen too)' : ''}, everything visible, first role shown, figures final, pause switch hidden`,
+    JSON.stringify({ ...reduced, roles, stuck, figures, ...(CONCIERGE ? { launcher } : {}) }),
   )
   await context.close()
 }
@@ -558,7 +602,10 @@ for (const vp of [
   // Pause switch (WCAG 2.2.2): second tab stop, Space pauses everything, a click resumes.
   const { context, page } = await newPage({ width: 1440, height: 900 })
   await page.goto(`${BASE}/`, { waitUntil: 'networkidle' })
+  await withLauncher(page, 'T8.pause')
   const running = await page.evaluate(() => document.getAnimations().length)
+  // On a concierge build the launcher's waveform is among them and must stop with the rest.
+  const waves = await page.evaluate(() => document.getAnimations().filter((a) => a.animationName === 'cg-wave').length)
   await page.keyboard.press('Tab')
   await page.keyboard.press('Tab')
   const secondStop = await page.evaluate(() => ({ id: document.activeElement?.id, name: document.activeElement?.getAttribute('aria-label') }))
@@ -584,10 +631,10 @@ for (const vp of [
     arriving: [...document.querySelectorAll('.hero :is(.lede, .cta, .chip)')].filter((el) => Number(getComputedStyle(el).opacity) < 0.99).length,
   }))
   check(
-    running > 0 && secondStop.id === 'pause-motion' && !!secondStop.name && paused.checked && paused.animations === 0 && paused.transparent === 0 && paused.veiled === 0 && figures.length === 0 && !resumed.checked && resumed.animations > 0 && resumed.arriving === 0,
+    running > 0 && (!CONCIERGE || waves > 0) && secondStop.id === 'pause-motion' && !!secondStop.name && paused.checked && paused.animations === 0 && paused.transparent === 0 && paused.veiled === 0 && figures.length === 0 && !resumed.checked && resumed.animations > 0 && resumed.arriving === 0,
     'T8.pause',
-    `second tab stop "${secondStop.name}"; Space stops ${running} animations and shows everything; a click resumes without replaying the arrival`,
-    JSON.stringify({ running, secondStop, paused, figures, resumed }),
+    `second tab stop "${secondStop.name}"; Space stops ${running} animations${CONCIERGE ? ` (the launcher's ${waves} waveform bars among them)` : ''} and shows everything; a click resumes without replaying the arrival`,
+    JSON.stringify({ running, ...(CONCIERGE ? { waves } : {}), secondStop, paused, figures, resumed }),
   )
 
   // The switch must leave the page where it is: its checkbox is not at the top of the document.
@@ -621,6 +668,7 @@ for (const vp of [
   await page.goto(`${BASE}/`, { waitUntil: 'networkidle' })
   await page.addStyleTag({ content: 'html { scroll-behavior: auto !important; }' })
   await page.waitForTimeout(2600)
+  await withLauncher(page, `T4.focus-seen.${vp.name}`)
   const stops = await page.evaluate(() => document.querySelectorAll('a[href], button:not([hidden]), input').length)
   const focused = () =>
     page.evaluate(() => {
@@ -660,6 +708,7 @@ for (const vp of [
   await cdp.send('Performance.enable')
   const counters = async () => Object.fromEntries((await cdp.send('Performance.getMetrics')).metrics.map((m) => [m.name, m.value]))
   await page.goto(`${BASE}/`, { waitUntil: 'networkidle' })
+  await withLauncher(page, 'T8.idle-main-thread')
   const busy = []
   for (const selector of ['.hero', '#proof .pstage', '.flag', '.deck', '.rail', '#contact']) {
     await page.evaluate((sel) => document.querySelector(sel).scrollIntoView({ block: 'center', behavior: 'instant' }), selector)
@@ -735,6 +784,7 @@ for (const vp of [
     document.addEventListener('securitypolicyviolation', (e) => window.__cspViolations.push(`${e.violatedDirective} ${e.blockedURI}`))
   })
   await page.goto(`${BASE}/`, { waitUntil: 'networkidle' })
+  await withLauncher(page, 'T10.console')
   await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight))
   await page.waitForTimeout(500)
   const csp = await page.evaluate(() => window.__cspViolations)
@@ -781,6 +831,386 @@ for (const vp of [
   const afterSkip = await page.evaluate(() => document.activeElement?.id)
   check(first.text === 'Skip to content' && first.visible && afterSkip === 'main', 'T4.skip-link', 'first Tab = visible skip link; Enter focuses <main>', JSON.stringify({ first, afterSkip }))
   await context.close()
+}
+
+// ---------------------------------------------------------------- the concierge (C9)
+// Only on a build made with NEXT_PUBLIC_CONCIERGE=on; anywhere else each gate is reported as
+// skipped. The conversations are the QA mock's (session.js, mock.js): on 127.0.0.1 or localhost,
+// localStorage cg-mock=1 stands a scripted agent in for ElevenLabs and hands the panel's client
+// tools to window.__cgMock; cg-mock-mic=denied|missing fails the microphone and
+// cg-mock-route=<status> the session route. With the mock on, nothing calls the route or
+// ElevenLabs. Against any other host the gates that need the mock are skipped, so a check never
+// starts a real conversation.
+const C9 = ['C9.concierge-quiet', 'C9.concierge-arrive', 'C9.concierge-open', 'C9.concierge-axe', 'C9.concierge-mock']
+if (!CONCIERGE) {
+  for (const id of C9) report('SKIP', id, 'no [data-concierge] in the served page: a build without the concierge')
+} else {
+  // site.js is ESM inside a typeless package; Node reparses it and warns. Keep output clean.
+  const emitWarning = process.emitWarning
+  process.emitWarning = (w, ...rest) => {
+    const code = (rest[0] && rest[0].code) || rest[1] || (w && w.code)
+    if (code === 'MODULE_TYPELESS_PACKAGE_JSON' || /Reparsing as ES module/.test(String(w))) return
+    return emitWarning.call(process, w, ...rest)
+  }
+  const { CONCIERGE: TEXT } = await import(pathToFileURL(path.join(REPO_ROOT, 'src', 'content', 'site.js')).href)
+
+  const LOCAL = /^(127\.0\.0\.1|localhost)$/.test(new URL(BASE).hostname)
+  const MOCK = { 'cg-mock': '1' }
+  // What only the concierge's lazy chunks contain (js-budget.mjs finds them the same way): the
+  // panel, the ElevenLabs client with LiveKit, and the QA mock.
+  const LAZY = [
+    ['panel', /cg-statustext|cg-briefwrap/],
+    ['ElevenLabs client', /livekit|@elevenlabs\/client/],
+    ['QA mock', /__cgMock/],
+  ]
+  // What the concierge may call only once a conversation starts: ElevenLabs, or its own routes.
+  const calling = (url) => {
+    try {
+      const { hostname, pathname } = new URL(url)
+      return /(^|\.)elevenlabs\.io$/i.test(hostname) || pathname.startsWith('/api/concierge')
+    } catch {
+      return false
+    }
+  }
+  // The tag sets of T4.axe.
+  const AXE_SETS = [
+    ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa', 'best-practice'],
+    ['wcag21a', 'experimental'],
+  ]
+  const BRIEF = { name: 'QA Visitor', company: 'QA Studio', building: 'A browser check', stuck: 'Nowhere yet', timeline: 'This week' }
+
+  // Each gate opens its own browser contexts (with whatever localStorage steers the mock) and
+  // watches every page's requests, sockets and console. A step that never happens fails the gate
+  // with its reason instead of ending the run.
+  async function gate(id, run) {
+    const contexts = []
+    const open = async (options, store = {}) => {
+      const { context, page } = await newPage(options)
+      contexts.push(context)
+      if (Object.keys(store).length) {
+        await page.addInitScript((pairs) => {
+          try {
+            for (const [key, value] of Object.entries(pairs)) localStorage.setItem(key, value)
+          } catch {}
+        }, store)
+      }
+      const seen = { calls: [], scripts: new Set(), console: [] }
+      page.on('request', (request) => {
+        if (calling(request.url())) seen.calls.push(`called ${request.url()}`)
+        if (request.resourceType() === 'script') seen.scripts.add(request.url())
+      })
+      page.on('websocket', (socket) => {
+        if (calling(socket.url())) seen.calls.push(`opened ${socket.url()}`)
+      })
+      page.on('console', (m) => {
+        if (m.type() === 'error' || m.type() === 'warning') seen.console.push(`${m.type()}: ${m.text().slice(0, 140)}`)
+      })
+      page.on('pageerror', (e) => seen.console.push(`pageerror: ${e.message.slice(0, 140)}`))
+      return { page, seen }
+    }
+    try {
+      await run(open)
+    } catch (error) {
+      report('FAIL', id, `stopped: ${String(error?.message ?? error).split('\n')[0]}`)
+    } finally {
+      for (const context of contexts) await context.close().catch(() => {})
+    }
+  }
+  // Here a launcher that never arrives stops the gate.
+  const arrive = async (page) => {
+    await page.waitForFunction(() => document.querySelector('.cg.cg-on'), null, { timeout: 15000 })
+    await page.waitForTimeout(700)
+  }
+  const auditPanel = (page) =>
+    page.evaluate(async (sets) => {
+      const panel = document.getElementById('cg-panel')
+      const found = []
+      for (const values of sets) {
+        const { violations } = await window.axe.run(panel, { runOnly: { type: 'tag', values }, resultTypes: ['violations'] })
+        found.push(...violations.map((v) => ({ id: v.id, impact: v.impact, nodes: v.nodes.length, target: v.nodes.slice(0, 4).map((node) => String(node.target)).join(', ') })))
+      }
+      return found
+    }, AXE_SETS)
+
+  // Quiet until asked: loading, the launcher's arrival and a full scroll (the quick questions
+  // peek on the way) call neither ElevenLabs nor the routes, fetch none of the concierge's lazy
+  // chunks and open no connection ahead (hover, focus or touch may; a scroll may not).
+  await gate('C9.concierge-quiet', async (open) => {
+    const { page, seen } = await open({ width: 1280, height: 800 })
+    await page.goto(`${BASE}/`, { waitUntil: 'networkidle' })
+    await arrive(page)
+    await scrollThrough(page)
+    await page.evaluate(() => window.scrollTo(0, 0))
+    await page.waitForTimeout(1500)
+    const preconnect = await page.evaluate(() =>
+      [...document.querySelectorAll('link[rel~="preconnect"], link[rel~="dns-prefetch"]')].map((link) => link.href).filter((href) => /elevenlabs/i.test(href)),
+    )
+    const chunks = []
+    for (const url of seen.scripts) {
+      const text = await fetch(url)
+        .then((r) => r.text())
+        .catch(() => '')
+      const kinds = LAZY.filter(([, marker]) => marker.test(text)).map(([kind]) => kind)
+      if (kinds.length) chunks.push(`${new URL(url).pathname} (${kinds.join(', ')})`)
+    }
+    check(
+      seen.calls.length === 0 && chunks.length === 0 && preconnect.length === 0,
+      'C9.concierge-quiet',
+      `load, arrival and a full scroll: nothing to ElevenLabs or /api/concierge, none of ${seen.scripts.size} scripts a concierge chunk, no preconnect`,
+      JSON.stringify({ calls: seen.calls, chunks, preconnect }),
+    )
+  })
+
+  // The launcher arrives only once the hero has: the moment it is marked cg-on is noted from the
+  // first frame, after a scroll as early as the page allows (a scroll brings it in otherwise).
+  // While Contact is on screen it steps aside, out of sight and out of the tab order, its loop at
+  // rest, and it comes back once Contact has gone.
+  await gate('C9.concierge-arrive', async (open) => {
+    const { page } = await open({ width: 1280, height: 800 })
+    await page.addInitScript(() => {
+      window.__cgArrival = null
+      new MutationObserver((records, observer) => {
+        if (!document.querySelector('.cg.cg-on')) return
+        observer.disconnect()
+        const finite = (document.querySelector('.hero')?.getAnimations({ subtree: true }) ?? []).filter((a) => a.effect?.getComputedTiming().iterations !== Infinity)
+        window.__cgArrival = { at: Math.round(performance.now()), finite: finite.length, running: finite.filter((a) => a.playState !== 'finished').length }
+      }).observe(document, { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] })
+    })
+    await page.goto(`${BASE}/`, { waitUntil: 'commit' })
+    await page.waitForFunction(() => document.querySelector('.cg'), null, { timeout: 15000 })
+    for (const top of [40, 80]) {
+      await page.evaluate((y) => window.scrollTo({ top: y, behavior: 'instant' }), top)
+      await page.waitForTimeout(250)
+    }
+    await page.waitForFunction(() => window.__cgArrival, null, { timeout: 15000 })
+    const arrival = await page.evaluate(() => window.__cgArrival)
+    await page.waitForTimeout(700)
+    await page.evaluate(() => document.getElementById('contact').scrollIntoView({ behavior: 'instant' }))
+    await page.waitForFunction(() => document.querySelector('.cg.cg-hide'), null, { timeout: 5000 }).catch(() => {})
+    await page.waitForTimeout(800) // the fade out (0.55 s), then visibility
+    const atContact = await page.evaluate(() => {
+      const launcher = document.getElementById('cg-launch')
+      launcher.focus()
+      return {
+        hide: !!document.querySelector('.cg.cg-hide'),
+        visibility: getComputedStyle(launcher).visibility,
+        focusable: document.activeElement === launcher,
+        waves: document.getAnimations().filter((a) => a.animationName === 'cg-wave').length,
+      }
+    })
+    await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }))
+    await page.waitForTimeout(900)
+    const back = await page.evaluate(() => getComputedStyle(document.getElementById('cg-launch')).visibility)
+    check(
+      arrival.finite > 0 && arrival.running === 0 && atContact.hide && atContact.visibility === 'hidden' && !atContact.focusable && atContact.waves === 0 && back === 'visible',
+      'C9.concierge-arrive',
+      `arrives at ${arrival.at} ms, all ${arrival.finite} hero arrivals finished despite an early scroll; at Contact hidden, unfocusable, waveform off; back at the top`,
+      JSON.stringify({ arrival, atContact, back }),
+    )
+  })
+
+  // The launcher opens the panel as a dialog with focus inside, calling nobody; Escape closes it
+  // and focus is back on the launcher. On a phone the panel is a modal sheet that keeps Tab
+  // inside it and never makes the page scroll sideways.
+  await gate('C9.concierge-open', async (open) => {
+    const problems = []
+    {
+      const { page, seen } = await open({ width: 1280, height: 800 })
+      await page.goto(`${BASE}/`, { waitUntil: 'networkidle' })
+      await arrive(page)
+      await page.click('#cg-launch')
+      await page.waitForSelector('#cg-panel', { timeout: 8000 })
+      await page.waitForTimeout(300)
+      const opened = await page.evaluate(() => {
+        const panel = document.getElementById('cg-panel')
+        return { role: panel.getAttribute('role'), expanded: document.getElementById('cg-launch').getAttribute('aria-expanded'), inside: panel.contains(document.activeElement) }
+      })
+      if (opened.role !== 'dialog' || opened.expanded !== 'true' || !opened.inside) problems.push(`opened: ${JSON.stringify(opened)}`)
+      await page.keyboard.press('Escape')
+      await page.waitForTimeout(300)
+      const closed = await page.evaluate(() => ({
+        panel: !!document.getElementById('cg-panel'),
+        focus: document.activeElement?.id || null,
+        expanded: document.getElementById('cg-launch').getAttribute('aria-expanded'),
+      }))
+      if (closed.panel || closed.focus !== 'cg-launch' || closed.expanded !== 'false') problems.push(`Escape: ${JSON.stringify(closed)}`)
+      problems.push(...seen.calls, ...seen.console)
+    }
+    {
+      const { page, seen } = await open({ width: 390, height: 844, mobile: true })
+      await page.goto(`${BASE}/`, { waitUntil: 'networkidle' })
+      await arrive(page)
+      await page.click('#cg-launch')
+      await page.waitForSelector('#cg-panel', { timeout: 8000 })
+      await page.waitForTimeout(600) // the sheet's rise (0.45 s)
+      const inside = () => page.evaluate(() => !!document.activeElement?.closest('#cg-panel'))
+      const sheet = await page.evaluate(() => ({ modal: document.getElementById('cg-panel').getAttribute('aria-modal'), scrollWidth: document.documentElement.scrollWidth, width: document.documentElement.clientWidth }))
+      const focusIn = await inside()
+      let escaped = 0
+      for (const [key, times] of [['Tab', 14], ['Shift+Tab', 6]]) {
+        for (let i = 0; i < times; i++) {
+          await page.keyboard.press(key)
+          if (!(await inside())) escaped++
+        }
+      }
+      const after = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
+      if (sheet.modal !== 'true' || !focusIn || escaped > 0 || sheet.scrollWidth > sheet.width || after > 0) problems.push(`390 px: ${JSON.stringify({ ...sheet, focusIn, escaped, after })}`)
+      problems.push(...seen.calls, ...seen.console)
+    }
+    check(
+      problems.length === 0,
+      'C9.concierge-open',
+      'a dialog with focus inside, nothing called; Escape closes it, focus back on the launcher; at 390 px a modal sheet, Tab stays inside (20 presses), no sideways scroll',
+      problems.join(' | '),
+    )
+  })
+
+  // The open panel with axe, the sets of T4.axe: the start screen, and a text conversation with
+  // the brief card the mock's fill_brief puts up, at a desktop and a phone width.
+  await gate('C9.concierge-axe', async (open) => {
+    const severe = []
+    const minor = new Set()
+    let audits = 0
+    for (const vp of [
+      { name: '1280', width: 1280, height: 800 },
+      { name: '390', width: 390, height: 844, mobile: true },
+    ]) {
+      const { page } = await open({ ...vp, reducedMotion: 'reduce' }, MOCK)
+      await page.goto(`${BASE}/`, { waitUntil: 'networkidle' })
+      await arrive(page)
+      await page.click('#cg-launch')
+      await page.waitForSelector('#cg-panel #cg-start', { timeout: 8000 })
+      await page.addScriptTag({ path: AXE_PATH })
+      const audit = async (screen) => {
+        audits++
+        for (const v of await auditPanel(page)) {
+          if (v.impact === 'serious' || v.impact === 'critical') severe.push(`${vp.name} ${screen}: ${v.id} [${v.impact}] x${v.nodes}: ${v.target}`)
+          else minor.add(v.id)
+        }
+      }
+      await audit('start')
+      if (!LOCAL) continue
+      // A text conversation: the agent's greeting in the log, then the brief card under it.
+      await page.click('#cg-type')
+      await page.waitForFunction(() => window.__cgMock && document.querySelector('.cg-agent .sr:not(:empty)'), null, { timeout: 10000 })
+      await page.evaluate((brief) => window.__cgMock.tools.fill_brief(brief), BRIEF)
+      await page.waitForSelector('#cg-brief', { timeout: 5000 })
+      await audit('brief')
+    }
+    check(
+      severe.length === 0,
+      'C9.concierge-axe',
+      `${audits} audits of the open panel (start screen${LOCAL ? ' and brief card' : '; the brief card needs the mock, local only'}, 1280 and 390 px): 0 serious/critical (minor/moderate: ${[...minor].join(', ') || 'none'})`,
+      severe.join(' | '),
+    )
+  })
+
+  // A conversation with the mock. A chip is the visitor's first message; the agent answers it,
+  // naming the Sprint, and the page follows: the Sprint comes up and the conversation notes it.
+  // Named again with the page scrolled away, it comes back under the header, ringed. fill_brief,
+  // called as the agent calls it, puts up the brief, which refuses a bad address and sends with a
+  // valid one. The route refusing (503) rests the concierge on its email card; a refused
+  // microphone shows the blocked card.
+  if (!LOCAL) report('SKIP', 'C9.concierge-mock', `the QA mock answers on 127.0.0.1 and localhost only, not on ${new URL(BASE).hostname}`)
+  else {
+    await gate('C9.concierge-mock', async (open) => {
+      const problems = []
+      {
+        const { page, seen } = await open({ width: 1280, height: 800 }, MOCK)
+        await page.goto(`${BASE}/`, { waitUntil: 'networkidle' })
+        await arrive(page)
+        await page.click('#cg-launch')
+        const chip = page.locator('#cg-panel .cg-chip[data-chip="engagement"]')
+        const asked = (await chip.textContent()).trim()
+        await chip.click()
+        await page.waitForFunction(() => document.querySelector('.cg-agent .sr:not(:empty)') && document.querySelector('.cg-act'), null, { timeout: 12000 })
+        const turn = await page.evaluate(() => ({
+          user: [...document.querySelectorAll('.cg-user')].map((el) => el.textContent.trim()),
+          agent: document.querySelectorAll('.cg-agent').length,
+          act: document.querySelector('.cg-act')?.textContent ?? null,
+        }))
+        if (turn.user[0] !== asked || turn.agent === 0 || !turn.act) problems.push(`chip: ${JSON.stringify({ asked, ...turn })}`)
+
+        // From the top of the page, once the ring of the chip's own reply has been drawn.
+        await page.waitForSelector('.cg-ring', { timeout: 8000 }).catch(() => {})
+        await page.evaluate(() => {
+          document.querySelectorAll('.cg-ring').forEach((ring) => ring.remove())
+          window.scrollTo({ top: 0, behavior: 'instant' })
+        })
+        await page.waitForTimeout(300)
+        const acts = await page.evaluate(() => document.querySelectorAll('.cg-act').length)
+        await page.evaluate(() => window.__cgMock.say('It starts with the two-week Sprint on your own data.'))
+        await page.waitForSelector('.cg-ring', { timeout: 8000 })
+        const shown = await page.evaluate(() => {
+          const step = [...document.querySelectorAll('#nexerah .steps > li')].find((li) => li.querySelector('.stepname')?.textContent.trim() === 'Sprint')
+          const box = step.getBoundingClientRect()
+          const ring = document.querySelector('.cg-ring').getBoundingClientRect()
+          const head = document.querySelector('.nav').getBoundingClientRect().bottom
+          return {
+            top: Math.round(box.top),
+            head: Math.round(head),
+            under: box.top >= head - 1 && box.top < innerHeight,
+            ringed: ring.top <= box.top + 1 && ring.bottom >= box.bottom - 1 && ring.left <= box.left + 1 && ring.right >= box.right - 1,
+            acts: document.querySelectorAll('.cg-act').length,
+          }
+        })
+        if (!shown.under || !shown.ringed || shown.acts !== acts + 1) problems.push(`a reply naming the Sprint: ${JSON.stringify({ ...shown, actsBefore: acts })}`)
+
+        const answer = await page.evaluate((brief) => window.__cgMock.tools.fill_brief(brief), BRIEF)
+        await page.waitForSelector('#cg-brief', { timeout: 5000 })
+        const fields = await page.evaluate(() => Object.fromEntries(['name', 'company', 'email', 'building', 'stuck', 'timeline'].map((key) => [key, document.getElementById(`cg-b-${key}`)?.value ?? null])))
+        if (typeof answer !== 'string' || !answer || fields.name !== BRIEF.name || fields.building !== BRIEF.building || fields.email !== '') problems.push(`fill_brief: ${JSON.stringify({ answer, fields })}`)
+        await page.fill('#cg-b-email', 'not-an-email')
+        await page.click('.cg-send')
+        await page.waitForTimeout(250)
+        const refused = await page.evaluate(() => ({
+          error: document.getElementById('cg-b-err')?.textContent ?? '',
+          invalid: document.getElementById('cg-b-email')?.getAttribute('aria-invalid') ?? null,
+          sent: !!document.querySelector('.cg-sent'),
+        }))
+        if (!refused.error || refused.invalid !== 'true' || refused.sent) problems.push(`a bad address: ${JSON.stringify(refused)}`)
+        await page.fill('#cg-b-email', 'visitor@example.com')
+        await page.click('.cg-send')
+        await page.waitForSelector('.cg-sent', { timeout: 5000 })
+        const remembered = await page.evaluate(() => localStorage.getItem('cg-brief-sent'))
+        if (remembered !== '1') problems.push(`sent, but cg-brief-sent is ${remembered}`)
+        problems.push(...seen.calls, ...seen.console)
+      }
+      for (const [store, start, title, status] of [
+        [{ 'cg-mock-route': '503' }, '#cg-type', TEXT.resting.title, TEXT.status.resting],
+        [{ 'cg-mock-mic': 'denied' }, '#cg-talk', TEXT.blocked.title, TEXT.status.blocked],
+      ]) {
+        const { page, seen } = await open({ width: 1280, height: 800 }, { ...MOCK, ...store })
+        await page.goto(`${BASE}/`, { waitUntil: 'networkidle' })
+        await arrive(page)
+        await page.click('#cg-launch')
+        await page.click(start)
+        // Talk explains the microphone first; the mock refuses it once it is allowed.
+        if (start === '#cg-talk') await page.click('.cg-card .cg-primary')
+        const reached = await page
+          .waitForFunction((want) => document.querySelector('.cg-card h3')?.textContent === want, title, { timeout: 8000 })
+          .then(
+            () => true,
+            () => false,
+          )
+        const card = await page.evaluate(() => ({
+          title: document.querySelector('.cg-card h3')?.textContent ?? null,
+          status: document.getElementById('cg-statustext')?.textContent ?? null,
+          mail: document.querySelector('.cg-card .cg-mail')?.textContent ?? null,
+          call: document.documentElement.dataset.call ?? null,
+        }))
+        const [[key, value]] = Object.entries(store)
+        if (!reached || card.status !== status || card.call !== null || (start === '#cg-type' && !card.mail?.includes('@'))) problems.push(`${key}=${value}: ${JSON.stringify(card)}`)
+        problems.push(...seen.calls, ...seen.console)
+      }
+      check(
+        problems.length === 0,
+        'C9.concierge-mock',
+        `a chip: message, reply, "${TEXT.shown}" line; a reply naming the Sprint brings it under the header, ringed; fill_brief, a bad address refused, sent; route 503: resting card; microphone denied: blocked card; nothing called`,
+        problems.join(' | '),
+      )
+    })
+  }
 }
 
 await browser.close()

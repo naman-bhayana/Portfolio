@@ -52,6 +52,23 @@ Crawlers, answer engines and reader modes take the HTML as plain text, so the pa
 
 The page links nexerah.com. Its Organization node joins the structured data only once `NEXERAH_LIVE` is set in `site.js`, which `verify-site.mjs` checks against the live address; until the domain answers, the HTTP check warns.
 
+## The concierge
+
+An AI assistant on the page that answers visitors by voice or text: it says how Naman can help, shows the part of the page it is talking about and passes him a brief the visitor checks and sends. The page follows the agent's words rather than a tool call: a reply that names a figure, a build, a practice, the Sprint, the terms or the email brings that part of the page up and rings it (`concierge/named.js`), so every turn is one reply with nothing for the page to wait on. The agent runs on ElevenLabs. Its prompt, knowledge, voice and tool definitions are configured there, outside this public repo; its visible strings are `CONCIERGE` in `site.js`.
+
+It exists only in a build made with `NEXT_PUBLIC_CONCIERGE=on` (`NEXT_PUBLIC_CONCIERGE=on npm run build`). Anything else builds the site exactly as it was: no launcher, no entry, the old headers, and both routes answer 404. The server reads `ELEVENLABS_API_KEY`, `ELEVENLABS_AGENT_ID`, `ELEVENLABS_WEBHOOK_SECRET`, `CONCIERGE_RESEND_KEY`, `CONCIERGE_FROM`, `CONCIERGE_TO`, `CONCIERGE_PAUSED` (the kill switch) and `CONCIERGE_ORIGINS`. `.env.example` lists them; their values live in Vercel and `.env.local`, never here.
+
+Nothing loads until the visitor asks. The page carries two small pieces: a launcher (`Concierge.jsx`), which renders nothing on the server, arrives only after the hero and steps aside while Contact is on screen, and an entry in Contact (`ConciergeEntry.jsx`), hidden until the page hydrates like the copy button. The panel and the ElevenLabs client are chunks of their own, fetched on a click; hover, focus or touch only warms the panel's chunk and opens a connection to ElevenLabs a moment early. Nothing reaches ElevenLabs or `/api/concierge` before a conversation starts. A voice call asks for the microphone inside the visitor's click and rests the page's motion while it lasts (`html[data-call]`). The audio worklets are copied into `public/vendor/elevenlabs/` before each build, so the Content Security Policy needs no `blob:` scripts.
+
+Two routes, neither cached:
+
+- `GET /api/concierge/session?mode=voice|text` mints a short-lived credential for one conversation, so the key never leaves the server. It refuses other methods (405), any origin but the site's own (403), an unknown mode (400) and a visitor asking too often (429, `LIMITS` in `src/lib/concierge-server.js`). It answers 503 when paused or unconfigured and 502 when ElevenLabs fails, and never passes on the key or an upstream body.
+- `POST /api/concierge/post-call` takes ElevenLabs' post-call webhook. It refuses a missing, forged or stale signature (401), ignores other agents and events, and emails Naman through Resend when the visitor left an address, sent a brief or stayed for three turns.
+
+For the checks, on 127.0.0.1 or localhost only, `localStorage['cg-mock'] = '1'` stands a scripted conversation in for ElevenLabs (the route is never called) and hands the agent's client tools to `window.__cgMock`, with `window.__cgMock.say(text)` to make the agent say a line the page then follows. `cg-mock-mic` set to `denied` or `missing` fails the microphone; `cg-mock-route` set to a status fails the route with it.
+
+`browser-checks.mjs` runs the concierge's gates (`C9.concierge-*`: quiet until asked, the launcher's arrival, the panel opening, axe on the open panel, a mock conversation) when the served page carries `[data-concierge]`, and reports them as skipped otherwise. `npm run budget` lists its chunks with budgets of their own (panel 25 KB, ElevenLabs client 190 KB, gzip) and fails if the home page references any. `concierge-routes.mjs` signs its test webhooks with the secret from the environment or `.env.local`; with the server's key set it mints a few short-lived sessions, and with `CONCIERGE_RESEND_KEY` set it sends one test email.
+
 ## Checks
 
 ```sh
@@ -59,6 +76,7 @@ npm run budget                                        # gzip JavaScript of the b
 node scripts/qa/css-survival.mjs                      # the motion CSS survived the minifier
 npm run verify -- http://127.0.0.1:3000               # HTML, metadata, routes and headers
 node scripts/qa/browser-checks.mjs http://127.0.0.1:3000   # layout, motion, accessibility in Chrome
+node scripts/qa/concierge-routes.mjs http://127.0.0.1:3000 # the concierge's two routes (a concierge build)
 npm run assets                                        # rebuild the avatar, share card and icons
 ```
 

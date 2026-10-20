@@ -11,7 +11,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { parse } from 'node-html-parser'
-import { CHROME_UA, HTML_ACCEPT, get, headerMap, rawGet } from './lib/net.mjs'
+import { CHROME_UA, HTML_ACCEPT, describeError, get, headerMap, rawGet, requestHeaders } from './lib/net.mjs'
 import {
   findEmoji,
   gluedText,
@@ -187,6 +187,26 @@ if (ldScripts.length) {
   }
 }
 const ldStrings = ld ? stringLeaves(ld) : []
+
+// A concierge build (NEXT_PUBLIC_CONCIERGE=on) is known by its headers: it allows the microphone
+// on this origin. T7 and T10 hold the routes and the headers to the build that is being served.
+const permissionsOf = (value) =>
+  new Map(
+    String(value ?? '')
+      .split(',')
+      .map((d) => d.split('='))
+      .filter((d) => d.length === 2 && d[0].trim())
+      .map(([feature, allow]) => [feature.trim().toLowerCase(), allow.replace(/\s+/g, ' ').trim()]),
+  )
+const cspSources = (policy, name) => {
+  const directive = String(policy ?? '')
+    .split(';')
+    .map((d) => d.trim().split(/\s+/))
+    .find(([n]) => n.toLowerCase() === name)
+  return directive ? directive.slice(1) : null
+}
+const CONCIERGE_HOSTS = ['https://api.elevenlabs.io', 'wss://api.elevenlabs.io', 'https://livekit.rtc.elevenlabs.io', 'wss://livekit.rtc.elevenlabs.io']
+const CONCIERGE_ON = permissionsOf(home.headers?.get?.('permissions-policy')).get('microphone') === '(self)'
 
 const textOrEmpty = (r) => (r.ok && r.status === 200 ? r.text : '')
 // Corpora shared by C2 (terms, emoji) and C4 (voice). `voice` marks prose-like corpora.
@@ -381,14 +401,17 @@ await section('C1', async () => {
     .filter((e) => /opacity\s*:\s*0*(\.0*)?\s*(;|!|$)|visibility\s*:\s*hidden/i.test(e.getAttribute('style') || ''))
   check(!hiddenStyle.length, 'C1.inline-hidden', 'no inline opacity:0 or visibility:hidden',
     `${hiddenStyle.length} element(s) hidden by inline style, first <${tagOf(hiddenStyle[0])}> style=${q(hiddenStyle[0]?.getAttribute('style') ?? '')}`)
-  const markedCopy = (e) => {
-    for (let p = e; p && p.nodeType === 1; p = p.parentNode) if (p.hasAttribute && p.hasAttribute('data-copy-email')) return true
+  // Enhancements that need JavaScript stay hidden until the page hydrates: the copy button
+  // (data-copy-email) and the concierge's inline entry (data-concierge).
+  const enhancement = (e) => {
+    for (let p = e; p && p.nodeType === 1; p = p.parentNode)
+      if (p.hasAttribute && (p.hasAttribute('data-copy-email') || p.hasAttribute('data-concierge'))) return true
     return false
   }
   // Empty hidden elements are framework markers (Next renders <div hidden><!--$--><!--/$--></div>);
   // only hidden elements that carry content count.
-  const hidden = body.querySelectorAll('[hidden]').filter((e) => !markedCopy(e) && (textOf(e) || e.querySelector('*')))
-  check(!hidden.length, 'C1.hidden-attr', 'no [hidden] content outside data-copy-email',
+  const hidden = body.querySelectorAll('[hidden]').filter((e) => !enhancement(e) && (textOf(e) || e.querySelector('*')))
+  check(!hidden.length, 'C1.hidden-attr', 'no [hidden] content outside data-copy-email and data-concierge',
     `${hidden.length} [hidden] element(s), first <${tagOf(hidden[0])}> ${q(textOf(hidden[0]), 50)}`)
 })
 
@@ -838,6 +861,68 @@ await section('T7', async () => {
     check(r.status === 404, `T7.404`, `${p} 404`, `${p} -> ${fetchErr(r)}, expected 404`)
   }
 
+  // The concierge's routes: a session goes only to the site's own pages, and the webhook takes
+  // only signed requests. Both are refused before anything reaches ElevenLabs or Resend, and no
+  // answer may be stored. A deployment from before the routes answers 404.
+  const ask = async (p, init) => {
+    try {
+      const r = await fetch(at(p), {
+        ...init,
+        headers: { ...requestHeaders(undefined, 'application/json'), ...init.headers },
+        redirect: 'manual',
+        signal: AbortSignal.timeout(20000),
+      })
+      const text = await r.text()
+      let error = null
+      try {
+        error = JSON.parse(text)?.error ?? null
+      } catch {}
+      return { ok: true, status: r.status, noStore: /\bno-store\b/i.test(r.headers.get('cache-control') || ''), error }
+    } catch (e) {
+      return { ok: false, status: 0, error: describeError(e) }
+    }
+  }
+  const routes = [
+    {
+      id: 'T7.concierge-session',
+      what: 'GET /api/concierge/session from another site',
+      want: 403,
+      error: 'origin',
+      r: await ask('/api/concierge/session?mode=text', {
+        headers: { origin: 'https://cross-site.example', 'sec-fetch-site': 'cross-site', 'sec-fetch-mode': 'cors' },
+      }),
+    },
+    {
+      id: 'T7.concierge-webhook',
+      what: 'unsigned POST /api/concierge/post-call',
+      want: 401,
+      r: await ask('/api/concierge/post-call', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ type: 'post_call_transcription', data: {} }),
+      }),
+    },
+  ]
+  for (const { id, what, want, error, r } of routes) {
+    if (!r.ok) fail(id, `${what}: request failed: ${r.error}`)
+    else if (r.status === 404) {
+      // Without the concierge the routes answer as if they did not exist.
+      if (CONCIERGE_ON) fail(id, `${what} -> 404 on a concierge build: the routes are missing`)
+      else pass(id, `${what} -> 404 (no concierge in this build)`)
+    }
+    else if (r.status === 503 && r.error === 'unconfigured' && want === 401) {
+      const detail = `${what} -> 503: ELEVENLABS_WEBHOOK_SECRET or ELEVENLABS_AGENT_ID is unset`
+      if (CONCIERGE_ON) fail(id, `${detail} on a concierge build`)
+      else warn(id, `${detail} (no concierge in this build)`)
+    } else {
+      const problems = []
+      if (r.status !== want) problems.push(`HTTP ${r.status}, expected ${want}`)
+      if (error && r.error !== error) problems.push(`error ${q(r.error ?? '')}, expected ${q(error)}`)
+      if (!r.noStore) problems.push('no Cache-Control: no-store')
+      check(!problems.length, id, `${what} -> ${want}${error ? ` ${error}` : ''}, no-store`, `${what}: ${problems.join('; ')}`)
+    }
+  }
+
   // The 404 page must not inherit the home page's indexing or canonical tags.
   const nf = await get(at('/this-path-should-not-exist'), { accept: HTML_ACCEPT })
   if (nf.status === 404 && nf.text) {
@@ -899,10 +984,32 @@ await section('T10', async () => {
     for (const bad of ['clipboard', 'browsing-topics']) if (pp.includes(bad)) fails.push(`permissions-policy mentions ${bad}`)
     const csp = (h.get('content-security-policy-report-only') || []).join(';')
     for (const bad of ['nonce-', 'upgrade-insecure-requests']) if (csp.includes(bad)) fails.push(`CSP mentions ${bad}`)
+    // A concierge build allows the microphone here and connects to ElevenLabs; any other build
+    // sends these exactly as before. Neither lets scripts run from blob: (the worklets are files).
+    const policy = permissionsOf(pp)
+    for (const [feature, want] of [['camera', '()'], ['microphone', CONCIERGE_ON ? '(self)' : '()'], ['geolocation', '()']])
+      if (policy.get(feature) !== want) fails.push(`permissions-policy ${feature}=${policy.get(feature) ?? '(absent)'}, expected ${want}`)
+    if (csp) {
+      const connect = cspSources(csp, 'connect-src')
+      const wantConnect = ["'self'", ...(CONCIERGE_ON ? CONCIERGE_HOSTS : [])]
+      if (!connect || connect.length !== wantConnect.length || !wantConnect.every((s) => connect.includes(s)))
+        fails.push(`CSP connect-src is ${connect ? q(connect.join(' '), 200) : 'absent'}, expected ${q(wantConnect.join(' '), 200)}`)
+      if ((cspSources(csp, 'script-src') || []).some((s) => /^blob:/i.test(s))) fails.push('CSP script-src allows blob:')
+    }
     const id = `T10.headers`
     if (fails.length) fail(id, `${p}: ${[...fails, ...warns].join('; ')}`)
     else if (warns.length) warn(id, `${p}: ${warns.join('; ')}`)
-    else pass(id, `${p}: security headers once each`)
+    else pass(id, `${p}: security headers once each${CONCIERGE_ON ? ', microphone and ElevenLabs allowed (concierge build)' : ''}`)
+  }
+
+  // The page and its headers come from the same build: the concierge's inline entry
+  // ([data-concierge]) ships only where Permissions-Policy lets it use the microphone.
+  if (!HOME_OK) skip('T10.concierge', `cannot read / (${fetchErr(home)})`)
+  else {
+    const entry = !!doc.querySelector('[data-concierge]')
+    if (entry && !CONCIERGE_ON) fail('T10.concierge', 'the page carries the concierge ([data-concierge]) but Permissions-Policy keeps the microphone off')
+    else if (!entry && CONCIERGE_ON) warn('T10.concierge', 'the headers are a concierge build (microphone=(self)) but the page has no [data-concierge] entry')
+    else pass('T10.concierge', CONCIERGE_ON ? 'concierge build: the entry is in the page and the headers allow the microphone' : 'no concierge: no entry in the page, microphone off')
   }
 })
 

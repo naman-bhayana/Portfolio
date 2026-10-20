@@ -39,7 +39,9 @@ export default function MotionIsland() {
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)')
     const printing = window.matchMedia('print')
     const hover = window.matchMedia('(hover: hover)').matches
-    const still = () => reduced.matches || pause?.checked
+    // A voice call with the concierge (html[data-call], set by its panel) rests the page too, so
+    // the field and the tilt leave the device to the audio.
+    const still = () => reduced.matches || pause?.checked || html.hasAttribute('data-call')
 
     const observers = []
     const listeners = []
@@ -523,6 +525,10 @@ export default function MotionIsland() {
     reduced.addEventListener('change', onPreference)
     printing.addEventListener('change', settleForPrint)
     on(window, 'beforeprint', settleBeforePrint)
+    // A call starting or ending counts as a change of preference (it fires only then).
+    const call = new MutationObserver(onPreference)
+    call.observe(html, { attributes: true, attributeFilter: ['data-call'] })
+    observers.push(call)
 
     return () => {
       observers.forEach((observer) => observer.disconnect())

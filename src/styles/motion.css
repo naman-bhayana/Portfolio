@@ -264,6 +264,94 @@
   }
 }
 
+/* The concierge (concierge.css). */
+@keyframes cg-wave {
+  0%, 100% {
+    scale: 1 .45;
+  }
+  50% {
+    scale: 1 1;
+  }
+}
+
+/* The quick questions arrive as one batch of equal-length animations: each one's wait is
+   written into its keyframes, as in the hero's arrival (Hero.jsx). */
+@keyframes cg-rise {
+  from {
+    opacity: 0;
+    translate: 0 10px;
+  }
+}
+
+@keyframes cg-rise2 {
+  0%, 12% {
+    opacity: 0;
+    translate: 0 10px;
+  }
+}
+
+@keyframes cg-rise3 {
+  0%, 24% {
+    opacity: 0;
+    translate: 0 10px;
+  }
+}
+
+@keyframes cg-rise4 {
+  0%, 36% {
+    opacity: 0;
+    translate: 0 10px;
+  }
+}
+
+@keyframes cg-open {
+  from {
+    opacity: 0;
+    scale: .96;
+    translate: 0 14px;
+  }
+}
+
+@keyframes cg-sheet {
+  from {
+    translate: 0 100%;
+  }
+}
+
+@keyframes cg-beat {
+  50% {
+    scale: .55;
+  }
+}
+
+@keyframes cg-dots {
+  0%, 100% {
+    opacity: .45;
+    scale: .6;
+  }
+  50% {
+    opacity: 1;
+    scale: 1;
+  }
+}
+
+@keyframes cg-ring {
+  0% {
+    opacity: 0;
+    scale: 1.04;
+  }
+  14% {
+    opacity: 1;
+    scale: 1;
+  }
+  72% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   html {
     scroll-behavior: smooth;
@@ -308,6 +396,65 @@
   /* The primary button's sheen runs once on hover. */
   .pill-primary:hover::after {
     animation: sheen 1.1s cubic-bezier(.3, .6, .2, 1) both;
+  }
+
+  /* ---------------------------------------------------------------- the concierge */
+  /* The launcher's waveform pulses while the launcher is on screen: a compositor-only scale
+     loop, staggered with negative delays. Open or stepped aside, it rests. */
+  .cg.cg-on .cg-bars i {
+    animation: cg-wave 1.6s ease-in-out infinite;
+  }
+  .cg.cg-on .cg-bars i:nth-child(2) {
+    animation-delay: -1.42s;
+  }
+  .cg.cg-on .cg-bars i:nth-child(3) {
+    animation-delay: -1.24s;
+  }
+  .cg.cg-on .cg-bars i:nth-child(4) {
+    animation-delay: -1.06s;
+  }
+  .cg.cg-open .cg-bars i,
+  .cg.cg-hide .cg-bars i {
+    animation: none;
+  }
+  .cg-peek.cg-in > * {
+    animation: cg-rise .7s var(--ease) backwards;
+  }
+  .cg-peek.cg-in > :nth-child(2) {
+    animation-name: cg-rise2;
+  }
+  .cg-peek.cg-in > :nth-child(3) {
+    animation-name: cg-rise3;
+  }
+  .cg-peek.cg-in > :nth-child(4) {
+    animation-name: cg-rise4;
+  }
+  /* The panel opens once; on a phone it rises as a sheet. */
+  .cg-panel.cg-opening {
+    animation: cg-open .45s var(--ease) backwards;
+  }
+  .cg-panel.cg-opening.cg-sheet {
+    animation-name: cg-sheet;
+  }
+  /* In a conversation only: the status dot beats while it listens or thinks, and three dots
+     pulse while the agent writes. */
+  .cg-panel[data-state="listening"] .cg-dot,
+  .cg-panel[data-state="thinking"] .cg-dot {
+    animation: cg-beat 1.2s ease-in-out infinite;
+  }
+  .cg-typing i {
+    animation: cg-dots 1s ease-in-out infinite;
+  }
+  .cg-typing i:nth-child(2) {
+    animation-delay: -.8s;
+  }
+  .cg-typing i:nth-child(3) {
+    animation-delay: -.6s;
+  }
+  /* The ring round what the concierge shows lights up, holds and fades, then is removed. Not
+     text, so it may hold its last frame. */
+  .cg-ring {
+    animation: cg-ring 2.8s cubic-bezier(.2, .8, .2, 1) both;
   }
 
   /* ---------------------------------------------------------------- scroll-driven depth */

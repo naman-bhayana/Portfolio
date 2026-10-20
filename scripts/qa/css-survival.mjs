@@ -17,14 +17,18 @@ if (!existsSync(builtDir)) {
   process.exit(2)
 }
 
-const read = (dir) =>
+const read = (dir, skip = []) =>
   readdirSync(dir)
-    .filter((file) => file.endsWith('.css'))
+    .filter((file) => file.endsWith('.css') && !skip.includes(file))
     .sort()
     .map((file) => readFileSync(path.join(dir, file), 'utf8'))
     .join('\n')
-const source = postcss.parse(read(sourceDir))
-const built = postcss.parse(read(builtDir))
+const builtText = read(builtDir)
+// The concierge's stylesheet ships only in a build with NEXT_PUBLIC_CONCIERGE=on (layout.js), so
+// a build without it is compared without that file.
+const withConcierge = /\.cg-launch\b/.test(builtText)
+const source = postcss.parse(read(sourceDir, withConcierge ? [] : ['concierge.css']))
+const built = postcss.parse(builtText)
 
 let failures = 0
 const report = (ok, id, pass, fail) => {
