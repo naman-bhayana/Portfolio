@@ -130,6 +130,8 @@ export const CAPABILITIES = [
   'Agent runtimes',
   'Voice AI',
   'Retrieval systems',
+  'Fine-tuning',
+  'Small language models',
   'Model governance',
   'Evidence guards',
   'Multi-tenant SaaS',
@@ -217,7 +219,6 @@ export const WORK = {
       'Autonomous outbound engine',
       'SEO and AEO growth programme',
     ],
-    next: 'Next release: fine-tuned small language models',
     team: { label: 'Listed on the ideasIQ team page', href: 'https://ideasiq.ai/about#who-we-are' },
     image: {
       src: '/work/ideasiq.webp',
@@ -422,7 +423,7 @@ export const TIMELINE = {
   events: [
     { when: '2023 to 2024', who: 'Allianz Exports, Techlive Solutions', what: 'Trading strategies in Python, then a recruitment platform' },
     { when: '2025 to 2026', who: 'InvestBeans, DocPad', what: 'Market analytics, then cloud hospital records' },
-    { when: '2026 to now', who: 'ideasIQ, myLeadsIQ', what: 'Head of AI Engineering; fine-tuned small language models in the next release' },
+    { when: '2026 to now', who: 'ideasIQ, myLeadsIQ', what: 'Head of AI Engineering; fine-tuning and small language models' },
   ],
 }
 

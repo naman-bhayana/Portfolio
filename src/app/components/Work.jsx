@@ -89,7 +89,6 @@ function Flagship({ build }) {
           {build.modules.map((module) => (
             <li key={module}>{module}</li>
           ))}
-          <li className="next">{build.next}</li>
         </ul>
         <Tags tags={build.tags} />
         <p className="quiet">
