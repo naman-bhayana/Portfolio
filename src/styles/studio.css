@@ -1,0 +1,169 @@
+/* The studio: the statement, three practices, the method, the terms. */
+
+.studio {
+  padding: var(--pad) 0;
+  background: rgba(7, 10, 16, .58);
+}
+
+.light-studio {
+  background: radial-gradient(760px 520px at 10% 30%, rgba(26, 125, 255, .11), transparent 70%);
+}
+
+.studio .wrap {
+  perspective: 1800px;
+}
+
+.studiohead {
+  max-width: 960px;
+}
+
+.h2studio {
+  font-size: clamp(38px, 5.2vw, 74px);
+  line-height: 1.02;
+  letter-spacing: -.04em;
+}
+
+.studiohead .body {
+  margin-top: 24px;
+  max-width: 760px;
+}
+
+.studiolink {
+  margin-top: 10px;
+}
+
+.practices {
+  display: grid;
+  grid-template-columns: 1.25fr 1fr 1fr;
+  gap: 16px;
+  margin-top: 48px;
+}
+
+.practice {
+  position: relative;
+  padding: 30px 30px 26px;
+  border: 1px solid var(--line2);
+  border-radius: 24px;
+  background: rgba(13, 18, 27, .9);
+}
+
+.practice:first-child {
+  background: radial-gradient(520px 360px at 20% 0%, rgba(26, 125, 255, .16), transparent 70%), rgba(13, 18, 27, .9);
+}
+
+.practice:nth-child(3) {
+  background: radial-gradient(420px 320px at 90% 100%, rgba(0, 225, 255, .08), transparent 70%), rgba(10, 14, 22, .9);
+}
+
+.practice h3 {
+  font: 700 clamp(24px, 2.1vw, 30px)/1.1 var(--display);
+  letter-spacing: -.03em;
+  color: var(--fg);
+}
+
+.practice p {
+  margin-top: 14px;
+  font-size: 15.5px;
+  line-height: 1.55;
+  color: var(--soft);
+  text-wrap: pretty;
+}
+
+.practice .src {
+  margin-top: 22px;
+}
+
+.method {
+  margin-top: 56px;
+}
+
+.steps {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0 24px;
+  margin-top: 24px;
+  border-top: 1px solid var(--line);
+}
+
+.steps > li {
+  position: relative;
+  padding: 22px 0 8px;
+}
+
+/* Each step's cyan tick, drawn once as the block arrives (motion.css). */
+.steps > li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: -1px;
+  width: 44px;
+  height: 2px;
+  background: var(--cyan);
+  transform-origin: 0 50%;
+}
+
+.stepname {
+  display: block;
+  font: 700 clamp(22px, 1.9vw, 28px)/1.1 var(--display);
+  letter-spacing: -.03em;
+  color: var(--fg);
+}
+
+.stepwhen {
+  display: block;
+  margin-top: 8px;
+  font: 500 12.5px/1.5 var(--mono);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--cyan);
+}
+
+.stepwhat {
+  display: block;
+  margin-top: 12px;
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--muted);
+  text-wrap: pretty;
+}
+
+.send {
+  margin-top: 28px;
+  max-width: 900px;
+  font: italic 400 clamp(20px, 1.6vw, 24px)/1.35 var(--serif);
+  color: var(--fg);
+}
+
+.terms {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  margin-top: 56px;
+  margin-bottom: 1em;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.terms > div {
+  padding: 22px 28px 24px 0;
+}
+
+.terms > div + div {
+  padding-left: 28px;
+  border-left: 1px solid var(--line);
+}
+
+.terms dt {
+  font: 500 12.5px/1.5 var(--mono);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--cyan);
+}
+
+.terms dd {
+  margin: 10px 0 0;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--soft);
+  text-wrap: pretty;
+}

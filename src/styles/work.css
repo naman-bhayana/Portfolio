@@ -1,0 +1,357 @@
+/* Work: the flagship plate, the sticky deck of five cases, and the index. */
+
+.work {
+  padding: var(--pad) 0;
+  background: rgba(7, 10, 16, .58);
+}
+
+.light-work {
+  background: radial-gradient(900px 600px at 82% 18%, rgba(26, 125, 255, .10), transparent 70%);
+}
+
+.work .wrap {
+  perspective: 1800px;
+}
+
+/* ---------------------------------------------------------------- the flagship plate */
+
+.flag {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.12fr);
+  gap: 40px 56px;
+  align-items: center;
+  margin-top: 48px;
+  padding: 40px 48px;
+  border: 1px solid var(--line2);
+  border-radius: 28px;
+  background: rgba(10, 15, 23, .86);
+}
+
+.card {
+  position: relative;
+  overflow: clip;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: #000;
+}
+
+.card img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 800 / 418;
+}
+
+/* One light sweeps the brand card once the plate has arrived (motion.css). */
+.card::after {
+  content: "";
+  position: absolute;
+  inset: -30% -40%;
+  background: linear-gradient(104deg, transparent 42%, rgba(255, 255, 255, .20) 50%, transparent 58%);
+  transform: translateX(-80%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.stagebar {
+  margin-top: 22px;
+}
+
+/* The 14 stages of the research agent, filled once, left to right. */
+.segs {
+  display: flex;
+  gap: 4px;
+  height: 6px;
+}
+
+.segs i {
+  flex: 1;
+  background: var(--cyan);
+  transform-origin: 0 50%;
+}
+
+.stagebar .cap {
+  margin-top: 12px;
+}
+
+.flagname {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px 18px;
+}
+
+.h3big {
+  font: 700 clamp(32px, 3.2vw, 46px)/1 var(--display);
+  letter-spacing: -.035em;
+  color: var(--fg);
+}
+
+.flagsum {
+  margin-top: 16px;
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--soft);
+  text-wrap: pretty;
+}
+
+.mods {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 24px;
+  margin-top: 18px;
+}
+
+.mods li {
+  position: relative;
+  padding-left: 15px;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.mods li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: .72em;
+  width: 7px;
+  height: 1px;
+  background: var(--cyan);
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 20px;
+  margin-top: 20px;
+  font: 500 12.5px/1.4 var(--mono);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.quiet {
+  margin-top: 4px;
+  font-size: 13.5px;
+}
+
+.quiet a {
+  display: inline-block;
+  padding: 10px 0 6px;
+  line-height: 1.2;
+  color: var(--muted);
+  border-bottom: 1px solid var(--line2);
+  transition: color .2s, border-color .2s;
+}
+
+.quiet a:hover {
+  color: var(--fg);
+  border-bottom-color: var(--cyan);
+}
+
+/* ---------------------------------------------------------------- the deck */
+
+/* Five cases, each sticky, each pinned a step lower than the one before and clear of the
+   sticky header (--top0 per breakpoint, responsive.css). As the next case slides over, the
+   previous one recedes: it scales down a touch and a flat dark veil (its ::after) fades over
+   it, from the moment the two meet (--h, measured by MotionIsland) to the moment the next one
+   is pinned (motion.css). The cases are opaque, so a covered case never shows through, with
+   or without the veil. */
+.deck {
+  position: relative;
+  margin-top: 12px;
+  perspective: 2000px;
+  timeline-scope: --c2, --c3, --c4, --c5;
+}
+
+.case {
+  --top0: 96px;
+  --step: 12px;
+  --h: 224px;
+  --top: var(--top0);
+  position: sticky;
+  top: var(--top);
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr) 280px;
+  gap: 24px 44px;
+  align-items: center;
+  height: 224px;
+  margin-top: 10px;
+  padding: 30px 44px;
+  border: 1px solid var(--line2);
+  border-radius: 24px;
+  background: #0C111A;
+  transform-origin: 50% 0;
+}
+
+.case::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  background: var(--bg);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.case:nth-child(2) {
+  --top: calc(var(--top0) + var(--step));
+  view-timeline-name: --c2;
+}
+
+.case:nth-child(3) {
+  --top: calc(var(--top0) + 2 * var(--step));
+  view-timeline-name: --c3;
+}
+
+.case:nth-child(4) {
+  --top: calc(var(--top0) + 3 * var(--step));
+  view-timeline-name: --c4;
+}
+
+.case:nth-child(5) {
+  --top: calc(var(--top0) + 4 * var(--step));
+  view-timeline-name: --c5;
+}
+
+/* The three shades of the prototype's translucent plates, composited on the page ground. */
+.case:nth-child(2),
+.case:nth-child(4) {
+  background: #0A0D15;
+}
+
+.case:nth-child(3),
+.case:nth-child(5) {
+  background: #0F151D;
+}
+
+.casehead,
+.casetext {
+  min-width: 0;
+}
+
+.casename {
+  line-height: 0;
+}
+
+.wm {
+  width: auto;
+  max-width: none;
+}
+
+.wm-myleadsiq {
+  height: 48px;
+}
+
+.wm-investbeans {
+  height: 50px;
+}
+
+.wm-docpad {
+  height: 44px;
+}
+
+.wm-prozone {
+  height: 32px;
+}
+
+.wm-artize {
+  height: 40px;
+}
+
+.casehead .tags {
+  margin-top: 18px;
+}
+
+.mech {
+  max-width: 560px;
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--soft);
+  text-wrap: pretty;
+}
+
+/* The role line opens the paragraph on a line of its own. */
+.role2 {
+  display: block;
+  margin-bottom: 10px;
+  font: italic 400 clamp(19px, 1.5vw, 22px)/1.3 var(--serif);
+  color: var(--fg);
+}
+
+.caseart {
+  justify-self: end;
+  width: 100%;
+  overflow: clip;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: #000;
+}
+
+.caseart img {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 800 / 418;
+}
+
+.caselink {
+  justify-self: end;
+  align-self: start;
+  margin-top: -8px;
+}
+
+/* ---------------------------------------------------------------- the index */
+
+.index {
+  margin-top: 56px;
+}
+
+.ix {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 26px 0;
+  margin-top: 20px;
+}
+
+.ix > li {
+  padding: 4px 36px 0 0;
+}
+
+.ix > li:nth-child(3n+2),
+.ix > li:nth-child(3n) {
+  padding-left: 36px;
+  border-left: 1px solid var(--line);
+}
+
+.ix > li:nth-child(3n) {
+  padding-right: 0;
+}
+
+.ixname {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 16px;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: -.01em;
+  color: var(--fg);
+}
+
+.ixsector {
+  margin-top: 5px;
+  font: 500 12.5px/1.4 var(--mono);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.ixwhat {
+  margin-top: 8px;
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--muted);
+  text-wrap: pretty;
+}

@@ -24,8 +24,13 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# local env files
-.env*.local
+# env files (all variants: `vercel env pull` writes a plain .env)
+.env*
+!.env.example
+
+# files Next.js writes for AI coding agents
+/AGENTS.md
+/CLAUDE.md
 
 # vercel
 .vercel

@@ -1,27 +1,68 @@
-import './globals.css'
-import { Inter } from 'next/font/google'
+import { HEAD, MOTION, PERSON, SITE_URL, SKIP_LINK } from '@/content/site'
+import SiteFooter from './components/SiteFooter'
+import SiteHeader from './components/SiteHeader'
+import { fontVariables } from './fonts'
+// Order matters: responsive.css overrides the section files, and motion.css comes last.
+import '@/styles/base.css'
+import '@/styles/chrome.css'
+import '@/styles/hero.css'
+import '@/styles/wall.css'
+import '@/styles/proof.css'
+import '@/styles/work.css'
+import '@/styles/infra.css'
+import '@/styles/studio.css'
+import '@/styles/about.css'
+import '@/styles/contact.css'
+import '@/styles/responsive.css'
+import '@/styles/motion.css'
 
-const inter = Inter({ subsets: ['latin'] })
-
+// Site-wide fields only. The canonical URL, robots, Open Graph, Twitter and JSON-LD belong to
+// the page that they describe (src/app/page.js), so other routes such as the 404 never
+// inherit them.
 export const metadata = {
-  title: 'Naman Bhayana | Full-Stack Developer & AI/ML Engineer',
-  description: 'Full-Stack Developer & AI/ML Engineer specializing in web development and artificial intelligence',
-  keywords: ['Full-Stack Developer', 'AI Engineer', 'ML Engineer', 'Web Development', 'Portfolio'],
-  authors: [{ name: 'Naman Bhayana' }],
-  openGraph: {
-    title: 'Naman Bhayana | Full-Stack Developer & AI/ML Engineer',
-    description: 'Full-Stack Developer & AI/ML Engineer specializing in web development and artificial intelligence',
-    type: 'website',
-  },
-  icons: {
-    icon: '/favicon.ico',
-  },
+  metadataBase: new URL(SITE_URL),
+  title: HEAD.title,
+  description: HEAD.description,
+  authors: [{ name: PERSON.name, url: SITE_URL }],
+}
+
+export const viewport = {
+  themeColor: '#05070B',
+  colorScheme: 'dark',
+  width: 'device-width',
+  initialScale: 1,
 }
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
-      <body className={inter.className}>{children}</body>
+    <html lang="en" className={fontVariables}>
+      <body>
+        <a href="#main" className="skip-link">
+          {SKIP_LINK}
+        </a>
+        {/* Pause switch (WCAG 2.2.2). A real checkbox, so it works without JavaScript; it sits
+            before .nb because motion.css reaches the page through a sibling selector. */}
+        <input id="pause-motion" className="sr" type="checkbox" role="switch" aria-label={MOTION.pause} />
+        <div className="nb">
+          {/* The ground under every section: a particle field MotionIsland draws, two slow
+              lights, a film grain and the reading-progress line. All decoration, all fixed,
+              and all outside <main>, so nothing that reads the page meets them. */}
+          <canvas className="field" aria-hidden="true" />
+          <div className="ambient" aria-hidden="true">
+            <i className="orb orb-a" />
+            <i className="orb orb-b" />
+          </div>
+          <div className="grain" aria-hidden="true" />
+          <div className="progress" aria-hidden="true" />
+          <SiteHeader />
+          <main id="main" tabIndex={-1}>
+            {children}
+          </main>
+          <SiteFooter />
+          {/* The pointer light, moved by MotionIsland on devices with a mouse. */}
+          <div className="cursor" aria-hidden="true" />
+        </div>
+      </body>
     </html>
   )
 }

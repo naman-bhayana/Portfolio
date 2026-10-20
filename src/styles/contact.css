@@ -1,0 +1,106 @@
+/* Contact: type on black. */
+
+.contact {
+  padding: clamp(60px, 5.4vw, 76px) 0 clamp(52px, 4.4vw, 60px);
+  background: rgba(3, 5, 8, .78);
+  text-align: center;
+}
+
+.light-contact {
+  background: radial-gradient(760px 420px at 50% 112%, rgba(26, 125, 255, .14), transparent 70%);
+}
+
+.contactin {
+  max-width: 1040px;
+}
+
+/* The gradient phrase keeps a hair of room at its end, as in the approved design: without it the
+   balanced headline tips "the" onto the second line once it is split into words. */
+.h2c .grad {
+  padding-right: .06em;
+}
+
+.cbody {
+  margin: 24px auto 0;
+  max-width: 600px;
+  font-size: var(--lede2);
+  line-height: 1.55;
+  color: var(--soft);
+  text-wrap: pretty;
+}
+
+.cextra {
+  margin: 10px auto 0;
+  max-width: 600px;
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--muted);
+  text-wrap: pretty;
+}
+
+.addr {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px 16px;
+  margin-top: 32px;
+}
+
+.addr a {
+  display: inline-block;
+  padding: 8px 0;
+  font: 500 clamp(18px, 2vw, 26px)/1.3 var(--mono);
+  letter-spacing: -.01em;
+  color: var(--fg);
+  border-bottom: 1px solid var(--line2);
+  transition: border-color .2s;
+}
+
+.addr a:hover {
+  border-bottom-color: var(--cyan);
+}
+
+/* The copy button: a real button, set as a quiet label. */
+.copybtn {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  background: transparent;
+  font: 500 12.5px/1 var(--mono);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color .2s;
+}
+
+.copybtn:hover {
+  color: var(--fg);
+}
+
+/* Copy-email result. Always in the page so screen readers announce it, and never shown: the
+   button's own label says "Copied" (CopyEmail), so nothing moves when it changes. */
+.copystatus {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.cacts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 22px;
+}
+
+.micro {
+  margin-top: 24px;
+  font: 500 12.5px/1.6 var(--mono);
+  letter-spacing: .06em;
+  color: var(--dim);
+}
