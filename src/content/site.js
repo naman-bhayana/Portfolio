@@ -91,7 +91,16 @@ export const HERO = {
   lede: 'Most AI products stall somewhere between the demo and the launch. That stretch is my job.',
   primaryCta: { label: 'See the work', href: '#work' },
   secondaryCta: { label: 'Get in touch', href: '#contact' },
-  chips: { runtime: 'In-house agent runtime', voice: 'Voice AI, live' },
+  // The skills round the avatar, in the order they arrive. `live` gives a chip the pinging dot
+  // instead of the diamond. On a tablet the second and fourth step out (responsive.css).
+  chips: [
+    { id: 'runtime', text: 'In-house agent runtime' },
+    { id: 'retrieval', text: 'Retrieval on private data' },
+    { id: 'slm', text: 'Fine-tuned small language models' },
+    { id: 'evals', text: 'Evals on every change' },
+    { id: 'gateway', text: '400+ models, one gateway' },
+    { id: 'voice', text: 'Voice AI, live', live: true },
+  ],
 }
 
 export const AVATAR = {

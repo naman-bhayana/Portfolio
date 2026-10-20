@@ -294,14 +294,14 @@
   position: absolute;
   display: flex;
   align-items: center;
-  gap: 9px;
-  padding: 10px 14px;
-  border-radius: 14px;
+  gap: 10px;
+  padding: 12px 17px;
+  border-radius: 15px;
   background: rgba(12, 19, 28, .84);
   border: 1px solid var(--line2);
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 600;
   line-height: 1.3;
   white-space: nowrap;
@@ -310,22 +310,46 @@
 }
 
 .chip .dm {
-  width: 7px;
-  height: 7px;
+  flex: none;
+  width: 8px;
+  height: 8px;
   border-radius: 2px;
   background: var(--cyan);
   transform: rotate(45deg);
   box-shadow: 0 0 10px var(--cyan);
 }
 
+/* Round the avatar and clear of the face: three down the left, three down the right. The right
+   ones end inside the stage, which has only the page's margin beside it from 1280 px down, and
+   standing proud of a tilting stage draws a chip a little further out than its box. */
 .c1 {
-  top: 8%;
-  left: -6%;
+  top: 3%;
+  left: -10%;
+}
+
+.c2 {
+  top: 15%;
+  right: 3%;
 }
 
 .c3 {
-  bottom: 22%;
-  left: -9%;
+  top: 45%;
+  left: -20%;
+}
+
+.c4 {
+  top: 58%;
+  right: 3%;
+}
+
+.c5 {
+  top: 76%;
+  left: -7%;
+}
+
+.c6 {
+  top: 89%;
+  right: 8%;
 }
 
 /* ---------------------------------------------------------------- the marquee */

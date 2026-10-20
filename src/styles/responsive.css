@@ -1,6 +1,20 @@
 /* Narrow layouts. Tablets (1160 px), narrow screens (960 px), phones (600 px, designed at 390). */
 
 @media (max-width: 1160px) {
+  /* A smaller stage carries four smaller chips, so the avatar still shows: the two on the right,
+     which would cover the face, step out. */
+  .chip {
+    gap: 9px;
+    padding: 10px 14px;
+    font-size: 14px;
+  }
+  .c2,
+  .c4 {
+    display: none;
+  }
+  .c3 {
+    left: -12%;
+  }
   .wgrid {
     grid-template-columns: repeat(3, 1fr);
   }

@@ -375,8 +375,20 @@
   .chip {
     animation: bob 6s ease-in-out infinite;
   }
+  .c2 {
+    animation-delay: -1s;
+  }
   .c3 {
+    animation-delay: -2s;
+  }
+  .c4 {
+    animation-delay: -3s;
+  }
+  .c5 {
     animation-delay: -4s;
+  }
+  .c6 {
+    animation-delay: -5s;
   }
   .mqt {
     animation: mq 60s linear infinite;

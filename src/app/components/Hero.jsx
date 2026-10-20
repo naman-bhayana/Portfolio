@@ -24,8 +24,8 @@ function arrivals() {
     ['.d3', 'rise', 1.1, 0.8],
     ['.d4', 'rise', 1.25, 0.8],
     ['.stage', 'settle', 0.1, 1.1],
-    ['.c1', 'pop', 1, 0.7, 'bob 6s ease-in-out infinite'],
-    ['.c3', 'pop', 1.3, 0.7, 'bob 6s ease-in-out -4s infinite'],
+    // The chips pop in one after another, each then bobbing a second out of step with the last.
+    ...HERO.chips.map((chip, i) => [`.c${i + 1}`, 'pop', 0.85 + i * 0.13, 0.7, `bob 6s ease-in-out ${i ? `-${i}s ` : ''}infinite`]),
   ]
 }
 
@@ -113,14 +113,12 @@ export default function Hero() {
               fetchPriority="high"
             />
           </div>
-          <div className="chip c1">
-            <span className="dm" aria-hidden="true" />
-            <span>{chips.runtime}</span>
-          </div>
-          <div className="chip c3">
-            <span className="pulse" aria-hidden="true" />
-            <span>{chips.voice}</span>
-          </div>
+          {chips.map((chip, i) => (
+            <div key={chip.id} className={`chip c${i + 1}`}>
+              <span className={chip.live ? 'pulse' : 'dm'} aria-hidden="true" />
+              <span>{chip.text}</span>
+            </div>
+          ))}
         </div>
       </div>
     </section>
