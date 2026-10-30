@@ -359,6 +359,8 @@
 
 /* ---------------------------------------------------------------- the marquee */
 
+/* The services strip closes the association band: the same ground as the wall above it, a faint
+   rule between the two, the band's seam under it. */
 .mq {
   position: relative;
   z-index: 1;
@@ -366,6 +368,17 @@
   background: var(--band-flat);
   overflow: clip;
   white-space: nowrap;
+}
+
+.mq::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--g-seam);
+  pointer-events: none;
 }
 
 .mqt {
@@ -380,12 +393,12 @@
 }
 
 .mqg {
-  padding: 20px 20px 20px 40px;
+  padding: 17px 20px 17px 40px;
   list-style: none;
 }
 
 .mqg li {
-  font: italic 400 30px/1.1 var(--serif);
+  font: italic 400 27px/1.1 var(--serif);
   color: #CBD5E1;
 }
 

@@ -366,8 +366,8 @@ for (const width of [360, 370, 374]) {
 
 // ---------------------------------------------------------------- the wall's descriptors
 // A pointer uncovers a mark's descriptor; on a touch screen from tablets up it stands under the
-// mark (nothing hovers there); phones show the marks alone. The wall's grid is full in every
-// layout: no mark sits in a row with an empty slot beside it.
+// mark (nothing hovers there); phones show the marks alone. The marks sit in centred rows in
+// every layout: a shorter row is centred under the one above, never left ragged to one side.
 for (const [name, viewport, want] of [
   ['tablet-touch', { width: 1024, height: 768, mobile: true }, 'shown'],
   ['laptop-pointer', { width: 1280, height: 800 }, 'on hover'],
@@ -390,19 +390,26 @@ for (const [name, viewport, want] of [
     detail = { before, after }
     ok = before.every((o) => o === 0) && after[0] === 1 && after.slice(1).every((o) => o === 0)
   }
-  // Full rows: every mark's row is as full as the grid's columns allow.
+  // Centred rows: in each row the space left of the first mark equals the space right of the
+  // last, and the label sits on a row of its own above them.
   const rows = await page.evaluate(() => {
-    const cols = getComputedStyle(document.querySelector('.wgrid')).gridTemplateColumns.split(' ').length
-    const widths = new Map()
-    for (const el of [document.querySelector('.wlabel'), ...document.querySelectorAll('.wcell')]) {
+    const grid = document.querySelector('.wlist').getBoundingClientRect()
+    const byRow = new Map()
+    for (const el of document.querySelectorAll('.wcell')) {
       const r = el.getBoundingClientRect()
       const top = Math.round(r.top)
-      widths.set(top, (widths.get(top) ?? 0) + r.width)
+      const row = byRow.get(top) ?? { left: Infinity, right: -Infinity, n: 0 }
+      row.left = Math.min(row.left, r.left)
+      row.right = Math.max(row.right, r.right)
+      row.n++
+      byRow.set(top, row)
     }
-    const full = document.querySelector('.wgrid').getBoundingClientRect().width
-    return { cols, ragged: [...widths.values()].filter((w) => Math.abs(w - full) > 2).length }
+    const sizes = [...byRow.values()].map((row) => row.n)
+    const ragged = [...byRow.values()].filter((row) => Math.abs(row.left - grid.left - (grid.right - row.right)) > 3).length
+    const label = document.querySelector('.wlabel').getBoundingClientRect()
+    return { rows: sizes.join('+'), ragged, labelAbove: label.bottom <= Math.min(...byRow.keys()) + 1 }
   })
-  check(ok && rows.ragged === 0, `T4.wall-desc.${name}`, `descriptors ${want}; ${rows.cols} columns, every row full`, JSON.stringify({ ...detail, rows }))
+  check(ok && rows.ragged === 0 && rows.labelAbove, `T4.wall-desc.${name}`, `descriptors ${want}; rows of ${rows.rows} marks, each centred`, JSON.stringify({ ...detail, rows }))
   await context.close()
 }
 

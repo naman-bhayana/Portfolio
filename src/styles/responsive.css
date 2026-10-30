@@ -15,21 +15,6 @@
   .c3 {
     left: -12%;
   }
-  /* The heading leads into the first mark rather than leaving a gap before it. */
-  .wgrid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-  .wlabel {
-    grid-column: span 3;
-    justify-content: flex-end;
-    padding-right: 32px;
-  }
-  .wlist > li {
-    border-top: 0;
-  }
-  .wlist > li:nth-child(n+2) {
-    border-top: 1px solid var(--line);
-  }
   .figs {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 40px 40px;
@@ -218,12 +203,6 @@
   .chip {
     display: none;
   }
-  .wgrid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-  .wlabel {
-    grid-column: span 2;
-  }
   .name {
     font-size: clamp(56px, 17.5vw, 120px);
   }
@@ -233,7 +212,7 @@
   }
   .mqg li {
     gap: 28px;
-    font-size: 23px;
+    font-size: 22px;
   }
   .pstage {
     grid-template-columns: minmax(0, 1fr);
@@ -319,26 +298,6 @@
     width: min(280px, 72%);
     margin-top: 32px;
   }
-  .wgrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: 48px;
-    grid-auto-rows: 60px;
-  }
-  .wlabel {
-    grid-column: 1 / -1;
-    justify-content: flex-start;
-    padding-right: 0;
-  }
-  .wlist > li {
-    border-top: 1px solid var(--line);
-  }
-  .wlist > li:last-child:nth-child(odd) {
-    grid-column: 1 / -1;
-  }
-  .wcell::before {
-    height: 24px;
-    margin-top: -12px;
-  }
   .lg-ideasiq {
     height: 21.9px;
   }
@@ -377,9 +336,6 @@
   }
   .lg-allianzexports {
     height: 18.9px;
-  }
-  .wdesc {
-    bottom: 3px;
   }
   /* Under a reader's own text spacing (WCAG 1.4.12) a long word may break rather than run off
      the screen. */

@@ -1,13 +1,28 @@
-/* The client wall: the hero's closing band. Marks only, each at the height that gives it the
-   same visual weight as the others (public/logos files are optical boxes: centring the file
-   centres the mark). The descriptor sits under the mark: a pointer uncovers it, and on a touch
-   screen from tablets up it simply stands there. */
+/* The client wall: the hero's closing band, and with the services strip under it one object,
+   the association band. The label sits centred between two fading rules; the marks sit in
+   centred rows with no cell rules, each at the height that gives it the same visual weight as
+   the others (public/logos files are optical boxes: centring the file centres the mark). The
+   descriptor sits under the mark: a pointer uncovers it, and on a touch screen from tablets up
+   it simply stands there. */
 
 .wall {
   position: relative;
   z-index: 1;
-  border-top: 1px solid var(--line);
-  background: rgba(8, 12, 18, .6);
+  background: var(--g-bloom-l), var(--band-flat);
+}
+
+/* The seam where the band meets the hero. */
+.wall::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  z-index: 2;
+  height: 1px;
+  background: var(--g-seam);
+  opacity: .7;
+  pointer-events: none;
 }
 
 /* One light crosses the band once it has arrived (motion.css). */
@@ -21,21 +36,36 @@
 }
 
 .wgrid {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  grid-auto-rows: 84px;
-}
-
-/* The marks are a list; its items take their places in the band's grid beside the heading. */
-.wlist {
-  display: contents;
+  padding: 34px 0 30px;
 }
 
 .wlabel {
-  grid-column: span 2;
   display: flex;
   align-items: center;
-  padding-right: 24px;
+  justify-content: center;
+  gap: 22px;
+  margin-bottom: 28px;
+}
+
+.wlabel::before,
+.wlabel::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(148, 170, 200, .24));
+}
+
+.wlabel::after {
+  background: linear-gradient(90deg, rgba(148, 170, 200, .24), transparent);
+}
+
+/* The marks: seven then six on a laptop. A fourteen-column grid, two columns a mark, lets the
+   shorter row start half a cell in, so it centres. */
+.wlist {
+  display: grid;
+  grid-template-columns: repeat(14, minmax(0, 1fr));
+  grid-auto-rows: 72px;
+  gap: 14px 0;
 }
 
 .wcell {
@@ -43,64 +73,89 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  grid-column: span 2;
+  padding: 0 10px;
 }
 
-.wlist > li:nth-child(n+4) {
-  border-top: 1px solid var(--line);
+.wcell:nth-child(8) {
+  grid-column: 2 / span 2;
 }
 
-/* A short rule between neighbouring marks, never at the start of a row. */
-.wcell::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 50%;
-  width: 1px;
-  height: 36px;
-  margin-top: -18px;
-  background: var(--line);
-  display: none;
-}
-
-/* Which marks start a row depends on the columns, so each layout lists its own. Every layout
-   fills its grid: five columns with the heading taking two (3 + 5 + 5 marks), four with it
-   taking three (1 + 4 + 4 + 4), three with it taking two (1 + 3 + 3 + 3 + 3), and on phones two
-   under a heading row of their own, the thirteenth mark taking the last row. The first mark
-   follows the heading and gets no rule either. */
-@media (min-width: 1161px) {
-  .wlist > li:not(:first-child, :nth-child(5n+4))::before {
-    display: block;
-  }
-}
-
+/* Five, four and four on a tablet; four and three threes on a narrow screen; three a row on a
+   phone, the thirteenth centred under them. */
 @media (min-width: 961px) and (max-width: 1160px) {
-  .wlist > li:not(:first-child, :nth-child(4n+2))::before {
-    display: block;
+  .wlist {
+    grid-template-columns: repeat(10, minmax(0, 1fr));
+    grid-auto-rows: 66px;
+  }
+
+  .wcell:nth-child(8) {
+    grid-column: span 2;
+  }
+
+  .wcell:nth-child(6),
+  .wcell:nth-child(10) {
+    grid-column: 2 / span 2;
   }
 }
 
 @media (min-width: 601px) and (max-width: 960px) {
-  .wlist > li:not(:first-child, :nth-child(3n+2))::before {
-    display: block;
+  .wlist {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    grid-auto-rows: 62px;
+  }
+
+  .wcell:nth-child(5),
+  .wcell:nth-child(11) {
+    grid-column: 2 / span 2;
   }
 }
 
 @media (max-width: 600px) {
-  .wlist > li:nth-child(2n)::before {
-    display: block;
+  .wgrid {
+    padding: 26px 0 22px;
+  }
+
+  .wlabel {
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+
+  .wlist {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-auto-rows: 54px;
+    gap: 4px 0;
+  }
+
+  .wcell {
+    padding: 0 6px;
+  }
+
+  .wcell:nth-child(8) {
+    grid-column: span 2;
+  }
+
+  .wcell:nth-child(13) {
+    grid-column: 3 / span 2;
   }
 }
 
 .lg {
   width: auto;
   max-width: none;
+  transition: translate var(--t-base) var(--ease-snap), filter var(--t-base);
 }
 
-/* A mark never runs into its neighbour's rule: in a narrow cell (a foldable, a small phone) the
-   widest marks scale down inside their own box rather than overflow it. */
+/* A mark never runs into its neighbour: in a narrow cell (a foldable, a small phone) the widest
+   marks scale down inside their own box rather than overflow it. */
 .wcell .lg {
-  max-width: calc(100% - 28px);
+  max-width: calc(100% - 20px);
   object-fit: contain;
+}
+
+.wcell:hover .lg {
+  translate: 0 -2px;
+  filter: brightness(1.15);
 }
 
 .lg-ideasiq {
@@ -159,14 +214,14 @@
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 4px;
+  bottom: 2px;
   text-align: center;
   font: var(--label);
   line-height: 1;
   letter-spacing: var(--trk);
   color: var(--muted);
   opacity: 0;
-  transition: opacity .25s;
+  transition: opacity var(--t-base);
   pointer-events: none;
 }
 
@@ -181,18 +236,12 @@
 /* Nothing hovers on a touch screen. From tablets up the descriptor stands under its mark, in
    rows tall enough for both; phones keep the marks alone. */
 @media (hover: none) and (min-width: 601px) {
-  .wgrid {
-    grid-auto-rows: 96px;
+  .wlist {
+    grid-auto-rows: 92px;
   }
 
-  .wlabel,
   .wcell {
     padding-bottom: 22px;
-  }
-
-  /* The rules between marks centre on the marks, above the descriptors. */
-  .wcell::before {
-    top: calc(50% - 11px);
   }
 
   .wdesc {
