@@ -140,12 +140,14 @@
   }
 }
 
+/* A covered case rises a little, shrinks and tilts in the deck's perspective as the next one
+   covers it, and its veil darkens. The rest state below ends on the same values. */
 @keyframes recede {
   from {
     transform: none;
   }
   to {
-    transform: scale(.965);
+    transform: translateY(-10px) scale(.955) rotateX(-6deg);
   }
 }
 
@@ -154,7 +156,136 @@
     opacity: 0;
   }
   to {
-    opacity: .94;
+    opacity: .96;
+  }
+}
+
+/* The stage's two rings, turning in opposite senses (hero.css .sring). */
+@keyframes ring-spin {
+  from {
+    transform: translateZ(6px) rotate(0deg);
+  }
+  to {
+    transform: translateZ(6px) rotate(360deg);
+  }
+}
+
+@keyframes ring-spin-r {
+  from {
+    transform: translateZ(6px) rotate(0deg);
+  }
+  to {
+    transform: translateZ(6px) rotate(-360deg);
+  }
+}
+
+/* The halos breathe. */
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: .85;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+}
+
+/* A node's flare as the first pulse passes it: a ring that opens and fades, then waits for the
+   next crossing (7.7 s, the pulse's own loop). It waits at no size, not transparent: a loop
+   resting at opacity 0 makes Chrome tick the main thread whenever another animation starts or
+   finishes (as rpulse above). */
+@keyframes flare {
+  0% {
+    opacity: 0;
+    transform: scale(.6);
+  }
+  4% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  14% {
+    opacity: 0;
+    transform: scale(2.6);
+  }
+  14.01%,
+  100% {
+    opacity: 1;
+    transform: scale(0);
+  }
+}
+
+/* The ring that pulses out of the hero figure once it has landed. */
+@keyframes pulse-ring {
+  from {
+    opacity: .9;
+    transform: scale(.6);
+  }
+  to {
+    opacity: 0;
+    transform: scale(3.2);
+  }
+}
+
+/* A figure column's rule, drawn top to bottom. */
+@keyframes draw-y {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+/* The practices fan in from either side (--ry per plate). */
+@keyframes fanin {
+  from {
+    opacity: 0;
+    transform: perspective(1200px) translateY(26px) rotateY(var(--ry, 0deg));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* The portrait develops from the bottom up: a cover of the frame's own ground draws up off it
+   (about.css .pframe::before), so the frame and its shadow stay whole throughout. */
+@keyframes develop {
+  from {
+    transform: scaleY(1);
+  }
+  to {
+    transform: scaleY(0);
+  }
+}
+
+/* The glint across a hovered plate: in, across and out in one pass. */
+@keyframes glint {
+  0% {
+    transform: translateX(-70%);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(70%);
+    opacity: 0;
+  }
+}
+
+/* The copy button answers a copy. */
+@keyframes pop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1);
   }
 }
 
@@ -414,15 +545,51 @@
   .orb-b {
     animation: orb-b 32s ease-in-out -14s infinite alternate;
   }
+  /* The stage's rings turn, the halos breathe. */
+  .sring.a {
+    animation: ring-spin 16s linear -4s infinite;
+  }
+  .sring.b {
+    animation: ring-spin-r 46s linear -20s infinite;
+  }
+  .halo {
+    animation: breathe 7s ease-in-out -2s infinite;
+  }
+  .phalo {
+    animation: breathe 9s ease-in-out -3s infinite;
+  }
   /* From the first node, once the rail has arrived (MotionIsland marks .railwrap.lit); before
      the page is marked, and without a script, it simply runs. */
   html:not(.rv-on) .rpulse,
   .railwrap.lit .rpulse {
     animation: rpulse 7.7s linear infinite;
   }
-  /* The primary button's sheen runs once on hover. */
+  /* Two more pulses at their own speeds, and each node's flare as the first one's bright centre
+     reaches it: the first node flares as the pulse sets out, then one node every .93 s. Before
+     the page is marked the flares run with the pulse, so the two never drift apart. */
+  html:not(.rv-on) .rpulse.rp2,
+  .railwrap.lit .rpulse.rp2 {
+    animation: rpulse 11.3s linear -4.1s infinite;
+  }
+  html:not(.rv-on) .rpulse.rp3,
+  .railwrap.lit .rpulse.rp3 {
+    animation: rpulse 9.1s linear -6.6s infinite;
+  }
+  html:not(.rv-on) .rdot::after,
+  .railwrap.lit .rdot::after {
+    animation: flare 7.7s linear infinite;
+    animation-delay: calc(.48s + var(--k, 0) * .93s - 7.7s);
+  }
+  /* The primary button's sheen runs once on hover; a glint crosses a hovered plate once. */
   .pill-primary:hover::after {
     animation: sheen 1.1s cubic-bezier(.3, .6, .2, 1) both;
+  }
+  .flag:hover::after,
+  .practice:hover::after {
+    animation: glint 1.1s cubic-bezier(.3, .6, .2, 1) both;
+  }
+  .copybtn[data-copied] {
+    animation: pop var(--t-slow) var(--ease-spring);
   }
 
   /* ---------------------------------------------------------------- the concierge */
@@ -550,10 +717,10 @@
 @media screen and (prefers-reduced-motion: no-preference) {
   @supports (animation-timeline: view()) {
     :where(#pause-motion:not(:checked)) ~ .nb .case:not(:last-child) {
-      transform: scale(.965);
+      transform: translateY(-10px) scale(.955) rotateX(-6deg);
     }
     :where(#pause-motion:not(:checked)) ~ .nb .case:not(:last-child)::after {
-      opacity: .94;
+      opacity: .96;
     }
   }
 }
@@ -615,6 +782,9 @@
   .rv-on .rv-wait .steps > li::before {
     transform: scaleX(0);
   }
+  .rv-on .rv-wait.figs > li::before {
+    transform: scaleY(0);
+  }
   /* The dots are hidden while MotionIsland flies them in on its canvas, then fade in. */
   /* The flight is full strength from its first frame (it is not one of the stage's arriving
      parts), and the grid leaves at once under it; it fades back in when the dots have landed. */
@@ -637,6 +807,27 @@
   .rv-in[data-rv="seq"] > *,
   .rv-in[data-rv="stage"] > * {
     animation: rise .85s var(--ease) backwards;
+  }
+  /* The figures' rules draw as the row arrives; the hero figure pulses a ring once it lands
+     (MotionIsland marks .landed); the practices fan in; the portrait develops. */
+  .rv-in.figs > li::before {
+    animation: draw-y .9s var(--ease) .2s backwards;
+  }
+  .hfig.landed .num::after {
+    animation: pulse-ring 1.1s var(--ease) backwards;
+  }
+  .rv-in.practices > .practice {
+    animation-name: fanin;
+    animation-duration: .95s;
+  }
+  .practices > .practice:nth-child(1) {
+    --ry: -12deg;
+  }
+  .practices > .practice:nth-child(3) {
+    --ry: 12deg;
+  }
+  .rv-in .pframe::before {
+    animation: develop 1.1s var(--ease) backwards;
   }
   .rv-in > :nth-child(2) {
     animation-delay: .1s;

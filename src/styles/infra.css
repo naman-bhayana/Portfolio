@@ -29,6 +29,18 @@
   pointer-events: none;
 }
 
+/* Two more pulses, a short sharp one and a long soft one (motion.css gives each its speed). */
+.rpulse.rp2 {
+  width: 90px;
+  filter: blur(.5px);
+}
+
+.rpulse.rp3 {
+  width: 200px;
+  height: 8px;
+  margin-top: 31px;
+}
+
 .rail {
   position: relative;
   display: grid;
@@ -76,6 +88,17 @@
   background: var(--cyan);
   transform: rotate(45deg);
   box-shadow: 0 0 14px rgba(0, 225, 255, .7);
+}
+
+/* The flare a node gives as a pulse passes it (motion.css; --k is the node's index, Infra.jsx). */
+.rdot::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 4px;
+  border: 1px solid var(--cyan);
+  opacity: 0;
+  transform: scale(.6);
 }
 
 .node h3 {

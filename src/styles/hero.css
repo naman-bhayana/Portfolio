@@ -269,6 +269,50 @@
   filter: blur(24px);
 }
 
+/* Two rings behind the avatar, turning in opposite senses (motion.css), a satellite riding each:
+   a broad soft arc close in, a thin bright one further out. */
+.sring {
+  position: absolute;
+  inset: -3%;
+  border-radius: 50%;
+  pointer-events: none;
+  transform: translateZ(6px);
+}
+
+.sring.a {
+  background: conic-gradient(from 180deg, transparent 0 58%, rgba(0, 225, 255, .9) 76%, rgba(26, 140, 255, .85) 88%, transparent 97%);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 18px), #000 calc(100% - 16px), #000 calc(100% - 3px), transparent 100%);
+  mask: radial-gradient(farthest-side, transparent calc(100% - 18px), #000 calc(100% - 16px), #000 calc(100% - 3px), transparent 100%);
+  filter: blur(3px);
+}
+
+.sring.b {
+  inset: -13%;
+  background: conic-gradient(from 0deg, transparent 0 72%, rgba(0, 225, 255, .75) 93%, transparent 100%);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1px));
+}
+
+.sring::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: -3px;
+  width: 7px;
+  height: 7px;
+  margin-left: -3.5px;
+  border-radius: 50%;
+  background: #9DEFFF;
+  box-shadow: 0 0 16px 2px var(--cyan);
+}
+
+.sring.a::after {
+  top: 7px;
+  width: 5px;
+  height: 5px;
+  margin-left: -2.5px;
+}
+
 .cut {
   position: absolute;
   left: 7%;

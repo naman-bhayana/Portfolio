@@ -138,6 +138,8 @@ export default function Hero() {
           <div className="orbit" aria-hidden="true" />
           <div className="disc" aria-hidden="true" />
           <div className="halo" aria-hidden="true" />
+          <i className="sring a" aria-hidden="true" />
+          <i className="sring b" aria-hidden="true" />
           <div className="cut">
             {/* eslint-disable-next-line @next/next/no-img-element -- optimised URLs built in lib/images */}
             <img

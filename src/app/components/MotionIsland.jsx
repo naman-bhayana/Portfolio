@@ -97,6 +97,7 @@ export default function MotionIsland() {
             if (section === entry.target) a.setAttribute('aria-current', 'location')
             else a.removeAttribute('aria-current')
           }
+          placeNavline()
         }
       },
       { rootMargin: '-35% 0px -55% 0px' },
@@ -188,7 +189,12 @@ export default function MotionIsland() {
           if (elapsed < SCRAMBLE_MS) show(el, low + Math.floor(Math.random() * low * 9))
           else {
             const progress = Math.min(1, (elapsed - SCRAMBLE_MS) / COUNT_MS)
-            if (progress === 1) return finish(el)
+            if (progress === 1) {
+              finish(el)
+              // The hero figure pulses a ring once it has landed (motion.css).
+              el.closest('.hfig')?.classList.add('landed')
+              return
+            }
             show(el, Math.round(target * (1 - 2 ** (-10 * progress))))
           }
           requestAnimationFrame(step)
@@ -471,6 +477,10 @@ export default function MotionIsland() {
       // The light starts in the middle of the screen and follows the pointer from its first move.
       const tilts = []
       let tiltRaf = 0
+      // The parts a near pointer pulls (a few pixels, through a transition) and the chips that
+      // drift away from it over the avatar and settle back.
+      const magnets = [...document.querySelectorAll('.pill, .pause, .copybtn')]
+      const chips = [...document.querySelectorAll('.hero .chip')]
       const cursor = hover ? document.querySelector('.cursor') : null
       let cx = window.innerWidth / 2
       let cy = window.innerHeight / 2
@@ -553,6 +563,43 @@ export default function MotionIsland() {
           run()
         }, { passive: true })
         showCursor()
+
+        // Magnetic pulls and the liquid light: a pill, the pause switch and the copy button
+        // drift towards a near pointer (chrome.css eases the translate back) and carry its
+        // position for their highlight. Every box is read before any style is written.
+        listen(document, 'pointermove', (e) => {
+          if (still()) return
+          const boxes = magnets.map((el) => el.getBoundingClientRect())
+          magnets.forEach((el, i) => {
+            const r = boxes[i]
+            const dx = e.clientX - (r.left + r.width / 2)
+            const dy = e.clientY - (r.top + r.height / 2)
+            const d = Math.hypot(dx, dy) || 1
+            const reach = Math.max(r.width, r.height) * 0.9
+            if (d < reach) {
+              const f = (1 - d / reach) * 7
+              el.style.translate = `${((dx / d) * f).toFixed(1)}px ${((dy / d) * f).toFixed(1)}px`
+              el.style.setProperty('--mx', `${Math.round(e.clientX - r.left)}px`)
+              el.style.setProperty('--my', `${Math.round(e.clientY - r.top)}px`)
+            } else if (el.style.translate) el.style.translate = ''
+          })
+        }, { passive: true })
+        if (stage) {
+          // Through transform: the chips' bob animates `translate`, which would win over a style.
+          listen(stage, 'pointermove', (e) => {
+            if (still()) return
+            const boxes = chips.map((c) => c.getBoundingClientRect())
+            chips.forEach((c, i) => {
+              const r = boxes[i]
+              const dx = r.left + r.width / 2 - e.clientX
+              const dy = r.top + r.height / 2 - e.clientY
+              const d = Math.hypot(dx, dy) || 1
+              const push = d < 150 ? (1 - d / 150) * 22 : 0
+              c.style.transform = push ? `translateZ(40px) translate(${((dx / d) * push).toFixed(1)}px, ${((dy / d) * push).toFixed(1)}px)` : ''
+            })
+          }, { passive: true })
+          listen(stage, 'pointerleave', () => chips.forEach((c) => (c.style.transform = '')))
+        }
       }
 
       // -------------------------------------------------------------- stopping and resuming
@@ -571,6 +618,8 @@ export default function MotionIsland() {
           o.last = ''
         }
         cursor?.classList.remove('on')
+        for (const el of magnets) el.style.translate = ''
+        for (const c of chips) c.style.transform = ''
       }
       // Resuming plays no arrival again (nothing waits any more), but smooth scrolling and the
       // rail's pulse come back once the page has been marked.

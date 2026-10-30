@@ -44,6 +44,21 @@
   color: #fff;
 }
 
+/* The ring that pulses out of the figure once it has landed (MotionIsland marks .landed). */
+.num::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 1.2em;
+  height: 1.2em;
+  margin: -.6em 0 0 -.6em;
+  border-radius: 50%;
+  border: 2px solid #5CE6FF;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .numtxt {
   display: inline-block;
 }

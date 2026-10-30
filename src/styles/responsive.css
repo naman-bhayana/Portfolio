@@ -57,7 +57,9 @@
     padding-right: 0;
     border-left: 1px solid var(--line);
   }
-  .rpulse {
+  /* No pulses on a rail in rows, so no flares either. */
+  .rpulse,
+  .rdot::after {
     display: none;
   }
   .rail {

@@ -825,6 +825,9 @@ for (const vp of [
     })
   }
   const { c2, top, step, vh } = geometry
+  // A fully covered case ends at this scale and veil (motion.css @keyframes recede and veil).
+  const SCALE_END = 0.955
+  const VEIL_END = 0.96
   const pinnedAt = c2 - top - step
   const progress = (y) => Math.min(1, Math.max(0, (y - (c2 - vh)) / (pinnedAt - (c2 - vh))))
   const problems = []
@@ -836,7 +839,7 @@ for (const vp of [
   ]) {
     const got = await at(y)
     const p = progress(y)
-    const want = { scale: Math.round((1 - 0.035 * p) * 1000) / 1000, veil: Math.round(0.94 * p * 100) / 100 }
+    const want = { scale: Math.round((1 - (1 - SCALE_END) * p) * 1000) / 1000, veil: Math.round(VEIL_END * p * 100) / 100 }
     if (Math.abs(got.scale - want.scale) > 0.004 || Math.abs(got.veil - want.veil) > 0.04) problems.push(`${name}: got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`)
   }
   check(problems.length === 0, 'T8.deck-recede', 'case 1 recedes from the moment case 2 enters the viewport to the moment it is pinned', problems.join(' | '))

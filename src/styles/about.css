@@ -43,6 +43,19 @@
   filter: saturate(.85) contrast(1.05);
 }
 
+/* The cover the portrait develops from (motion.css): the frame's own ground, drawn up and off
+   as the portrait arrives. At rest it has no height. */
+.pframe::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: var(--g-glaze), var(--ink-3);
+  transform: scaleY(0);
+  transform-origin: 50% 0;
+  pointer-events: none;
+}
+
 .pframe::after {
   content: "";
   position: absolute;
