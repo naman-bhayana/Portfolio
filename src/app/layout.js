@@ -46,7 +46,7 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={fontVariables}>
+    <html lang="en-GB" className={fontVariables}>
       <body>
         <a href="#main" className="skip-link">
           {SKIP_LINK}

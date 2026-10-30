@@ -170,8 +170,9 @@
   pointer-events: none;
 }
 
-/* Only a real pointer uncovers it: a tap on a phone leaves a sticky :hover behind. */
-@media (hover: hover) {
+/* Only a real pointer uncovers it, and not in the phone layout, whose cells are too short for
+   both: a tap on a phone leaves a sticky :hover behind. */
+@media (hover: hover) and (min-width: 601px) {
   .wcell:hover .wdesc {
     opacity: 1;
   }
@@ -199,9 +200,10 @@
   }
 }
 
-/* Forced colours would set the white marks on a light ground: the band keeps its own. */
+/* Forced colours would set the white marks on a light ground: the band keeps its own, edge to
+   edge. */
 @media (forced-colors: active) {
-  .wgrid {
+  .wall {
     forced-color-adjust: none;
     background: var(--black);
   }

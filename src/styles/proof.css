@@ -9,7 +9,8 @@
   display: grid;
   grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr);
   gap: 48px 64px;
-  align-items: center;
+  /* The figure's source and the field's caption share a baseline. */
+  align-items: end;
   margin-top: 56px;
 }
 

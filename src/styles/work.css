@@ -112,6 +112,7 @@
   font-size: 13.5px;
   line-height: 1.45;
   color: var(--muted);
+  text-wrap: balance;
 }
 
 .mods li::before {

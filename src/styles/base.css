@@ -250,6 +250,17 @@ main:focus {
   z-index: 1;
 }
 
+/* The page is at least a screen tall, so a short one (the 404) keeps its footer at the foot. */
+.nb {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+.nb > main {
+  flex: 1 0 auto;
+}
+
 /* ---------------------------------------------------------------- shared type */
 
 .mono,
@@ -307,6 +318,7 @@ main:focus {
   font: italic 400 clamp(24px, 2.1vw, 30px)/1.1 var(--serif);
   letter-spacing: -.01em;
   color: var(--fg);
+  text-wrap: balance;
 }
 
 .sub {
@@ -514,5 +526,15 @@ main:focus {
   .pause,
   #pause-motion {
     display: none !important;
+  }
+
+  /* Printed mid-flight, the dots print as their grid. */
+  .assemble {
+    display: none !important;
+  }
+
+  .dotfield {
+    opacity: 1 !important;
+    transition: none !important;
   }
 }

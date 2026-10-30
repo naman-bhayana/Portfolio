@@ -48,6 +48,23 @@
   font: 700 clamp(24px, 2.1vw, 30px)/1.1 var(--display);
   letter-spacing: -.03em;
   color: var(--fg);
+  text-wrap: balance;
+}
+
+/* Three across, the plates share their rows: titles, paragraphs and sources start level
+   whatever each one's length. */
+@media (min-width: 961px) {
+  .practice {
+    display: grid;
+    grid-row: span 3;
+    grid-template-rows: subgrid;
+    row-gap: 0;
+  }
+
+  .practices .practice .src {
+    min-height: 0;
+    margin-top: 0;
+  }
 }
 
 .practice p:not(.src) {
@@ -134,7 +151,6 @@
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0;
   margin-top: 56px;
-  margin-bottom: 1em;
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
 }

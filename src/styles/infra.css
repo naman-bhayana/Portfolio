@@ -84,7 +84,18 @@
   font-size: 13.5px;
   line-height: 1.5;
   color: var(--muted);
-  text-wrap: pretty;
+  text-wrap: balance;
+}
+
+/* Eight across, the nodes share their rows: a name on two lines no longer pushes its
+   description below its neighbours'. (The diamond is placed absolutely, outside the rows.) */
+@media (min-width: 1161px) {
+  .node {
+    display: grid;
+    grid-row: span 2;
+    grid-template-rows: subgrid;
+    row-gap: 0;
+  }
 }
 
 .every {

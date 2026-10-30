@@ -191,22 +191,26 @@ for (const vp of [
   const { context, page } = await newPage({ ...vp, reducedMotion: 'reduce' })
   await page.goto(`${BASE}/`, { waitUntil: 'networkidle' })
   await withLauncher(page, `T3.lcp.${vp.name}`)
-  const lcp = await page.evaluate(
-    () =>
-      new Promise((resolve) => {
-        new PerformanceObserver((list) => {
-          const entries = list.getEntries()
-          const last = entries[entries.length - 1]
-          const el = last?.element
-          resolve({
-            tag: el?.tagName?.toLowerCase() ?? null,
-            text: el?.tagName === 'IMG' ? el.currentSrc : (el?.textContent ?? '').slice(0, 60),
-            time: Math.round(last?.startTime ?? 0),
-            size: last?.size ?? 0,
-          })
-        }).observe({ type: 'largest-contentful-paint', buffered: true })
-      }),
-  )
+  // The final candidate, not the first: on a cold load the name can paint a moment before the
+  // avatar has decoded. The avatar is awaited, then the candidates are read once they settle.
+  const lcp = await page.evaluate(async () => {
+    const avatar = document.querySelector('.hero .stage img')
+    await avatar?.decode().catch(() => {})
+    await new Promise((r) => setTimeout(r, 300))
+    return new Promise((resolve) => {
+      new PerformanceObserver((list) => {
+        const entries = list.getEntries()
+        const last = entries[entries.length - 1]
+        const el = last?.element
+        resolve({
+          tag: el?.tagName?.toLowerCase() ?? null,
+          text: el?.tagName === 'IMG' ? el.currentSrc : (el?.textContent ?? '').slice(0, 60),
+          time: Math.round(last?.startTime ?? 0),
+          size: last?.size ?? 0,
+        })
+      }).observe({ type: 'largest-contentful-paint', buffered: true })
+    })
+  })
   const isAvatar = lcp.tag === 'img' && /naman-bhayana-avatar/.test(lcp.text)
   const id = `T3.lcp.${vp.name}`
   if (vp.name === '412x823') check(isAvatar, id, `avatar (${lcp.size}px², ${lcp.time} ms)`, `LCP is <${lcp.tag}> "${lcp.text}"`)
@@ -740,11 +744,12 @@ for (const vp of [
   const resumed = await page.evaluate(() => ({
     checked: document.getElementById('pause-motion').checked,
     animations: document.getAnimations().length,
-    // Resuming must not play the hero's arrival again.
+    // Resuming must not play the hero's arrival again, and brings smooth scrolling back.
     arriving: [...document.querySelectorAll('.hero :is(.lede, .cta, .chip)')].filter((el) => Number(getComputedStyle(el).opacity) < 0.99).length,
+    smooth: getComputedStyle(document.documentElement).scrollBehavior,
   }))
   check(
-    running > 0 && (!CONCIERGE || waves > 0) && secondStop.id === 'pause-motion' && !!secondStop.name && paused.checked && paused.animations === 0 && paused.transparent === 0 && paused.veiled === 0 && paused.icons === '0,1' && figures.length === 0 && !resumed.checked && resumed.animations > 0 && resumed.arriving === 0 && icons === '1,0',
+    running > 0 && (!CONCIERGE || waves > 0) && secondStop.id === 'pause-motion' && !!secondStop.name && paused.checked && paused.animations === 0 && paused.transparent === 0 && paused.veiled === 0 && paused.icons === '0,1' && figures.length === 0 && !resumed.checked && resumed.animations > 0 && resumed.arriving === 0 && resumed.smooth === 'smooth' && icons === '1,0',
     'T8.pause',
     `second tab stop "${secondStop.name}"; Space stops ${running} animations${CONCIERGE ? ` (the launcher's ${waves} waveform bars among them)` : ''}, shows everything and the play icon; a click resumes without replaying the arrival`,
     JSON.stringify({ running, ...(CONCIERGE ? { waves } : {}), secondStop, paused, figures, resumed, icons }),
@@ -767,6 +772,26 @@ for (const vp of [
     if (Math.abs(y - 3000) > 2) jumps.push(`${how}: 3000 -> ${y}`)
   }
   check(jumps.length === 0, 'T8.pause-in-place', 'using the pause switch does not scroll the page', jumps.join('; '))
+  await context.close()
+}
+
+// ---------------------------------------------------------------- reduced motion turned off mid-page
+// A visitor who turns their system's reduced motion off while the page is open gets motion from
+// then on, but the first screen they are reading never blanks to replay its arrival.
+{
+  const { context, page } = await newPage({ width: 1440, height: 900, reducedMotion: 'reduce' })
+  await page.goto(`${BASE}/`, { waitUntil: 'networkidle' })
+  await page.emulateMedia({ reducedMotion: 'no-preference' })
+  const hidden = []
+  for (const wait of [100, 600]) {
+    await page.waitForTimeout(wait)
+    hidden.push(
+      ...(await page.evaluate(() =>
+        [...document.querySelectorAll('.hero :is(.hello, .role, .lede, .cta, .chip), .wcell')].filter((el) => Number(getComputedStyle(el).opacity) < 0.99).map((el) => String(el.className)),
+      )),
+    )
+  }
+  check(hidden.length === 0, 'T8.reduced-flip', 'turning reduced motion off mid-page hides nothing and replays no arrival', `hidden after the switch: ${[...new Set(hidden)].join(', ')}`)
   await context.close()
 }
 
@@ -1029,8 +1054,9 @@ for (const vp of [
 // Every loop animates opacity or a transform, so the compositor runs it alone, and the particle
 // field draws in a worker (MotionIsland). A page that sits still must ask the main thread for
 // nothing: no style recalculation, no layout. (A frame loop on the main thread would also make
-// Chrome update every CSS loop there, each frame.)
-{
+// Chrome update every CSS loop there, each frame.) On a busy machine an arrival can still be
+// finishing when a section is measured, so the gate gets a second attempt.
+await timed('T8.idle-main-thread', async () => {
   const { context, page } = await newPage({ width: 412, height: 823, mobile: true })
   const cdp = await context.newCDPSession(page)
   await cdp.send('Performance.enable')
@@ -1049,9 +1075,9 @@ for (const vp of [
     const layouts = after.LayoutCount - before.LayoutCount
     if (recalcs > IDLE_RECALCS || layouts > 0) busy.push(`${selector}: ${recalcs} style recalcs, ${layouts} layouts in 2 s`)
   }
-  check(busy.length === 0, 'T8.idle-main-thread', 'at rest the animations cost no style or layout work', busy.join(' | '))
   await context.close()
-}
+  return { ok: busy.length === 0, pass: 'at rest the animations cost no style or layout work', fail: busy.join(' | ') }
+})
 
 // ---------------------------------------------------------------- React's animationiteration listener
 // The behavioural proof is T8.idle-main-thread; this names the cause. React registers every

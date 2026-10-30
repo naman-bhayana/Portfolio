@@ -61,7 +61,7 @@ export default function MotionIsland() {
       observers.push(observer)
       return observer
     }
-    const belowFold = (el) => el.getBoundingClientRect().top > window.innerHeight
+    const belowFold = (el) => el.getBoundingClientRect().top >= window.innerHeight
 
     // ---------------------------------------------------------------- the nav
     // Every section is watched, so a section without a link (the wall, the proof) clears the mark.
@@ -210,14 +210,26 @@ export default function MotionIsland() {
       // position). Whatever reads the page without any of that (a crawler, a link preview, a
       // print) finds the real numbers. Only figures below the screen are ever set to zero.
       const approach = watch({ rootMargin: '0px 0px 100% 0px' }, arm)
+      // One signal takes all six listeners away together, after the first of them fires.
+      const firstSign = new AbortController()
+      stops.push(() => firstSign.abort())
       let started = false
       const start = () => {
+        firstSign.abort()
         if (started) return
         started = true
         document.querySelectorAll('[data-count]').forEach((el) => approach.observe(el))
       }
-      for (const type of ['scroll', 'wheel', 'keydown', 'pointerdown', 'pointermove', 'touchstart']) listen(window, type, start, { once: true, passive: true })
-      const settle = () => [...counting.keys()].forEach(finish)
+      for (const type of ['scroll', 'wheel', 'keydown', 'pointerdown', 'pointermove', 'touchstart']) window.addEventListener(type, start, { passive: true, signal: firstSign.signal })
+      // The page as finished, at once (pause, print): the figures on their values and the dots'
+      // flight over, the grid in its place.
+      const settle = () => {
+        ;[...counting.keys()].forEach(finish)
+        if (assembling) {
+          cancelAnimationFrame(assembling.raf)
+          assembling.done()
+        }
+      }
 
       // -------------------------------------------------------------- the dots
       // The 400 dots fly in from across the stage and settle onto their grid, on one canvas,
@@ -336,25 +348,30 @@ export default function MotionIsland() {
         if (block === rail) railwrap.classList.add('lit')
       }
       // A block waits for the reader (.rv-wait) when it is wholly below the fold. The wall, which
-      // arrives with the hero, also waits when less than 12% of it shows and its marks are still
-      // waiting to rise: they are not on screen yet, so hiding them changes nothing. Marked
-      // .rv-armed, it leaves the hero's arrival for good. Nothing the reader can already see, or
-      // has scrolled past, ever goes back.
-      const rising = (animation) => animation.currentTime > animation.effect.getKeyframes()[1].computedOffset * animation.effect.getComputedTiming().duration
+      // arrives with the hero, also waits when less than 12% of it shows and none of its marks is
+      // both risen and on screen (a sliver of its band can show while every mark is still below
+      // the fold): hiding them then changes nothing the reader sees. Marked .rv-armed, it leaves
+      // the hero's arrival for good. Nothing the reader can already see, or has scrolled past,
+      // ever goes back.
+      // Risen means drawn: a part of the batch whose opacity has left zero.
+      const rising = (animation) => Number(getComputedStyle(animation.effect.target, animation.effect.pseudoElement).opacity) > 0.01
       const toWait = (block) => {
         const r = block.getBoundingClientRect()
-        if (r.top >= window.innerHeight) return true
+        if (belowFold(block)) return true
         if (r.bottom <= 0 || r.height === 0) return false
         const shown = (Math.min(r.bottom, window.innerHeight) - Math.max(r.top, 0)) / r.height
         if (shown >= WAIT_SHARE) return false
         const batch = block.getAnimations({ subtree: true }).filter((animation) => BATCH.test(animation.animationName))
-        return batch.length > 0 && !batch.some(rising)
+        const marks = batch.filter((animation) => !animation.effect.pseudoElement)
+        return batch.length > 0 && !marks.some((animation) => rising(animation) && animation.effect.target.getBoundingClientRect().top < window.innerHeight)
       }
+      let marked = false
       const arriving = watch({ rootMargin: '0px 0px -10% 0px', threshold: 0.12 }, (blocks) => blocks.forEach(reveal))
       const idleArrivals = whenIdle(
         () => {
           if (still()) return
           html.classList.add('rv-on')
+          marked = true
           // A page that opens scrolled has a visitor: its figures below may count.
           if (window.scrollY > 0) start()
           for (const block of [...document.querySelectorAll('[data-rv]')].filter(toWait)) {
@@ -369,13 +386,21 @@ export default function MotionIsland() {
       )
       stops.push(() => cancelIdle(idleArrivals))
       // Focus never lands on anything still hidden or fading in: a waiting block is shown at once,
-      // and a block mid-arrival (reached a moment ago by the previous tab stop) finishes it.
+      // and a block mid-arrival (reached a moment ago by the previous tab stop) finishes its
+      // arrival. Only the arrival's own one-shot animations are finished: hover and press
+      // transitions, and the loops, are left alone.
       listen(document, 'focusin', (event) => {
+        // The hero's own arrival too: its buttons can take focus while they still fade in.
+        const hero = event.target.closest?.('.hero')
+        if (hero) {
+          for (const animation of hero.getAnimations({ subtree: true })) if (BATCH.test(animation.animationName) && animation.playState === 'running') animation.finish()
+          return
+        }
         const block = event.target.closest?.('.rv-wait, .rv-in')
         if (!block) return
         if (block.classList.contains('rv-in')) {
           for (const animation of block.getAnimations({ subtree: true })) {
-            if (animation.timeline === document.timeline && animation.effect?.getComputedTiming().iterations !== Infinity) animation.finish()
+            if (animation instanceof CSSAnimation && animation.timeline === document.timeline && animation.playState === 'running' && animation.effect?.getComputedTiming().iterations !== Infinity) animation.finish()
           }
           return
         }
@@ -519,10 +544,6 @@ export default function MotionIsland() {
         settle()
         html.classList.remove('rv-on')
         for (const el of document.querySelectorAll('.rv-wait, .rv-in')) el.classList.remove('rv-wait', 'rv-in')
-        if (assembling) {
-          cancelAnimationFrame(assembling.raf)
-          assembling.done()
-        }
         post({ type: 'stop' })
         cancelAnimationFrame(tiltRaf)
         tiltRaf = 0
@@ -533,7 +554,13 @@ export default function MotionIsland() {
         }
         cursor?.classList.remove('on')
       }
+      // Resuming plays no arrival again (nothing waits any more), but smooth scrolling and the
+      // rail's pulse come back once the page has been marked.
       const resume = () => {
+        if (marked) {
+          html.classList.add('rv-on')
+          railwrap?.classList.add('lit')
+        }
         runField()
         showCursor()
       }
@@ -544,11 +571,11 @@ export default function MotionIsland() {
       return { rest, resume, settle, teardown }
     }
 
-    // A page that opens paused (a browser restores the switch on the way back) is marked as
-    // arrived, so resuming does not play the hero's arrival (Hero.jsx); its motion starts on
-    // the first resume.
+    // A page that opens still (paused, as a browser may restore the switch on the way back, or
+    // with less motion asked for) is marked as arrived, and so is one that turns still later: the
+    // hero's arrival (Hero.jsx) never plays, or plays again, when motion starts or resumes.
     let motion = null
-    if (pause?.checked) html.classList.add('arrived')
+    if (still()) html.classList.add('arrived')
     const begin = () => {
       if (!motion && !still()) motion = startMotion()
     }
@@ -559,7 +586,7 @@ export default function MotionIsland() {
         else begin()
         return
       }
-      if (pause?.checked) html.classList.add('arrived')
+      html.classList.add('arrived')
       motion?.rest()
     }
     const settleForPrint = (query) => {

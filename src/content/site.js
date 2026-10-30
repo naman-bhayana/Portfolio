@@ -7,9 +7,10 @@
 // only when it is already public.
 // Pure data only: Node scripts (OG card, QA checks) import this file too.
 //
-// Two invisible characters keep words together on screen: "e-commerce" carries a word joiner
-// after its hyphen (the fonts have no non-breaking hyphen; a word joiner is never drawn, so no
-// fallback font shows), and "Delhi NCR" a no-break space. Copy read by machines (the meta
+// Invisible characters keep words together on screen: "e-commerce" carries a word joiner after
+// its hyphen (the fonts have no non-breaking hyphen; a word joiner is never drawn, so no
+// fallback font shows), "Delhi NCR" a no-break space, and a separator dot inside a line of
+// copy a no-break space before it, so the dot ends a line and never starts one. Copy read by machines (the meta
 // description, LLMS_SUMMARY) stays plain, and llms.txt strips the joiner.
 const ECOMMERCE = 'e-\u2060commerce'
 const DELHI_NCR = 'Delhi\u00a0NCR'
@@ -170,7 +171,7 @@ export const PROOF = {
   wall: [
     {
       id: 'models',
-      source: 'ideasIQ · model gateway',
+      source: 'ideasIQ\u00a0· model gateway',
       value: '400+',
       parts: [400, '+'],
       label: 'models behind one gateway I architected. Each organisation gets its own access tier and one policy covers every model.',
@@ -181,7 +182,7 @@ export const PROOF = {
   cells: [
     {
       id: 'signals',
-      source: 'myLeadsIQ · private beta',
+      source: 'myLeadsIQ\u00a0· private beta',
       value: '200+',
       parts: [200, '+'],
       label: 'buying signals read every day, unattended.',
@@ -197,14 +198,14 @@ export const PROOF = {
     },
     {
       id: 'agent',
-      source: 'ideasIQ',
+      source: 'ideasIQ\u00a0· research agent',
       value: '14-stage',
       parts: [14, '-stage'],
       label: 'research agent that challenges its own findings before it ranks them.',
     },
     {
       id: 'sources',
-      source: 'myLeadsIQ',
+      source: 'myLeadsIQ\u00a0· private beta',
       value: '11',
       parts: [11],
       label: 'live signal sources behind one outbound agent.',
@@ -221,7 +222,7 @@ const mark = (id) => WALL.marks.find((m) => m.id === id)
 
 export const WORK = {
   heading: { lead: 'Shipped, not ', em: 'pitched.' },
-  sub: 'Enterprise platform work at ideasIQ and client builds for founders and enterprise teams. Most of the code is private; I’m glad to walk through any architecture on a call.',
+  sub: 'Enterprise platform work at ideasIQ and client builds for founders and enterprise teams, then the projects that came before. Most of the code is private; I’m glad to walk through any architecture on a call.',
   flagship: {
     id: 'ideasiq',
     name: 'ideasIQ',
@@ -239,7 +240,7 @@ export const WORK = {
       'Knowledge Assistant over a company’s own documents',
       'Voice agent that qualifies visitors and books meetings',
       'Autonomous outbound engine',
-      'Search and answer-engine (AEO) growth programme',
+      'Growth programme for search and AI answer engines',
     ],
     team: { label: 'Listed on the ideasIQ team page', href: 'https://ideasiq.ai/about#who-we-are' },
     image: {
@@ -259,7 +260,7 @@ export const WORK = {
       name: 'myLeadsIQ',
       mark: mark('myleadsiq'),
       tags: ['Enterprise SaaS', 'Sales intelligence', 'Private beta'],
-      mech: 'Lead discovery on live buying signals, with evidence guards that downgrade any claim the model can’t cite.',
+      mech: 'Lead discovery on live buying signals. Any claim the model can’t cite is downgraded.',
       image: {
         src: '/work/myleadsiq.webp',
         width: 800,
@@ -274,8 +275,8 @@ export const WORK = {
       mark: mark('investbeans'),
       tags: ['Fintech', 'Market analytics', 'Live'],
       role: 'Subscription market analytics.',
-      mech: 'I led engineering on the data pipelines, the indicators behind its decision tools and billing.',
-      llms: 'Subscription market analytics. He led engineering on the data pipelines, the indicators behind its decision tools and billing.',
+      mech: 'I led engineering on its data pipelines, its billing and the indicators behind its decision tools.',
+      llms: 'Subscription market analytics. He led engineering on its data pipelines, its billing and the indicators behind its decision tools.',
       links: [{ label: 'investbeans.com', href: 'https://investbeans.com/' }],
     },
     {
@@ -293,8 +294,8 @@ export const WORK = {
       mark: mark('prozone'),
       tags: ['Industrial', 'Hardware integration', 'Client build'],
       role: 'A 2021 Electron app that emissions-testing centres run their gas analysers and smoke meters through.',
-      mech: 'I brought it back into service: Node 20 and current serial drivers, the smoke meter’s serial protocol and reliable port resets.',
-      llms: 'A 2021 Electron app that emissions-testing centres run their gas analysers and smoke meters through. He brought it back into service: Node 20 and current serial drivers, the smoke meter’s serial protocol and reliable port resets.',
+      mech: 'I brought it back into service on Node 20, with current serial drivers, a working smoke-meter protocol and reliable port resets.',
+      llms: 'A 2021 Electron app that emissions-testing centres run their gas analysers and smoke meters through. He brought it back into service on Node 20, with current serial drivers, a working smoke-meter protocol and reliable port resets.',
       links: [],
     },
     {
@@ -320,11 +321,11 @@ export const WORK = {
     {
       builds: [{ id: 'techlive', name: 'Techlive Solutions' }],
       sector: 'Recruitment',
-      summary: 'A hiring platform with real-time messaging and smarter job matching.',
+      summary: 'A hiring platform with real-time messaging and job matching.',
     },
     {
       builds: [{ id: 'allianz-exports', name: 'Allianz Exports' }],
-      sector: 'Markets',
+      sector: 'Trading',
       summary: 'Trading strategies on proprietary indicators in Python and Pine Script, tuned through backtesting.',
     },
     {
@@ -378,14 +379,14 @@ export const BUILDS = [
 // The rail: what every build runs on, read left to right.
 export const INFRA = {
   heading: { lead: 'Built like infrastructure, ', em: 'not a demo.' },
-  sub: 'I build the whole stack. Every layer of it is the one ideasIQ runs in production.',
+  sub: 'I build the whole stack. Every layer of it runs in production at ideasIQ, where I lead the engineering team.',
   nodes: [
     { name: 'Your data', copy: 'Documents, CRM, orders, tickets, calls. Read where it lives.' },
     { name: 'Ingest and retrieval', copy: 'Documents split into passages, indexed by meaning and linked for matching.' },
     { name: 'Agent runtime', copy: 'Each tool has a fixed input and output shape, each run a step limit and a save point it can resume from.' },
-    { name: 'Evals and guardrails', copy: 'Each release is scored against a fixed test set before it ships.' },
+    { name: 'Evals and guardrails', copy: 'Every change is scored against a fixed test set before it ships.' },
     { name: 'Model gateway', copy: '400+ models, routed by eval score and cost.' },
-    { name: 'Observability', copy: 'Traces, budgets per tenant, a kill switch.' },
+    { name: 'Observability', copy: 'Traces, budgets per organisation, a kill switch.' },
     { name: 'Deliverables', copy: 'Decks, video, live sites, voice, outbound.' },
     { name: 'Your cloud', copy: 'Deployed into your accounts, not ours.' },
   ],
@@ -406,17 +407,17 @@ export const STUDIO = {
     {
       name: 'AI products and agents',
       copy: 'Agents, copilots and AI platforms that hold up against real users, real data and real bills, with a person stepping in exactly where one should.',
-      seen: 'Seen in ideasIQ · myLeadsIQ',
+      seen: 'Seen in ideasIQ\u00a0· myLeadsIQ',
     },
     {
       name: 'Automation',
       copy: 'The manual work in your operations is handed to software that does not take weekends off. Orders, documents, tickets and the back office, run unattended, with every exception routed to a person.',
-      seen: `Seen in DocPad · three ${ECOMMERCE} operations`,
+      seen: `Seen in DocPad\u00a0· three ${ECOMMERCE} operations`,
     },
     {
       name: 'Growth engine',
       copy: 'Launch is the start. Then it gets found, cited and bought: search, answer engines, paid and outbound, run as one programme against numbers you can see every week.',
-      seen: 'Seen in ideasIQ’s growth programme · myLeadsIQ’s outbound agent',
+      seen: 'Seen in ideasIQ’s growth programme\u00a0· myLeadsIQ’s outbound agent',
     },
   ],
   methodHeading: 'Two weeks to certainty. Then we build.',
@@ -425,7 +426,7 @@ export const STUDIO = {
     { name: 'Design', when: '1 to 2 weeks', what: 'Map the workflow, remove the steps that should not exist, simplify. Product, brand and architecture drawn together.' },
     { name: 'Build', when: '6 to 10 weeks', what: 'Working software in your repos as we build, never a big reveal at the end.' },
     { name: 'Launch', when: '1 week', what: 'Product, site, analytics and first campaigns go live together.' },
-    { name: 'Grow', when: 'Monthly', what: 'The growth engine, monthly, from the first week after launch.' },
+    { name: 'Grow', when: 'Monthly', what: 'The growth engine, run from the first week after launch.' },
   ],
   priced: 'Priced up front: the Sprint fee is published and every quote after it comes in writing before anything starts.',
   pricedLink: { label: 'Engagements on nexerah.com', href: `${NEXERAH_URL}engagements#ai-sprint` },
@@ -447,7 +448,7 @@ export const ABOUT = {
     ` and run Nexerah, my studio. I’ve shipped sixteen builds across enterprise AI, fintech, healthcare, ${ECOMMERCE} and industrial hardware. I’d rather be judged on what’s live than on what I say here.`,
   ],
   facts: ['Thapar Institute of Engineering and Technology', DELHI_NCR, 'US, EU and AU hours'],
-  disclosure: 'Client work runs through Nexerah; I work with ideasIQ in my day role; nothing here is sponsored.',
+  disclosure: 'Client work runs through Nexerah; ideasIQ is my day role; nothing here is sponsored.',
   portrait: {
     src: '/images/naman-bhayana-portrait.webp',
     width: 1000,
@@ -459,7 +460,7 @@ export const ABOUT = {
 
 // The page's only dates.
 export const TIMELINE = {
-  label: 'Ship log · 2023 to now',
+  label: 'Ship log\u00a0· 2023 to now',
   events: [
     { when: '2023 to 2024', who: 'Allianz Exports, Techlive Solutions', what: 'Trading strategies in Python, then a recruitment platform' },
     { when: '2025 to 2026', who: 'InvestBeans, DocPad', what: 'Market analytics, then cloud hospital records' },
@@ -473,7 +474,7 @@ export const CONTACT = {
   extra: 'A few lines on what you’re building and where it’s stuck is enough.',
   write: 'Write to me',
   resumeLabel: 'Resume',
-  microline: `NDA before we talk, if you want one. ${DELHI_NCR} · US, EU and AU hours.`,
+  microline: `NDA before we talk, if you want one. ${DELHI_NCR}\u00a0· US, EU and AU hours.`,
   copy: { button: 'Copy', copied: 'Copied', hint: 'email address', done: 'Email address copied', fallback: 'Press Ctrl+C or Cmd+C to copy' },
 }
 
@@ -652,8 +653,10 @@ export const ENTITY = {
   jobTitle: 'Head of AI Engineering',
   employer: { id: 'https://ideasiq.ai/#organization', name: 'ideasIQ', url: 'https://ideasiq.ai' },
   employerProfile: 'https://ideasiq.ai/about#who-we-are',
-  // Other pages about him, beside his own accounts (PERSON) and the employer's team page.
-  sameAs: [`${NEXERAH_URL}about#naman`],
+  // The same person elsewhere, beside his own accounts (PERSON): the @id ideasIQ's structured
+  // data gives him, and Nexerah's page about him. (The team page, employerProfile, is not used
+  // here: in ideasIQ's graph that address is its founder's.)
+  sameAs: ['https://ideasiq.ai/about#naman-bhayana', `${NEXERAH_URL}about#naman`],
   studio: { id: `${NEXERAH_URL}#organization`, name: 'Nexerah', url: NEXERAH_URL },
   alumniOf: 'Thapar Institute of Engineering and Technology',
   locality: 'Delhi',

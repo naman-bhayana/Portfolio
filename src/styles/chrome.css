@@ -280,7 +280,6 @@ button.pill {
 
 /* The small movements of a hover or a press, only for visitors who have not asked for less. */
 @media (prefers-reduced-motion: no-preference) {
-  .brand:hover .mark,
   .brand:focus-visible .mark {
     transform: rotate(-8deg) scale(1.06);
   }
@@ -292,6 +291,13 @@ button.pill {
 
   .pause:active {
     transform: scale(.92);
+  }
+}
+
+/* Only a real pointer turns the monogram: a tap on a touch screen leaves a sticky :hover. */
+@media (prefers-reduced-motion: no-preference) and (hover: hover) {
+  .brand:hover .mark {
+    transform: rotate(-8deg) scale(1.06);
   }
 }
 

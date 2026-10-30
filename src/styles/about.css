@@ -65,6 +65,7 @@
   margin-top: 22px;
   font: italic 400 var(--accent)/1.3 var(--serif);
   color: var(--cyan);
+  text-wrap: balance;
 }
 
 .abouttext .body {
@@ -81,11 +82,16 @@
   color: var(--soft);
 }
 
+.facts > span {
+  text-wrap: balance;
+}
+
 .disclosure {
   margin-top: 14px;
   font-size: 13px;
   line-height: 1.5;
   color: var(--dim);
+  text-wrap: pretty;
 }
 
 .log {
@@ -100,6 +106,7 @@
 .ledger > li {
   display: grid;
   grid-template-columns: 130px minmax(0, 1.3fr) minmax(0, 1fr);
+  align-items: baseline;
   gap: 4px 28px;
   padding: 12px 0;
   border-bottom: 1px solid var(--line);
@@ -117,6 +124,7 @@
   line-height: 1.4;
   letter-spacing: -.01em;
   color: var(--fg);
+  text-wrap: balance;
 }
 
 .lwhat {

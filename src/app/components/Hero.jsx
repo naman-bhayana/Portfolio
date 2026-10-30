@@ -12,6 +12,8 @@ const MOVES = {
   letter: ['transform:translateY(112%)', 'transform:none'],
   settle: ['scale:.94', 'scale:1'],
   pop: ['opacity:0;scale:.9', 'opacity:1;scale:1'],
+  // The wall's own scroll arrival is @keyframes wallin and wallsweep in motion.css: keep the
+  // distance, the stops and the easing here in step with those.
   wallin: ['opacity:0;translate:0 14px', 'opacity:1;translate:0 0'],
 }
 // A move with stops of its own: [share of its duration, declarations]. The wall's light.
@@ -149,6 +151,7 @@ export default function Hero() {
           </div>
           {chips.map((chip, i) => (
             <div key={chip.id} className={`chip c${i + 1}`}>
+              {/* `live` (site.js) gives a chip the pinging dot; none has it until the concierge ships. */}
               <span className={chip.live ? 'pulse' : 'dm'} aria-hidden="true" />
               <span>{chip.text}</span>
             </div>

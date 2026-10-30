@@ -233,6 +233,8 @@
   }
 }
 
+/* The wall's arrival when it is reached by scroll. On the first screen it arrives with the hero
+   instead (Hero.jsx writes that one): keep the two in step. */
 @keyframes wallin {
   from {
     opacity: 0;
@@ -614,6 +616,14 @@
     transform: scaleX(0);
   }
   /* The dots are hidden while MotionIsland flies them in on its canvas, then fade in. */
+  /* The flight is full strength from its first frame (it is not one of the stage's arriving
+     parts), and the grid leaves at once under it; it fades back in when the dots have landed. */
+  .rv-in[data-rv="stage"] > .assemble {
+    animation: none;
+  }
+  .pstage.assembling .dotfield {
+    transition: none;
+  }
   .rv-on .pstage.assembling .dotfield {
     opacity: 0;
   }
