@@ -652,6 +652,8 @@ export const ENTITY = {
   jobTitle: 'Head of AI Engineering',
   employer: { id: 'https://ideasiq.ai/#organization', name: 'ideasIQ', url: 'https://ideasiq.ai' },
   employerProfile: 'https://ideasiq.ai/about#who-we-are',
+  // Other pages about him, beside his own accounts (PERSON) and the employer's team page.
+  sameAs: [`${NEXERAH_URL}about#naman`],
   studio: { id: `${NEXERAH_URL}#organization`, name: 'Nexerah', url: NEXERAH_URL },
   alumniOf: 'Thapar Institute of Engineering and Technology',
   locality: 'Delhi',

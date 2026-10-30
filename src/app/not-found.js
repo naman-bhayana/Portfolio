@@ -5,6 +5,7 @@ import Icon from './components/Icon'
 // live in page.js, so nothing here contradicts it.
 export const metadata = {
   title: NOT_FOUND.title,
+  description: NOT_FOUND.description,
 }
 
 export default function NotFound() {

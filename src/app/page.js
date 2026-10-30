@@ -1,4 +1,4 @@
-import { OG_IMAGE, PERSON, SHARE } from '@/content/site'
+import { OG_IMAGE, PERSON, SHARE, SITE_URL } from '@/content/site'
 import { serializeGraph } from '@/lib/structured-data'
 import About from './components/About'
 import ClientWall from './components/ClientWall'
@@ -11,15 +11,17 @@ import Proof from './components/Proof'
 import Studio from './components/Studio'
 import Work from './components/Work'
 
-// Page-specific metadata lives here so other routes never inherit this canonical or card.
+// Page-specific metadata lives here so other routes never inherit this canonical or card. The
+// home page's address is the bare origin everywhere: Next prints the canonical that way, and
+// og:url and the JSON-LD's url fields (structured-data.js) say the same.
 export const metadata = {
-  alternates: { canonical: '/' },
+  alternates: { canonical: SITE_URL },
   robots: { index: true, follow: true, 'max-image-preview': 'large' },
   openGraph: {
     type: 'profile',
-    url: '/',
+    url: SITE_URL,
     siteName: PERSON.name,
-    locale: 'en_US',
+    locale: 'en_GB',
     title: SHARE.title,
     description: SHARE.ogDescription,
     firstName: PERSON.firstName,
@@ -28,6 +30,7 @@ export const metadata = {
   },
   twitter: {
     card: 'summary_large_image',
+    creator: PERSON.xHandle,
     title: SHARE.title,
     description: SHARE.twitterDescription,
     images: [{ url: OG_IMAGE.url, alt: OG_IMAGE.alt }],

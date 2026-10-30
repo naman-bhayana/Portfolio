@@ -1006,7 +1006,7 @@ await section('T10', async () => {
     'permissions-policy',
     'x-frame-options',
     'cross-origin-opener-policy',
-    'content-security-policy-report-only',
+    'content-security-policy',
   ]
   const results = await Promise.all(paths.map(async (p) => [p, await rawGet(at(p))]))
   for (const [p, r] of results) {
@@ -1027,8 +1027,10 @@ await section('T10', async () => {
     if (h.has('x-powered-by')) fails.push('x-powered-by present')
     const pp = (h.get('permissions-policy') || []).join(',')
     for (const bad of ['clipboard', 'browsing-topics']) if (pp.includes(bad)) fails.push(`permissions-policy mentions ${bad}`)
-    const csp = (h.get('content-security-policy-report-only') || []).join(';')
-    for (const bad of ['nonce-', 'upgrade-insecure-requests']) if (csp.includes(bad)) fails.push(`CSP mentions ${bad}`)
+    // The policy is enforced; a report-only copy alongside it would be a leftover.
+    if (h.has('content-security-policy-report-only')) fails.push('content-security-policy-report-only still sent')
+    const csp = (h.get('content-security-policy') || []).join(';')
+    if (csp.includes('nonce-')) fails.push('CSP mentions nonce-')
     // A concierge build allows the microphone here and connects to ElevenLabs; any other build
     // sends these exactly as before. Neither lets scripts run from blob: (the worklets are files).
     const policy = permissionsOf(pp)

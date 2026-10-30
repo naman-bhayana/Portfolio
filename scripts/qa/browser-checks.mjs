@@ -1127,7 +1127,7 @@ const scrollTrace = async () => {
   await page.waitForTimeout(500)
   const csp = await page.evaluate(() => window.__cspViolations)
   check(consoleProblems.length === 0, 'T10.console', 'no console errors or warnings', consoleProblems.join(' | '))
-  check(csp.length === 0, 'T10.csp-violations', 'no CSP report-only violations', csp.join(' | '))
+  check(csp.length === 0, 'T10.csp-violations', 'nothing blocked by the Content Security Policy', csp.join(' | '))
   check(issues.length === 0, 'T10.devtools-issues', 'no DevTools issues', [...new Set(issues)].join(', '))
 
   // Copy email: visible after hydration, announces through the status region.

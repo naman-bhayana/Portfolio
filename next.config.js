@@ -6,9 +6,9 @@ const { IMAGE_QUALITY, IMAGE_WIDTHS, LOGO_WIDTHS } = require('./src/lib/images.j
 // Without the flag every header stays exactly as it was.
 const CONCIERGE = process.env.NEXT_PUBLIC_CONCIERGE === 'on'
 
-// Report-only first. A static page cannot carry a per-request nonce, so inline scripts are
-// allowed; promote this to Content-Security-Policy after a clean week in production.
-// No upgrade-insecure-requests: browsers reject it in report-only mode with a console error.
+// Enforced since 30 Oct 2026, after ten clean days in production as report-only. A static page
+// cannot carry a per-request nonce, so inline scripts are allowed; the particle field's worker
+// is a same-origin file under script-src 'self'.
 const contentSecurityPolicy = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline'",
@@ -37,7 +37,7 @@ const securityHeaders = [
   { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
   // Production builds only: next dev needs eval for fast refresh.
   ...(process.env.NODE_ENV === 'production'
-    ? [{ key: 'Content-Security-Policy-Report-Only', value: contentSecurityPolicy }]
+    ? [{ key: 'Content-Security-Policy', value: contentSecurityPolicy }]
     : []),
 ]
 

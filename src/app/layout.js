@@ -31,7 +31,8 @@ const Concierge = process.env.NEXT_PUBLIC_CONCIERGE === 'on' ? require('./compon
 // inherit them.
 export const metadata = {
   metadataBase: new URL(SITE_URL),
-  title: HEAD.title,
+  // Another route's title is followed by the name (the 404: "Page not found · Naman Bhayana").
+  title: { default: HEAD.title, template: `%s · ${PERSON.name}` },
   description: HEAD.description,
   authors: [{ name: PERSON.name, url: SITE_URL }],
 }
