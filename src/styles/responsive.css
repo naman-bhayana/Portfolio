@@ -227,6 +227,8 @@
 @media (max-width: 600px) {
   .nb {
     --pad: 60px;
+    --rplate: 20px;
+    --accent: 19px;
   }
   .field {
     opacity: .8;
@@ -253,7 +255,7 @@
     height: 23.2px;
   }
   .lg-artize {
-    height: 18.3px;
+    height: 20.6px;
   }
   .lg-docpad {
     height: 20.2px;
@@ -293,9 +295,6 @@
   }
   .h2b {
     font-size: clamp(28px, 8vw, 32px);
-  }
-  .h2c {
-    font-size: clamp(40px, 11.6vw, 48px);
   }
   .sub {
     font-size: 16px;
@@ -339,7 +338,6 @@
   }
   .flag {
     padding: 22px 18px;
-    border-radius: 20px;
     gap: 22px;
   }
   .h3big {
@@ -367,12 +365,10 @@
   .case {
     margin-top: 10px;
     padding: 20px 18px;
-    border-radius: 20px;
     gap: 14px;
   }
   .role2 {
     margin-bottom: 8px;
-    font-size: 18px;
   }
   .mech {
     font-size: 14.5px;
@@ -452,9 +448,6 @@
     margin-top: 20px;
     gap: 6px 18px;
   }
-  .h2studio {
-    font-size: 38px;
-  }
   .studiohead .body {
     margin-top: 18px;
     font-size: 16px;
@@ -465,12 +458,11 @@
   }
   .practice {
     padding: 22px 20px 20px;
-    border-radius: 20px;
   }
   .practice h3 {
     font-size: 22px;
   }
-  .practice p {
+  .practice p:not(.src) {
     font-size: 14.5px;
   }
   .method {
@@ -506,7 +498,6 @@
   }
   .send {
     margin-top: 20px;
-    font-size: 18px;
   }
   .terms {
     grid-template-columns: minmax(0, 1fr);
@@ -533,7 +524,6 @@
   }
   .person {
     margin-top: 16px;
-    font-size: 20px;
   }
   .abouttext .body {
     font-size: 16px;
@@ -550,7 +540,6 @@
     font-size: 14px;
   }
   .contact {
-    padding: 56px 0 48px;
     text-align: left;
   }
   .cbody,

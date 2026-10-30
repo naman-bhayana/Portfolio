@@ -339,7 +339,7 @@ export default function MotionIsland() {
           if (still()) return
           html.classList.add('rv-on')
           for (const block of [...document.querySelectorAll('[data-rv]')].filter(belowFold)) {
-            block.querySelectorAll(':scope > .h2, :scope > .h2b, :scope > .h2c').forEach(splitWords)
+            block.querySelectorAll(':scope > .h2, :scope > .h2b').forEach(splitWords)
             block.classList.add('rv-wait')
             arriving.observe(block)
           }

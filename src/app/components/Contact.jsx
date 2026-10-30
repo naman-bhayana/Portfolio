@@ -10,7 +10,7 @@ export default function Contact() {
     <section className="scene contact" id="contact" aria-labelledby="contact-heading">
       <div className="light light-contact para" aria-hidden="true" />
       <div className="wrap contactin" data-rv="seq">
-        <h2 id="contact-heading" className="h2c">
+        <h2 id="contact-heading" className="h2">
           {CONTACT.heading.lead}
           <span className="grad">{CONTACT.heading.em}</span>
         </h2>

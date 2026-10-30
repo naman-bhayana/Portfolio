@@ -296,7 +296,7 @@
   align-items: center;
   gap: 10px;
   padding: 12px 17px;
-  border-radius: 15px;
+  border-radius: var(--rframe);
   background: rgba(12, 19, 28, .84);
   border: 1px solid var(--line2);
   -webkit-backdrop-filter: blur(10px);

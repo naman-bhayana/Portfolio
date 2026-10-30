@@ -66,6 +66,7 @@ export default function Proof() {
               <div className="num2">
                 <Num item={cell} />
               </div>
+              <p className="flab2">{cell.label}</p>
               {cell.bars && (
                 <div className="bars" aria-hidden="true">
                   {Array.from({ length: cell.bars }, (_, i) => (
@@ -73,7 +74,6 @@ export default function Proof() {
                   ))}
                 </div>
               )}
-              <p className="flab2">{cell.label}</p>
               <p className="src">{cell.source}</p>
             </li>
           ))}

@@ -1,9 +1,5 @@
 /* Proof: the one figure on its stage, a dot per model beside it, then four figures in a row. */
 
-.proof {
-  padding: var(--pad) 0 calc(var(--pad) * .75);
-}
-
 .light-proof {
   background: radial-gradient(640px 420px at 18% 62%, rgba(26, 125, 255, .12), transparent 70%);
 }
@@ -56,8 +52,10 @@
   text-wrap: pretty;
 }
 
+/* Muted rather than dim: it sits on the halo, which lifts the ground behind it. */
 .hfig .src {
   position: relative;
+  color: var(--muted);
 }
 
 .fieldwrap {
@@ -97,9 +95,18 @@
   margin-top: 72px;
 }
 
+/* Each figure is a column: number, label, then its bars and its source at the foot, so the
+   sources line up across the row whatever the labels' lengths. */
 .figs > li {
+  display: flex;
+  flex-direction: column;
   padding: 6px 0 2px 26px;
   border-left: 1px solid var(--line);
+}
+
+.figs .src {
+  margin-top: auto;
+  padding-top: 14px;
 }
 
 .num2 {
@@ -123,7 +130,7 @@
   display: flex;
   gap: 4px;
   height: 20px;
-  margin-top: 16px;
+  margin-top: 14px;
 }
 
 .bars i {

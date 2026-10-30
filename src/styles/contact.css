@@ -1,7 +1,6 @@
 /* Contact: type on black. */
 
 .contact {
-  padding: clamp(60px, 5.4vw, 76px) 0 clamp(52px, 4.4vw, 60px);
   background: rgba(3, 5, 8, .78);
   text-align: center;
 }
@@ -16,13 +15,13 @@
 
 /* The gradient phrase keeps a hair of room at its end, as in the approved design: without it the
    balanced headline tips "the" onto the second line once it is split into words. */
-.h2c .grad {
+.contact .h2 .grad {
   padding-right: .06em;
 }
 
 .cbody {
   margin: 24px auto 0;
-  max-width: 600px;
+  max-width: var(--measure);
   font-size: var(--lede2);
   line-height: 1.55;
   color: var(--soft);
@@ -31,7 +30,7 @@
 
 .cextra {
   margin: 10px auto 0;
-  max-width: 600px;
+  max-width: var(--measure);
   font-size: 16px;
   line-height: 1.55;
   color: var(--muted);
@@ -67,8 +66,9 @@
   padding: 0 12px;
   border: 0;
   background: transparent;
-  font: 500 12.5px/1 var(--mono);
-  letter-spacing: .14em;
+  font: var(--label);
+  line-height: 1;
+  letter-spacing: var(--trk-up);
   text-transform: uppercase;
   color: var(--muted);
   cursor: pointer;
@@ -100,7 +100,7 @@
 
 .micro {
   margin-top: 24px;
-  font: 500 12.5px/1.6 var(--mono);
-  letter-spacing: .06em;
+  font: var(--label);
+  letter-spacing: var(--trk);
   color: var(--dim);
 }

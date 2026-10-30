@@ -1,9 +1,5 @@
 /* About: the portrait beside the quote, the bio and the ship log. */
 
-.about {
-  padding: var(--pad) 0;
-}
-
 .light-about {
   background: radial-gradient(700px 560px at 24% 40%, rgba(26, 125, 255, .12), transparent 70%);
 }
@@ -26,7 +22,7 @@
   position: relative;
   aspect-ratio: 4 / 5;
   overflow: clip;
-  border-radius: 24px;
+  border-radius: var(--rplate);
   border: 1px solid var(--line);
   background: rgba(10, 14, 22, .9);
 }
@@ -67,7 +63,7 @@
 
 .person {
   margin-top: 22px;
-  font: italic 400 clamp(22px, 1.9vw, 28px)/1.3 var(--serif);
+  font: italic 400 var(--accent)/1.3 var(--serif);
   color: var(--cyan);
 }
 
@@ -80,8 +76,8 @@
   flex-wrap: wrap;
   gap: 6px 26px;
   margin-top: 20px;
-  font: 500 12.5px/1.5 var(--mono);
-  letter-spacing: .08em;
+  font: var(--label);
+  letter-spacing: var(--trk);
   color: var(--soft);
 }
 
@@ -97,21 +93,21 @@
 }
 
 .ledger {
-  margin-top: 14px;
+  margin-top: 20px;
   border-top: 1px solid var(--line);
 }
 
 .ledger > li {
   display: grid;
-  grid-template-columns: 130px minmax(0, 1fr) minmax(0, 1.4fr);
+  grid-template-columns: 130px minmax(0, 1.3fr) minmax(0, 1fr);
   gap: 4px 28px;
   padding: 12px 0;
   border-bottom: 1px solid var(--line);
 }
 
 .lyear {
-  font: 500 12.5px/1.6 var(--mono);
-  letter-spacing: .06em;
+  font: var(--label);
+  letter-spacing: var(--trk);
   color: var(--fg);
 }
 

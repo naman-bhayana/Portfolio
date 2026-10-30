@@ -1,9 +1,5 @@
 /* Built like infrastructure: the rail of eight nodes, what every build ships with, the toolbox. */
 
-.infra {
-  padding: var(--pad) 0 calc(var(--pad) * .85);
-}
-
 .light-infra {
   background: radial-gradient(760px 520px at 70% 36%, rgba(26, 125, 255, .11), transparent 70%);
 }
@@ -125,8 +121,8 @@
   flex-wrap: wrap;
   gap: 8px 24px;
   margin-top: 22px;
-  font: 500 12.5px/1.6 var(--mono);
-  letter-spacing: .1em;
+  font: var(--label);
+  letter-spacing: var(--trk-up);
   text-transform: uppercase;
   color: var(--dim);
 }
