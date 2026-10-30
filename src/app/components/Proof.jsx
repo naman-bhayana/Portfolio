@@ -10,7 +10,11 @@ function Figure({ parts }) {
         {part}
       </span>
     ) : part === '-' ? (
-      part
+      // A hyphen never breaks before a digit; the <wbr> lets a range wrap after it when a
+      // reader's own text spacing makes it wider than its column. It shows nothing otherwise.
+      <span key={i}>
+        -<wbr />
+      </span>
     ) : (
       <small key={i} className="u">
         {part}

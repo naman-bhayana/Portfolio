@@ -272,8 +272,8 @@ for (const width of [1024, 1100]) {
   check(sizes.scrollWidth <= sizes.width, `T4.reflow-${width}`, `no horizontal overflow at ${width} px`, JSON.stringify(sizes))
   await context.close()
 }
-for (const textSpacing of [false, true]) {
-  const { context, page } = await newPage({ width: 320, height: 640, mobile: true, reducedMotion: 'reduce' })
+for (const [width, textSpacing] of [[320, false], [320, true], [390, false], [390, true]]) {
+  const { context, page } = await newPage({ width, height: 640, mobile: true, reducedMotion: 'reduce' })
   await page.goto(`${BASE}/`, { waitUntil: 'networkidle' })
   if (textSpacing) {
     await page.addStyleTag({
@@ -290,8 +290,26 @@ for (const textSpacing of [false, true]) {
       .map((el) => el.id || el.tagName.toLowerCase())
     return { scrollWidth: document.documentElement.scrollWidth, width, wide: [...new Set(wide)].slice(0, 6) }
   })
-  const id = textSpacing ? 'T4.reflow-320-spacing' : 'T4.reflow-320'
-  check(overflow.scrollWidth <= overflow.width && overflow.wide.length === 0, id, `no horizontal overflow at 320 px${textSpacing ? ' with text-spacing overrides' : ''}`, JSON.stringify(overflow))
+  const id = textSpacing ? `T4.reflow-${width}-spacing` : `T4.reflow-${width}`
+  check(overflow.scrollWidth <= overflow.width && overflow.wide.length === 0, id, `no horizontal overflow at ${width} px${textSpacing ? ' with text-spacing overrides' : ''}`, JSON.stringify(overflow))
+  await context.close()
+}
+
+// ---------------------------------------------------------------- narrow header over the deck
+// On the narrowest phones the header must stay two rows (brand row, links row) and the deck's
+// pinned cases must sit below it, never under it.
+for (const width of [360, 370, 374]) {
+  const { context, page } = await newPage({ width, height: 760, mobile: true, reducedMotion: 'reduce' })
+  await page.goto(`${BASE}/`, { waitUntil: 'networkidle' })
+  const header = await page.evaluate(() => Math.round(document.querySelector('header.nav').getBoundingClientRect().height))
+  const pinned = await page.evaluate(async () => {
+    const first = document.querySelector('.deck .case')
+    const top0 = parseFloat(getComputedStyle(first).top)
+    window.scrollTo({ top: first.getBoundingClientRect().top + window.scrollY - top0 + 40, behavior: 'instant' })
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
+    return { caseTop: Math.round(first.getBoundingClientRect().top), headerBottom: Math.round(document.querySelector('header.nav').getBoundingClientRect().bottom), top0 }
+  })
+  check(header <= 107 && pinned.caseTop >= pinned.headerBottom - 1, `T4.header-deck.${width}`, `header ${header} px, two rows; the pinned case sits ${pinned.caseTop - pinned.headerBottom} px below it`, JSON.stringify({ header, ...pinned }))
   await context.close()
 }
 

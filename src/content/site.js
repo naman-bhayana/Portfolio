@@ -99,7 +99,7 @@ export const HERO = {
     { id: 'slm', text: 'Fine-tuned small language models' },
     { id: 'evals', text: 'Evals on every change' },
     { id: 'gateway', text: '400+ models, one gateway' },
-    { id: 'voice', text: 'Voice AI, live', live: true },
+    { id: 'voice', text: 'Voice agents' },
   ],
 }
 

@@ -28,7 +28,7 @@ export default function SiteHeader() {
             <Icon name="pause" className="when-playing" />
             <Icon name="play" className="when-paused" />
           </label>
-          <a className="pill pill-primary navcta" href={HEADER_CTA.href}>
+          <a className="pill pill-ghost navcta" href={HEADER_CTA.href}>
             {HEADER_CTA.label}
           </a>
         </div>

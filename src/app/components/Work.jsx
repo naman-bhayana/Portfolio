@@ -4,8 +4,11 @@ import { IMAGE_WIDTHS, LOGO_WIDTHS, optimised, srcSet } from '@/lib/images'
 import { spaced } from '@/lib/spaced'
 import Shot from './Shot'
 
-const CARD_SIZES = '(max-width: 960px) 92vw, 380px'
-const FLAGSHIP_SIZES = '(max-width: 960px) 86vw, 560px'
+// A case's screenshot is never wider than 380 px (340 on a landscape tablet), and is not shown
+// on phones (it is lazy, so it is not fetched there). The flagship's art fills its plate up to
+// 640 px wide on tablets and narrow screens, and 560 px beside the text on a laptop.
+const CARD_SIZES = '380px'
+const FLAGSHIP_SIZES = '(max-width: 744px) 86vw, (max-width: 1160px) 640px, 560px'
 // A case's wordmark is drawn up to 290 px wide on a desktop and 230 px on a phone (heights in
 // work.css times each mark's aspect), so a 3x phone needs about 690 px of it.
 const WORDMARK_SIZES = '(max-width: 600px) 230px, 290px'

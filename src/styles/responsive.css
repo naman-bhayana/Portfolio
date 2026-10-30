@@ -1,8 +1,8 @@
 /* Narrow layouts. Tablets (1160 px), narrow screens (960 px), phones (600 px, designed at 390). */
 
 @media (max-width: 1160px) {
-  /* A smaller stage carries four smaller chips, so the avatar still shows: the two on the right,
-     which would cover the face, step out. */
+  /* A smaller stage carries four smaller chips, so the avatar still shows: the two beside the
+     face (c2, c4) step out; the sixth stays, low on the right by the laptop. */
   .chip {
     gap: 9px;
     padding: 10px 14px;
@@ -34,6 +34,9 @@
   .flag {
     grid-template-columns: minmax(0, 1fr);
     padding: 36px;
+  }
+  .flagart {
+    max-width: 640px;
   }
   .case {
     height: auto;
@@ -81,6 +84,23 @@
     display: inline-block;
     margin: 0 0 12px;
   }
+  /* The promises take a row of their own under the label, four across (two below 960 px, one
+     on phones), so no rule between them ever starts a line. */
+  .every {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px 28px;
+  }
+  .every > .eyebrow {
+    grid-column: 1 / -1;
+    padding: 0;
+  }
+  .every > span,
+  .every > span:first-child,
+  .every > span:nth-child(2) {
+    padding: 0;
+    border-left: 0;
+  }
   .practices {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -119,6 +139,24 @@
   .abouttext,
   .log {
     grid-column: 1;
+  }
+}
+
+/* Tablets in landscape: the one case with a screenshot keeps it beside its words, as on a
+   laptop, rather than under them. */
+@media (min-width: 961px) and (max-width: 1160px) {
+  .case:has(.caseart) {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 340px);
+  }
+  .case:has(.caseart) :is(.casehead, .casetext, .caselink) {
+    grid-column: 1;
+  }
+  .case:has(.caseart) .caseart {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+    justify-self: end;
+    align-self: center;
+    width: 100%;
   }
 }
 
@@ -198,6 +236,9 @@
   .fieldwrap .cap {
     text-align: left;
   }
+  .every {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
   .phalo {
     left: -10%;
     top: -30%;
@@ -244,6 +285,14 @@
   }
   .orb {
     filter: blur(40px);
+  }
+  /* A smaller avatar closes the hero sooner; it is still the first screen's largest image. */
+  .hero {
+    padding-bottom: 44px;
+  }
+  .stage {
+    width: min(280px, 72%);
+    margin-top: 32px;
   }
   .wgrid {
     grid-template-columns: repeat(2, 1fr);
@@ -306,11 +355,15 @@
   .wdesc {
     bottom: 3px;
   }
+  /* Under a reader's own text spacing (WCAG 1.4.12) a long word may break rather than run off
+     the screen. */
   .h2 {
     font-size: clamp(40px, 11.5vw, 48px);
+    overflow-wrap: anywhere;
   }
   .h2b {
     font-size: clamp(28px, 8vw, 32px);
+    overflow-wrap: anywhere;
   }
   .sub {
     font-size: 16px;
@@ -341,8 +394,11 @@
   .figs > li {
     padding-left: 16px;
   }
+  /* The widest figure (30–40%) must fit half a phone: it scales down a little below 393 px.
+     Under a reader's own text spacing it may wrap after its dash rather than overflow. */
   .num2 {
-    font-size: 44px;
+    font-size: clamp(36px, 11.2vw, 44px);
+    white-space: normal;
   }
   .flab2 {
     margin-top: 10px;
@@ -449,8 +505,7 @@
     margin-top: 5px;
   }
   .every {
-    flex-direction: column;
-    align-items: flex-start;
+    grid-template-columns: minmax(0, 1fr);
     gap: 8px;
     margin-top: 32px;
     padding: 16px 0;
@@ -607,17 +662,10 @@
   }
 }
 
-/* Below 360 px the figures take a row each, the deck pins below a header whose links now take
-   two rows, and the monogram stands in for the name, which stays available to screen readers. */
-@media (max-width: 359px) {
-  .figs {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .case {
-    --top0: 168px;
-  }
-
+/* Below 374 px the monogram stands in for the name, which stays available to screen readers,
+   and the links close up, so the five of them hold one row and the header stays two rows tall:
+   the deck's pinned cases clear it (--top0, 120 px from 960 px down). */
+@media (max-width: 373px) {
   .brand span + span {
     position: absolute;
     width: 1px;
@@ -625,5 +673,33 @@
     overflow: hidden;
     clip-path: inset(50%);
     white-space: nowrap;
+  }
+
+  .links {
+    margin: 0 -8px;
+  }
+
+  .links a {
+    padding: 0 8px;
+  }
+}
+
+/* Below 360 px the figures take a row each, and the links close up further to keep one row. */
+@media (max-width: 359px) {
+  .figs {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .num2 {
+    font-size: 44px;
+  }
+
+  .links {
+    margin: 0 -6px;
+    font-size: 13.5px;
+  }
+
+  .links a {
+    padding: 0 6px;
   }
 }
