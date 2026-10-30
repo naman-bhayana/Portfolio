@@ -1,7 +1,12 @@
 /* Proof: the one figure on its stage, a dot per model beside it, then four figures in a row. */
 
+/* A tinted tier, lit where the figure stands. */
+.proof {
+  background: var(--g-tint);
+}
+
 .light-proof {
-  background: radial-gradient(640px 420px at 18% 62%, rgba(26, 125, 255, .12), transparent 70%);
+  background: radial-gradient(700px 440px at 14% 60%, rgba(26, 125, 255, .14), transparent 70%);
 }
 
 .pstage {
@@ -101,10 +106,23 @@
 /* Each figure is a column: number, label, then its bars and its source at the foot, so the
    sources line up across the row whatever the labels' lengths. */
 .figs > li {
+  position: relative;
   display: flex;
   flex-direction: column;
   padding: 6px 0 2px 26px;
-  border-left: 1px solid var(--line);
+  border-left: 1px solid transparent;
+}
+
+/* Each column's rule, drawn as the row arrives (motion.css). */
+.figs > li::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: linear-gradient(180deg, var(--cyan), rgba(0, 225, 255, .15));
+  transform-origin: 50% 0;
 }
 
 .figs .src {

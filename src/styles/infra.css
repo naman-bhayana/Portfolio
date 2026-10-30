@@ -1,7 +1,12 @@
 /* Built like infrastructure: the rail of eight nodes, what every build ships with, the toolbox. */
 
+/* A tinted tier. */
+.infra {
+  background: var(--g-tint);
+}
+
 .light-infra {
-  background: radial-gradient(760px 520px at 70% 36%, rgba(26, 125, 255, .11), transparent 70%);
+  background: radial-gradient(760px 520px at 70% 36%, rgba(26, 125, 255, .13), transparent 70%);
 }
 
 .railwrap {

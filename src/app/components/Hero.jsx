@@ -124,9 +124,11 @@ export default function Hero() {
           <div className="cta d4">
             <a className="pill pill-primary" href={HERO.primaryCta.href}>
               {HERO.primaryCta.label} <Icon name="arrow" />
+              <i className="lq" aria-hidden="true" />
             </a>
             <a className="pill pill-ghost" href={HERO.secondaryCta.href}>
               {HERO.secondaryCta.label}
+              <i className="lq" aria-hidden="true" />
             </a>
           </div>
         </div>

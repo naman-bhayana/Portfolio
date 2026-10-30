@@ -71,6 +71,24 @@ export default function MotionIsland() {
         return section ? [[section, a]] : []
       }),
     )
+    // The row's one bar slides to the current link (chrome.css .navline): placed when the current
+    // link changes and when the row is laid out again.
+    const navline = document.querySelector('.nav .navline')
+    const linksBox = document.querySelector('.nav .links')
+    const placeNavline = () => {
+      if (!navline || !linksBox) return
+      const a = linksBox.querySelector('a[aria-current]')
+      if (!a) {
+        navline.style.setProperty('--on', '0')
+        return
+      }
+      const r = a.getBoundingClientRect()
+      const b = linksBox.getBoundingClientRect()
+      navline.style.setProperty('--x', `${r.left - b.left}px`)
+      navline.style.setProperty('--w', String(r.width))
+      navline.style.setProperty('--on', '1')
+    }
+    on(window, 'resize', placeNavline, { passive: true })
     const current = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {

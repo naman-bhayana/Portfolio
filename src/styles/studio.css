@@ -1,11 +1,30 @@
 /* The studio: the statement, three practices, the method, the terms. */
 
+/* A raised band, like Work. */
 .studio {
-  background: rgba(7, 10, 16, .58);
+  background: var(--g-bloom), var(--g-band);
+}
+
+.studio::before,
+.studio::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  z-index: 2;
+  height: 1px;
+  background: var(--g-seam);
+  pointer-events: none;
+}
+
+.studio::after {
+  top: auto;
+  bottom: 0;
 }
 
 .light-studio {
-  background: radial-gradient(760px 520px at 10% 30%, rgba(26, 125, 255, .11), transparent 70%);
+  background: radial-gradient(760px 520px at 10% 28%, rgba(0, 225, 255, .1), transparent 70%);
 }
 
 .studio .wrap {
@@ -39,9 +58,37 @@
   display: flex;
   flex-direction: column;
   padding: 30px 30px 26px;
-  border: 1px solid var(--line2);
+  overflow: clip;
+  overflow-clip-margin: 2px;
+  border: 1px solid rgba(148, 170, 200, .26);
   border-radius: var(--rplate);
-  background: radial-gradient(520px 360px at 20% 0%, rgba(26, 125, 255, .16), transparent 70%), rgba(13, 18, 27, .9);
+  background: var(--g-glaze), radial-gradient(520px 360px at 20% 0%, rgba(26, 125, 255, .16), transparent 70%), rgba(17, 24, 38, .94);
+  box-shadow: var(--sh-2);
+  transition: box-shadow var(--t-slow) var(--ease-snap), border-color var(--t-base), translate var(--t-slow) var(--ease-snap);
+}
+
+/* Under the pointer the plate lifts a step and its ring lights; a glint crosses it once
+   (motion.css). Its parts sit above the glint. */
+.practice:hover {
+  translate: 0 -3px;
+  border-color: var(--ring);
+  box-shadow: var(--sh-3);
+}
+
+.practice::after {
+  content: "";
+  position: absolute;
+  inset: -40% -60%;
+  z-index: 0;
+  background: linear-gradient(104deg, transparent 42%, rgba(255, 255, 255, .07) 50%, transparent 58%);
+  transform: translateX(-70%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.practice > * {
+  position: relative;
+  z-index: 1;
 }
 
 .practice h3 {

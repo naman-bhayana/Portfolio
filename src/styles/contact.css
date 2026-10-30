@@ -1,12 +1,13 @@
 /* Contact: type on black. */
 
+/* The page again, darkening towards the foot. */
 .contact {
-  background: rgba(3, 5, 8, .78);
+  background: linear-gradient(180deg, rgba(5, 7, 11, .2), rgba(3, 5, 8, .85));
   text-align: center;
 }
 
 .light-contact {
-  background: radial-gradient(760px 420px at 50% 112%, rgba(26, 125, 255, .14), transparent 70%);
+  background: radial-gradient(900px 480px at 50% 112%, rgba(26, 125, 255, .2), transparent 70%);
 }
 
 .contactin {
@@ -71,7 +72,7 @@
   text-transform: uppercase;
   color: var(--muted);
   cursor: pointer;
-  transition: color .2s, transform .12s var(--ease);
+  transition: color var(--t-base), transform var(--t-fast) var(--ease-snap), translate var(--t-slow) var(--ease-spring);
 }
 
 .copybtn:hover {

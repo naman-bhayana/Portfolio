@@ -15,6 +15,10 @@ npm run build && npm start
 npm run lint
 ```
 
+## How the page looks
+
+Every colour, surface, radius and motion length is a token on `.nb` in `base.css`. The page sits in three tiers, each a token: the page itself, a tinted scene (`--g-tint`) and a band with a seam of light where it meets the page (`--band-flat`, `--g-seam`; the wall and the marquee are one band, the marquee closing it). A plate (the flagship, a case, a practice, the portrait) is one recipe: a glaze along its top edge (`--g-glaze`), a hairline, a stacked shadow (`--sh-1` to `--sh-3`) and, with a pointer near, a lift, a ring and a glint. The buttons carry a liquid highlight (`.lq`) that follows the pointer. Motion lengths are `--t-fast`, `--t-base`, `--t-slow` and `--t-reveal`, with two curves (`--ease-snap`, `--ease-spring`). A colour, a shadow or a duration written out in a section's file is a bug: use a token or add one.
+
 ## How the page moves
 
 The styles are in `src/styles/`, one file per section, with every animation in `motion.css`. The page is complete in the server HTML and reads the same with JavaScript off, with reduced motion, or with the pause switch in the header.

@@ -1,7 +1,12 @@
 /* About: the portrait beside the quote, the bio and the ship log. */
 
+/* A tinted tier. */
+.about {
+  background: var(--g-tint);
+}
+
 .light-about {
-  background: radial-gradient(700px 560px at 24% 40%, rgba(26, 125, 255, .12), transparent 70%);
+  background: radial-gradient(700px 560px at 24% 40%, rgba(26, 125, 255, .14), transparent 70%);
 }
 
 .aboutgrid {
@@ -23,8 +28,9 @@
   aspect-ratio: 4 / 5;
   overflow: clip;
   border-radius: var(--rplate);
-  border: 1px solid var(--line);
-  background: rgba(10, 14, 22, .9);
+  border: 1px solid var(--line2);
+  background: var(--g-glaze), rgba(12, 17, 25, .9);
+  box-shadow: var(--sh-2);
 }
 
 .pimg {

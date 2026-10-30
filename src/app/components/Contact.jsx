@@ -24,12 +24,14 @@ export default function Contact() {
         </div>
         <p className="cacts">
           <a className="pill pill-primary" href={MAILTO}>
+            <i className="lq" aria-hidden="true" />
             {CONTACT.write}
           </a>
           {RESUME_DRIVE_URL && (
             <>
               {' '}
               <a className="pill pill-ghost" href={RESUME_PATH}>
+                <i className="lq" aria-hidden="true" />
                 {CONTACT.resumeLabel}
               </a>
             </>

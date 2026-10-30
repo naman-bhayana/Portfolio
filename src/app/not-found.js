@@ -20,6 +20,7 @@ export default function NotFound() {
           {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- a full load is fine here */}
           <a className="pill pill-primary" href="/">
             {NOT_FOUND.home} <Icon name="arrow" />
+            <i className="lq" aria-hidden="true" />
           </a>
         </p>
       </div>

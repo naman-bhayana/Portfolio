@@ -1,11 +1,30 @@
 /* Work: the flagship plate, the sticky deck of five cases, and the index. */
 
+/* A raised band: a bloom where the eye enters it, a seam where it meets the page. */
 .work {
-  background: rgba(7, 10, 16, .58);
+  background: var(--g-bloom), var(--g-band);
+}
+
+.work::before,
+.work::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  z-index: 2;
+  height: 1px;
+  background: var(--g-seam);
+  pointer-events: none;
+}
+
+.work::after {
+  top: auto;
+  bottom: 0;
 }
 
 .light-work {
-  background: radial-gradient(900px 600px at 82% 18%, rgba(26, 125, 255, .10), transparent 70%);
+  background: radial-gradient(900px 600px at 84% 14%, rgba(0, 225, 255, .09), transparent 70%);
 }
 
 .work .wrap {
@@ -22,17 +41,46 @@
   align-items: center;
   margin-top: 48px;
   padding: 40px 48px;
+  overflow: clip;
+  overflow-clip-margin: 2px;
   border: 1px solid var(--line2);
   border-radius: var(--rplate);
-  background: rgba(10, 15, 23, .86);
+  background: var(--g-glaze), rgba(12, 17, 25, .9);
+  box-shadow: var(--sh-2);
+  transition: box-shadow var(--t-slow) var(--ease-snap), border-color var(--t-base), translate var(--t-slow) var(--ease-snap);
+}
+
+/* Under the pointer the plate lifts a step and its ring lights; a glint crosses it once
+   (motion.css). Its parts sit above the glint. */
+.flag:hover {
+  translate: 0 -3px;
+  border-color: var(--ring);
+  box-shadow: var(--sh-3);
+}
+
+.flag::after {
+  content: "";
+  position: absolute;
+  inset: -40% -60%;
+  z-index: 0;
+  background: linear-gradient(104deg, transparent 42%, rgba(255, 255, 255, .07) 50%, transparent 58%);
+  transform: translateX(-70%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.flag > * {
+  position: relative;
+  z-index: 1;
 }
 
 .card {
   position: relative;
   overflow: clip;
   border-radius: var(--rframe);
-  border: 1px solid var(--line);
+  border: 1px solid var(--line2);
   background: #000;
+  box-shadow: var(--sh-1);
 }
 
 .card img {
@@ -164,7 +212,7 @@
 .deck {
   position: relative;
   margin-top: 12px;
-  perspective: 2000px;
+  perspective: 1400px;
   timeline-scope: --c2, --c3, --c4, --c5;
 }
 
@@ -181,10 +229,11 @@
   height: 224px;
   margin-top: 10px;
   padding: 30px 44px;
-  border: 1px solid var(--line2);
+  border: 1px solid rgba(148, 170, 200, .22);
   border-radius: var(--rplate);
-  background: #0C111A;
-  transform-origin: 50% 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .04), transparent 44%), #0E1420;
+  box-shadow: var(--sh-2);
+  transform-origin: 50% 100%;
 }
 
 .case::after {
@@ -221,12 +270,12 @@
 /* The three shades of the prototype's translucent plates, composited on the page ground. */
 .case:nth-child(2),
 .case:nth-child(4) {
-  background: #0A0D15;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .035), transparent 44%), #0B1019;
 }
 
 .case:nth-child(3),
 .case:nth-child(5) {
-  background: #0F151D;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .045), transparent 44%), #111A27;
 }
 
 .casehead,
@@ -288,8 +337,9 @@
   width: 100%;
   overflow: clip;
   border-radius: var(--rframe);
-  border: 1px solid var(--line);
+  border: 1px solid var(--line2);
   background: #000;
+  box-shadow: var(--sh-1);
 }
 
 .caseart img {
