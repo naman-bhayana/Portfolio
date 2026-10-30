@@ -697,10 +697,12 @@ for (const vp of [
       .flatMap((el) => [el, ...el.children, ...el.querySelectorAll('.wcell, .wd, .node, .flagtext > *')])
       .filter((el) => Number(getComputedStyle(el).opacity) < 0.99).length,
     veiled: [...document.querySelectorAll('.case')].filter((el) => Number(getComputedStyle(el, '::after').opacity) > 0.01).length,
+    icons: [...document.querySelectorAll('.pause .ic')].map((el) => Number(getComputedStyle(el).opacity)).join(','),
   }))
   const figures = await unfinishedFigures(page)
   await page.locator('.pause').click()
-  await page.waitForTimeout(200)
+  await page.waitForTimeout(400)
+  const icons = await page.evaluate(() => [...document.querySelectorAll('.pause .ic')].map((el) => Number(getComputedStyle(el).opacity)).join(','))
   const resumed = await page.evaluate(() => ({
     checked: document.getElementById('pause-motion').checked,
     animations: document.getAnimations().length,
@@ -708,10 +710,10 @@ for (const vp of [
     arriving: [...document.querySelectorAll('.hero :is(.lede, .cta, .chip)')].filter((el) => Number(getComputedStyle(el).opacity) < 0.99).length,
   }))
   check(
-    running > 0 && (!CONCIERGE || waves > 0) && secondStop.id === 'pause-motion' && !!secondStop.name && paused.checked && paused.animations === 0 && paused.transparent === 0 && paused.veiled === 0 && figures.length === 0 && !resumed.checked && resumed.animations > 0 && resumed.arriving === 0,
+    running > 0 && (!CONCIERGE || waves > 0) && secondStop.id === 'pause-motion' && !!secondStop.name && paused.checked && paused.animations === 0 && paused.transparent === 0 && paused.veiled === 0 && paused.icons === '0,1' && figures.length === 0 && !resumed.checked && resumed.animations > 0 && resumed.arriving === 0 && icons === '1,0',
     'T8.pause',
-    `second tab stop "${secondStop.name}"; Space stops ${running} animations${CONCIERGE ? ` (the launcher's ${waves} waveform bars among them)` : ''} and shows everything; a click resumes without replaying the arrival`,
-    JSON.stringify({ running, ...(CONCIERGE ? { waves } : {}), secondStop, paused, figures, resumed }),
+    `second tab stop "${secondStop.name}"; Space stops ${running} animations${CONCIERGE ? ` (the launcher's ${waves} waveform bars among them)` : ''}, shows everything and the play icon; a click resumes without replaying the arrival`,
+    JSON.stringify({ running, ...(CONCIERGE ? { waves } : {}), secondStop, paused, figures, resumed, icons }),
   )
 
   // The switch must leave the page where it is: its checkbox is not at the top of the document.
@@ -1137,11 +1139,21 @@ const scrollTrace = async () => {
       const region = document.querySelector('#contact [role="status"]')
       new MutationObserver(() => window.__statusChanges++).observe(region, { childList: true, subtree: true, characterData: true })
     })
+    const addressAt = () => page.evaluate(() => Math.round(document.getElementById('contact-email').getBoundingClientRect().left * 10) / 10)
+    const leftBefore = await addressAt()
     await button.click()
     await page.waitForTimeout(200)
     const status = await page.locator('[role="status"]').textContent()
     const copied = await page.evaluate(() => navigator.clipboard.readText()).catch(() => '')
-    check(/copied/i.test(status ?? '') && copied.includes('@'), 'T10.copy-email', `"${status}" and clipboard holds ${copied}`, `status "${status}", clipboard "${copied}"`)
+    // The button says "Copied" in cyan and the centred address beside it stays where it was.
+    const marked = await button.evaluate((el) => el.hasAttribute('data-copied'))
+    const leftAfter = await addressAt()
+    check(
+      /copied/i.test(status ?? '') && copied.includes('@') && marked && Math.abs(leftAfter - leftBefore) < 1,
+      'T10.copy-email',
+      `"${status}" and clipboard holds ${copied}; the button is marked copied and the address stays put`,
+      JSON.stringify({ status, copied, marked, leftBefore, leftAfter }),
+    )
     // A second press must empty and then refill the live region, so screen readers announce
     // it again (they only speak changes).
     await page.evaluate(() => {

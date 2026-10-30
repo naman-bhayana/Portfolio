@@ -110,6 +110,13 @@ main:focus {
   text-decoration: none;
 }
 
+/* Taps act at once (no double-tap zoom wait) and show the page's own pressed states rather
+   than the browser's grey flash. */
+.nb :where(a[href], button, label, input) {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
 .nb :where(img) {
   display: block;
   max-width: 100%;
@@ -352,17 +359,25 @@ main:focus {
   letter-spacing: var(--trk);
   color: var(--cyan);
   border-bottom: 1px solid rgba(0, 225, 255, .35);
-  transition: border-color .2s, color .2s;
 }
 
 .inl {
   color: var(--fg);
   border-bottom: 1px solid var(--line2);
-  transition: border-color .2s;
 }
 
-.ext:hover,
-.inl:hover {
+/* Every underlined link answers a pointer and the keyboard alike: its rule turns cyan. */
+.ext,
+.inl,
+.quiet a,
+.addr a {
+  transition: color .2s, border-color .2s;
+}
+
+.ext:is(:hover, :focus-visible),
+.inl:is(:hover, :focus-visible),
+.quiet a:is(:hover, :focus-visible),
+.addr a:is(:hover, :focus-visible) {
   border-bottom-color: var(--cyan);
 }
 

@@ -40,6 +40,7 @@
   font-weight: 700;
   font-size: 14px;
   box-shadow: 0 0 26px rgba(0, 190, 255, .45);
+  transition: transform .2s var(--ease);
 }
 
 .links {
@@ -50,12 +51,13 @@
 }
 
 .links a {
+  position: relative;
   display: inline-flex;
   align-items: center;
   min-height: 44px;
   padding: 0 14px;
   border-radius: 999px;
-  transition: color .2s, background .2s;
+  transition: color .2s, background .2s, opacity .1s;
 }
 
 .links a:hover {
@@ -63,11 +65,26 @@
   background: rgba(255, 255, 255, .05);
 }
 
-/* The section on screen (MotionIsland sets aria-current). */
+/* The section on screen (MotionIsland sets aria-current): a cyan line along its foot. Drawn as
+   its own bar, so the link keeps its rounded shape and its focus ring. */
 .links a[aria-current] {
   color: var(--fg);
-  border-radius: 0;
-  box-shadow: inset 0 -2px 0 var(--cyan);
+}
+
+.links a[aria-current]::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: var(--cyan);
+}
+
+/* A press answers at once: links dim, buttons settle a touch. */
+.links a:active,
+.footl a:active {
+  opacity: .7;
 }
 
 .pill {
@@ -197,7 +214,7 @@ button.pill {
   padding: 0 12px;
   font-size: 13.5px;
   color: var(--muted);
-  transition: color .2s;
+  transition: color .2s, opacity .1s;
 }
 
 .footl a:hover {
@@ -229,7 +246,7 @@ button.pill {
   border: 1px solid var(--line2);
   color: var(--muted);
   cursor: pointer;
-  transition: color .2s, border-color .2s;
+  transition: color .2s, border-color .2s, transform .12s var(--ease);
 }
 
 .pause:hover {
@@ -237,23 +254,45 @@ button.pill {
   color: var(--fg);
 }
 
+/* Both icons share the button's one cell; the switch cross-fades from one to the other. */
 .pause .ic {
+  grid-area: 1 / 1;
   fill: currentColor;
   stroke: none;
+  transition: opacity .2s, transform .2s var(--ease);
 }
 
 .pause .when-paused,
 #pause-motion:checked ~ .nb .pause .when-playing {
-  display: none;
+  opacity: 0;
+  transform: scale(.6);
 }
 
 #pause-motion:checked ~ .nb .pause .when-paused {
-  display: block;
+  opacity: 1;
+  transform: none;
 }
 
 #pause-motion:focus-visible ~ .nb .pause {
   outline: 2px solid #00E1FF;
   outline-offset: 3px;
+}
+
+/* The small movements of a hover or a press, only for visitors who have not asked for less. */
+@media (prefers-reduced-motion: no-preference) {
+  .brand:hover .mark,
+  .brand:focus-visible .mark {
+    transform: rotate(-8deg) scale(1.06);
+  }
+
+  .pill:active {
+    transform: translateY(0) scale(.98);
+    transition-duration: .08s;
+  }
+
+  .pause:active {
+    transform: scale(.92);
+  }
 }
 
 /* Visitors who already asked for less motion get none, so there is nothing to pause. */

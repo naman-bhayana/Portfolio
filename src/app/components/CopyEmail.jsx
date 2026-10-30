@@ -63,7 +63,7 @@ export default function CopyEmail({ email, targetId, labels, className = 'pill p
 
   return (
     <>
-      <button type="button" className={className} onClick={copy} hidden={!hydrated} data-copy-email>
+      <button type="button" className={className} onClick={copy} hidden={!hydrated} data-copy-email data-copied={copied || undefined}>
         {copied ? labels.copied : labels.button}
         {labels.hint && <span className="sr"> {labels.hint}</span>}
       </button>

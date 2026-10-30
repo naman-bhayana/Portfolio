@@ -53,17 +53,16 @@
   letter-spacing: -.01em;
   color: var(--fg);
   border-bottom: 1px solid var(--line2);
-  transition: border-color .2s;
 }
 
-.addr a:hover {
-  border-bottom-color: var(--cyan);
-}
-
-/* The copy button: a real button, set as a quiet label. */
+/* The copy button: a real button, set as a quiet label. It is as wide as its longer label
+   ("Copied", six characters with their tracking), so the centred address beside it never moves
+   when the label changes. */
 .copybtn {
+  min-width: calc(6ch + .72em + 24px);
   min-height: 44px;
   padding: 0 12px;
+  text-align: center;
   border: 0;
   background: transparent;
   font: var(--label);
@@ -72,11 +71,21 @@
   text-transform: uppercase;
   color: var(--muted);
   cursor: pointer;
-  transition: color .2s;
+  transition: color .2s, transform .12s var(--ease);
 }
 
 .copybtn:hover {
   color: var(--fg);
+}
+
+.copybtn[data-copied] {
+  color: var(--cyan);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .copybtn:active {
+    transform: scale(.96);
+  }
 }
 
 /* Copy-email result. Always in the page so screen readers announce it, and never shown: the
