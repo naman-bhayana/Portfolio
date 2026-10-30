@@ -15,11 +15,14 @@
   .c3 {
     left: -12%;
   }
+  /* The heading leads into the first mark rather than leaving a gap before it. */
   .wgrid {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
   .wlabel {
     grid-column: span 3;
+    justify-content: flex-end;
+    padding-right: 32px;
   }
   .wlist > li {
     border-top: 0;
@@ -42,6 +45,7 @@
     height: auto;
     min-height: 0;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
     padding: 32px 36px;
   }
   .caseart {
@@ -101,9 +105,6 @@
     padding: 0;
     border-left: 0;
   }
-  .practices {
-    grid-template-columns: minmax(0, 1fr);
-  }
   .steps {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px 32px;
@@ -114,6 +115,10 @@
   .steps > li:first-child,
   .steps > li:nth-child(2) {
     border-top: 0;
+  }
+  /* Five steps in two columns: the last one takes the row. */
+  .steps > li:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
   }
   .terms {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -153,10 +158,13 @@
   }
   .case:has(.caseart) .caseart {
     grid-column: 2;
-    grid-row: 1 / span 3;
+    grid-row: 1 / span 2;
     justify-self: end;
     align-self: center;
     width: 100%;
+  }
+  .case:has(.caseart):has(.caselink) .caseart {
+    grid-row: 1 / span 3;
   }
 }
 
@@ -209,7 +217,7 @@
     display: none;
   }
   .wgrid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
   .wlabel {
     grid-column: span 2;
@@ -235,6 +243,14 @@
   }
   .fieldwrap .cap {
     text-align: left;
+  }
+  /* The practices stack: each paragraph keeps a readable measure, and a source no longer
+     needs to line up with its neighbours'. */
+  .practices {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .practice .src {
+    min-height: 0;
   }
   .every {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -295,12 +311,13 @@
     margin-top: 32px;
   }
   .wgrid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-template-rows: 48px;
     grid-auto-rows: 60px;
   }
   .wlabel {
     grid-column: 1 / -1;
+    justify-content: flex-start;
     padding-right: 0;
   }
   .wlist > li {
@@ -394,11 +411,15 @@
   .figs > li {
     padding-left: 16px;
   }
-  /* The widest figure (30–40%) must fit half a phone: it scales down a little below 393 px.
+  /* The widest figure (30-40%) must fit half a phone: it scales down a little below 393 px.
      Under a reader's own text spacing it may wrap after its dash rather than overflow. */
   .num2 {
     font-size: clamp(36px, 11.2vw, 44px);
     white-space: normal;
+  }
+  /* Two figures a row: a source that wraps starts level with its neighbour's. */
+  .figs .src {
+    min-height: calc(14px + 3em);
   }
   .flab2 {
     margin-top: 10px;
@@ -692,6 +713,10 @@
 
   .num2 {
     font-size: 44px;
+  }
+
+  .figs .src {
+    min-height: 0;
   }
 
   .links {

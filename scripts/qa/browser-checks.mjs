@@ -1056,10 +1056,11 @@ for (const vp of [
 // ---------------------------------------------------------------- main thread while scrolling
 // A full scroll at phone width with motion on. The page animates on purpose, so its frames
 // are not free; what matters is that none of them would hold up a slow phone. The CPU time
-// of every main-thread task is read from a trace (unaffected by whatever else this machine is
-// doing) and multiplied by four for a mid-range phone. Blocking time is what a task takes
-// beyond 50 ms, as in Total Blocking Time.
-{
+// of every main-thread task is read from a trace and multiplied by four for a mid-range phone.
+// Blocking time is what a task takes beyond 50 ms, as in Total Blocking Time. One trace varies
+// by a factor of three from run to run on this machine (70 to 212 ms on 30 Oct 2026), so the
+// scroll is traced three times and the medians are judged.
+const scrollTrace = async () => {
   const { context, page } = await newPage({ width: 360, height: 640, deviceScaleFactor: 3, mobile: true })
   const cdp = await context.newCDPSession(page)
   await page.goto(`${BASE}/`, { waitUntil: 'networkidle' })
@@ -1081,17 +1082,24 @@ for (const vp of [
   const anchor = events.find((e) => e.name === 'UpdateLayoutTree')
   const tasks = events.filter((e) => e.name === 'RunTask' && e.ph === 'X' && e.pid === anchor?.pid && e.tid === anchor?.tid)
   const onPhone = tasks.map((e) => ((e.tdur ?? 0) / 1000) * PHONE_SLOWDOWN)
-  const blocking = Math.round(onPhone.reduce((sum, ms) => sum + Math.max(0, ms - 50), 0))
-  const worst = Math.round(Math.max(0, ...onPhone))
-  check(
-    tasks.length > 0 && blocking <= SCROLL_BLOCKING_MS && worst <= SCROLL_WORST_TASK_MS,
-    'T8.scroll-360',
-    `a full scroll blocks for ${blocking} ms on a ${PHONE_SLOWDOWN}x slower phone; worst task ${worst} ms`,
-    tasks.length === 0
-      ? 'no main-thread tasks in the trace'
-      : `a full scroll blocks for ${blocking} ms (budget ${SCROLL_BLOCKING_MS}); worst task ${worst} ms (budget ${SCROLL_WORST_TASK_MS}) on a ${PHONE_SLOWDOWN}x slower phone`,
-  )
   await context.close()
+  return { tasks: tasks.length, blocking: Math.round(onPhone.reduce((sum, ms) => sum + Math.max(0, ms - 50), 0)), worst: Math.round(Math.max(0, ...onPhone)) }
+}
+{
+  const traces = []
+  for (let n = 0; n < 3; n++) traces.push(await scrollTrace())
+  const median = (key) => traces.map((t) => t[key]).sort((a, b) => a - b)[1]
+  const blocking = median('blocking')
+  const worst = median('worst')
+  const runs = traces.map((t) => t.blocking).join(', ')
+  check(
+    traces.every((t) => t.tasks > 0) && blocking <= SCROLL_BLOCKING_MS && worst <= SCROLL_WORST_TASK_MS,
+    'T8.scroll-360',
+    `a full scroll blocks for ${blocking} ms (median of ${runs}) on a ${PHONE_SLOWDOWN}x slower phone; worst task ${worst} ms`,
+    traces.some((t) => t.tasks === 0)
+      ? 'no main-thread tasks in a trace'
+      : `a full scroll blocks for ${blocking} ms (median of ${runs}; budget ${SCROLL_BLOCKING_MS}); worst task ${worst} ms (budget ${SCROLL_WORST_TASK_MS}) on a ${PHONE_SLOWDOWN}x slower phone`,
+  )
 }
 
 // ---------------------------------------------------------------- console, CSP issues, copy button, keyboard

@@ -323,12 +323,14 @@ main:focus {
   font: var(--label);
   letter-spacing: var(--trk);
   color: var(--dim);
+  text-wrap: balance;
 }
 
 .cap {
   font: var(--label);
   letter-spacing: var(--trk);
   color: var(--dim);
+  text-wrap: balance;
 }
 
 /* A figure's unit, set in the serif. */
@@ -453,6 +455,15 @@ main:focus {
 /* Focus moving up the page must not land under the sticky header (WCAG 2.4.11). */
 .nb :where(a[href], button) {
   scroll-margin-top: 120px;
+}
+
+/* Forced colours draw a backplate behind each line of text; at the headlines' tight leading it
+   would cover the descenders of the line above. */
+@media (forced-colors: active) {
+  .h2,
+  .h2b {
+    line-height: 1.1;
+  }
 }
 
 /* The 404 page. */
