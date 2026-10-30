@@ -8,7 +8,9 @@ const CONCIERGE = process.env.NEXT_PUBLIC_CONCIERGE === 'on'
 
 // Enforced since 30 Oct 2026, after ten clean days in production as report-only. A static page
 // cannot carry a per-request nonce, so inline scripts are allowed; the particle field's worker
-// is a same-origin file under script-src 'self'.
+// is a same-origin file under script-src 'self'. A concierge build sends it as report-only: its
+// ElevenLabs connections have not yet run in production, and a blocked one would end a call.
+// Enforce it there too after a clean week.
 const contentSecurityPolicy = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline'",
@@ -37,7 +39,7 @@ const securityHeaders = [
   { key: 'Cross-Origin-Opener-Policy', value: 'same-origin' },
   // Production builds only: next dev needs eval for fast refresh.
   ...(process.env.NODE_ENV === 'production'
-    ? [{ key: 'Content-Security-Policy', value: contentSecurityPolicy }]
+    ? [{ key: CONCIERGE ? 'Content-Security-Policy-Report-Only' : 'Content-Security-Policy', value: contentSecurityPolicy }]
     : []),
 ]
 

@@ -94,4 +94,4 @@ npx -y lighthouse@13.5.0 https://www.namanbhayana.com/ --form-factor=mobile --sc
 
 When content changes, bump `UPDATED` in `src/content/site.js`.
 
-Everything under `public/images`, `public/logos`, `public/work` and `public/og` is cached for a year as immutable, and the image optimiser keeps its copies as long. So a changed file always gets a new name, never the old one: update the path in `site.js` (`AVATAR.src`, `OG_IMAGE`, the wall's marks, the wordmarks) and have `npm run assets` write under the new name. The share card needs a new name in any case for link previews to refresh.
+Everything under `public/images`, `public/logos`, `public/work` and `public/og` is cached for a year as immutable, and the image optimiser keeps its copies as long. So a changed file always gets a new name, never the old one: change its path in `site.js` (`AVATAR.src`, `OG_IMAGE.url`, the wall's marks, the wordmarks); `npm run assets` writes the avatar and the share card under the names `site.js` gives them. The share card needs a new name in any case for link previews to refresh.

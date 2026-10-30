@@ -8,7 +8,8 @@
 //
 // So React's registration is dropped, for good: React adds it again whenever a portal mounts.
 // React marks a root or portal container (_reactListening…) just before it adds its listeners,
-// so only those are dropped; anything else that asks for animationiteration still gets it.
+// and only those containers lose animationiteration. React's root here is the document itself,
+// so a listener for it on the document is dropped too: listen on the animated element instead.
 const { addEventListener } = EventTarget.prototype
 const isReactContainer = (target) => target != null && Object.keys(target).some((key) => key.startsWith('_reactListening'))
 

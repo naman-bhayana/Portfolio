@@ -11,7 +11,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { parse } from 'node-html-parser'
-import { CHROME_UA, HTML_ACCEPT, describeError, get, headerMap, rawGet, requestHeaders } from './lib/net.mjs'
+import { CHROME_UA, HTML_ACCEPT, describeError, get, headerMap, rawGet, requestHeaders, setBypassOrigin } from './lib/net.mjs'
 import {
   findEmoji,
   gluedText,
@@ -56,6 +56,7 @@ try {
   process.exit(2)
 }
 const BASE = base.origin
+setBypassOrigin(BASE)
 const PROD = new URL(SITE_URL)
 const PROD_HOSTS = new Set([PROD.host, PROD.host.replace(/^www\./, '')])
 const pIdx = argv.indexOf('--profile')
@@ -207,6 +208,8 @@ const cspSources = (policy, name) => {
 }
 const CONCIERGE_HOSTS = ['https://api.elevenlabs.io', 'wss://api.elevenlabs.io', 'https://livekit.rtc.elevenlabs.io', 'wss://livekit.rtc.elevenlabs.io']
 const CONCIERGE_ON = permissionsOf(home.headers?.get?.('permissions-policy')).get('microphone') === '(self)'
+const CSP_HEADER = CONCIERGE_ON ? 'content-security-policy-report-only' : 'content-security-policy'
+const OTHER_CSP_HEADER = CONCIERGE_ON ? 'content-security-policy' : 'content-security-policy-report-only'
 
 const textOrEmpty = (r) => (r.ok && r.status === 200 ? r.text : '')
 // Corpora shared by C2 (terms, emoji) and C4 (voice). `voice` marks prose-like corpora.
@@ -1008,7 +1011,7 @@ await section('T10', async () => {
     'permissions-policy',
     'x-frame-options',
     'cross-origin-opener-policy',
-    'content-security-policy',
+    CSP_HEADER,
   ]
   const results = await Promise.all(paths.map(async (p) => [p, await rawGet(at(p))]))
   for (const [p, r] of results) {
@@ -1029,9 +1032,10 @@ await section('T10', async () => {
     if (h.has('x-powered-by')) fails.push('x-powered-by present')
     const pp = (h.get('permissions-policy') || []).join(',')
     for (const bad of ['clipboard', 'browsing-topics']) if (pp.includes(bad)) fails.push(`permissions-policy mentions ${bad}`)
-    // The policy is enforced; a report-only copy alongside it would be a leftover.
-    if (h.has('content-security-policy-report-only')) fails.push('content-security-policy-report-only still sent')
-    const csp = (h.get('content-security-policy') || []).join(';')
+    // The policy is enforced; a concierge build reports only, until its policy has run clean in
+    // production (next.config.js). The other header alongside would be a leftover.
+    if (h.has(OTHER_CSP_HEADER)) fails.push(`${OTHER_CSP_HEADER} sent as well`)
+    const csp = (h.get(CSP_HEADER) || []).join(';')
     if (csp.includes('nonce-')) fails.push('CSP mentions nonce-')
     // A concierge build allows the microphone here and connects to ElevenLabs; any other build
     // sends these exactly as before. Neither lets scripts run from blob: (the worklets are files).

@@ -10,7 +10,9 @@ import satori from 'satori'
 import { Resvg } from '@resvg/resvg-js'
 import pngToIco from 'png-to-ico'
 import opentype from 'opentype.js'
-import { PERSON, HERO, MANIFEST } from '../../src/content/site.js'
+// The avatar and the share card are written under the names site.js gives them. Both are cached
+// for a year as immutable (next.config.js), so a changed image takes a new name there.
+import { PERSON, HERO, MANIFEST, AVATAR as AVATAR_IMAGE, OG_IMAGE } from '../../src/content/site.js'
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 const at = (p) => path.join(ROOT, p)
@@ -121,7 +123,7 @@ async function buildAvatar(box) {
   check(meta.width === SIZE && meta.height === SIZE, `avatar is ${meta.width}x${meta.height}, not 1024x1024`)
   check(meta.hasAlpha, 'avatar lost its alpha channel')
   check(png.length <= 400 * 1024, `avatar is ${png.length} bytes, over 400 KB`)
-  await write('public/images/naman-bhayana-avatar.png', png)
+  await write(`public${AVATAR_IMAGE.src}`, png)
 }
 
 // ---------------------------------------------------------------- OG card
@@ -335,7 +337,7 @@ async function buildOgCard(box) {
   const meta = await sharp(png).metadata()
   check(meta.format === 'png' && meta.width === OG.width && meta.height === OG.height, `OG card is ${meta.width}x${meta.height}`)
   check(png.length <= 300 * 1024, `OG card is ${png.length} bytes, over 300 KB`)
-  await write('public/og/naman-bhayana-og.png', png)
+  await write(`public${OG_IMAGE.url}`, png)
 }
 
 // ---------------------------------------------------------------- icons
