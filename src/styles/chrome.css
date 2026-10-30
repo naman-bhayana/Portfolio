@@ -265,11 +265,12 @@ button.pill {
 }
 
 /* Forced colours drop backgrounds, and with them the gradient that draws these outlines.
-   `button.pill` is named because the button reset above removes its border. */
+   `button.pill` and the copy button are named because their resets remove the border. */
 @media (forced-colors: active) {
   .pill-primary,
   .pill-ghost,
-  button.pill {
+  button.pill,
+  button.copybtn {
     border: 1px solid ButtonText;
   }
 }

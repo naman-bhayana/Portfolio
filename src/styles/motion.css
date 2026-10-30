@@ -751,40 +751,40 @@
   .rv-in[data-rv="wall"] .wcell {
     animation: wallin .8s var(--ease) backwards;
   }
-  .rv-in[data-rv="wall"] .wcell:nth-child(3) {
+  .rv-in[data-rv="wall"] .wcell:nth-child(2) {
     animation-delay: .05s;
   }
-  .rv-in[data-rv="wall"] .wcell:nth-child(4) {
+  .rv-in[data-rv="wall"] .wcell:nth-child(3) {
     animation-delay: .1s;
   }
-  .rv-in[data-rv="wall"] .wcell:nth-child(5) {
+  .rv-in[data-rv="wall"] .wcell:nth-child(4) {
     animation-delay: .15s;
   }
-  .rv-in[data-rv="wall"] .wcell:nth-child(6) {
+  .rv-in[data-rv="wall"] .wcell:nth-child(5) {
     animation-delay: .2s;
   }
-  .rv-in[data-rv="wall"] .wcell:nth-child(7) {
+  .rv-in[data-rv="wall"] .wcell:nth-child(6) {
     animation-delay: .25s;
   }
-  .rv-in[data-rv="wall"] .wcell:nth-child(8) {
+  .rv-in[data-rv="wall"] .wcell:nth-child(7) {
     animation-delay: .3s;
   }
-  .rv-in[data-rv="wall"] .wcell:nth-child(9) {
+  .rv-in[data-rv="wall"] .wcell:nth-child(8) {
     animation-delay: .35s;
   }
-  .rv-in[data-rv="wall"] .wcell:nth-child(10) {
+  .rv-in[data-rv="wall"] .wcell:nth-child(9) {
     animation-delay: .4s;
   }
-  .rv-in[data-rv="wall"] .wcell:nth-child(11) {
+  .rv-in[data-rv="wall"] .wcell:nth-child(10) {
     animation-delay: .45s;
   }
-  .rv-in[data-rv="wall"] .wcell:nth-child(12) {
+  .rv-in[data-rv="wall"] .wcell:nth-child(11) {
     animation-delay: .5s;
   }
-  .rv-in[data-rv="wall"] .wcell:nth-child(13) {
+  .rv-in[data-rv="wall"] .wcell:nth-child(12) {
     animation-delay: .55s;
   }
-  .rv-in[data-rv="wall"] .wcell:nth-child(14) {
+  .rv-in[data-rv="wall"] .wcell:nth-child(13) {
     animation-delay: .6s;
   }
   .rv-in[data-rv="wall"]::after {

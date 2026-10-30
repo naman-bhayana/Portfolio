@@ -110,8 +110,9 @@ export const AVATAR = {
   alt: 'Illustrated avatar of Naman Bhayana wearing headphones, working on a laptop',
 }
 
-// The client wall: the hero's closing band. Marks only; the descriptor shows on hover and is
-// always there for a screen reader. Files are each mark's optical box (public/logos), so
+// The client wall: the hero's closing band. Marks only; the descriptor is text a pointer
+// uncovers, stands under the mark on a touch screen from tablets up, and is always there for a
+// screen reader. Files are each mark's optical box (public/logos), so
 // centring the file centres the mark; the heights that give them equal weight are in wall.css.
 export const WALL = {
   label: 'Built and shipped with',

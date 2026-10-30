@@ -1,6 +1,7 @@
 /* The client wall: the hero's closing band. Marks only, each at the height that gives it the
    same visual weight as the others (public/logos files are optical boxes: centring the file
-   centres the mark). The descriptor sits under the mark and shows under the pointer. */
+   centres the mark). The descriptor sits under the mark: a pointer uncovers it, and on a touch
+   screen from tablets up it simply stands there. */
 
 .wall {
   position: relative;
@@ -25,6 +26,11 @@
   grid-auto-rows: 84px;
 }
 
+/* The marks are a list; its items take their places in the band's grid beside the heading. */
+.wlist {
+  display: contents;
+}
+
 .wlabel {
   grid-column: span 2;
   display: flex;
@@ -39,7 +45,7 @@
   justify-content: center;
 }
 
-.wgrid > li:nth-child(n+5) {
+.wlist > li:nth-child(n+4) {
   border-top: 1px solid var(--line);
 }
 
@@ -56,43 +62,31 @@
   display: none;
 }
 
-/* Which cells start a row depends on the columns, so each layout lists its own: five columns
-   with the label taking two, three with the label taking two, then two with the label taking one. */
+/* Which marks start a row depends on the columns, so each layout lists its own. Every layout
+   fills its grid: five columns with the heading taking two (3 + 5 + 5 marks), four with it
+   taking three (1 + 4 + 4 + 4), three with it taking two (1 + 3 + 3 + 3 + 3), and on phones two
+   under a heading row of their own, the thirteenth mark taking the last row. The first mark
+   follows the heading and gets no rule either. */
 @media (min-width: 1161px) {
-  .wgrid > li:nth-child(3)::before,
-  .wgrid > li:nth-child(4)::before,
-  .wgrid > li:nth-child(6)::before,
-  .wgrid > li:nth-child(7)::before,
-  .wgrid > li:nth-child(8)::before,
-  .wgrid > li:nth-child(9)::before,
-  .wgrid > li:nth-child(11)::before,
-  .wgrid > li:nth-child(12)::before,
-  .wgrid > li:nth-child(13)::before,
-  .wgrid > li:nth-child(14)::before {
+  .wlist > li:not(:first-child, :nth-child(5n+4))::before {
     display: block;
   }
 }
 
-@media (min-width: 601px) and (max-width: 1160px) {
-  .wgrid > li:nth-child(4)::before,
-  .wgrid > li:nth-child(5)::before,
-  .wgrid > li:nth-child(7)::before,
-  .wgrid > li:nth-child(8)::before,
-  .wgrid > li:nth-child(10)::before,
-  .wgrid > li:nth-child(11)::before,
-  .wgrid > li:nth-child(13)::before,
-  .wgrid > li:nth-child(14)::before {
+@media (min-width: 961px) and (max-width: 1160px) {
+  .wlist > li:not(:first-child, :nth-child(4n+2))::before {
+    display: block;
+  }
+}
+
+@media (min-width: 601px) and (max-width: 960px) {
+  .wlist > li:not(:first-child, :nth-child(3n+2))::before {
     display: block;
   }
 }
 
 @media (max-width: 600px) {
-  .wgrid > li:nth-child(4)::before,
-  .wgrid > li:nth-child(6)::before,
-  .wgrid > li:nth-child(8)::before,
-  .wgrid > li:nth-child(10)::before,
-  .wgrid > li:nth-child(12)::before,
-  .wgrid > li:nth-child(14)::before {
+  .wlist > li:nth-child(2n)::before {
     display: block;
   }
 }
@@ -171,4 +165,29 @@
 
 .wcell:hover .wdesc {
   opacity: 1;
+}
+
+/* Nothing hovers on a touch screen. From tablets up the descriptor stands under its mark, in
+   rows tall enough for both; phones keep the marks alone. */
+@media (hover: none) and (min-width: 601px) {
+  .wgrid {
+    grid-auto-rows: 96px;
+  }
+
+  .wlabel,
+  .wcell {
+    padding-bottom: 22px;
+  }
+
+  .wdesc {
+    opacity: 1;
+  }
+}
+
+/* Forced colours would set the white marks on a light ground: the cells keep their own. */
+@media (forced-colors: active) {
+  .wcell {
+    forced-color-adjust: none;
+    background: var(--black);
+  }
 }

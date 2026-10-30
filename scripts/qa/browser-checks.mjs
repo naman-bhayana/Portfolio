@@ -295,6 +295,48 @@ for (const textSpacing of [false, true]) {
   await context.close()
 }
 
+// ---------------------------------------------------------------- the wall's descriptors
+// A pointer uncovers a mark's descriptor; on a touch screen from tablets up it stands under the
+// mark (nothing hovers there); phones show the marks alone. The wall's grid is full in every
+// layout: no mark sits in a row with an empty slot beside it.
+for (const [name, viewport, want] of [
+  ['tablet-touch', { width: 1024, height: 768, mobile: true }, 'shown'],
+  ['laptop-pointer', { width: 1280, height: 800 }, 'on hover'],
+  ['phone-touch', { width: 390, height: 844, mobile: true }, 'hidden'],
+]) {
+  const { context, page } = await newPage({ ...viewport, reducedMotion: 'reduce' })
+  await page.goto(`${BASE}/`, { waitUntil: 'networkidle' })
+  await page.evaluate(() => document.querySelector('.wall').scrollIntoView({ block: 'center', behavior: 'instant' }))
+  await page.waitForTimeout(400)
+  const shown = () => page.evaluate(() => [...document.querySelectorAll('.wdesc')].map((el) => Number(getComputedStyle(el).opacity)))
+  const before = await shown()
+  let ok
+  let detail = { before }
+  if (want === 'shown') ok = before.every((o) => o === 1)
+  else if (want === 'hidden') ok = before.every((o) => o === 0)
+  else {
+    await page.hover('.wcell')
+    await page.waitForTimeout(400)
+    const after = await shown()
+    detail = { before, after }
+    ok = before.every((o) => o === 0) && after[0] === 1 && after.slice(1).every((o) => o === 0)
+  }
+  // Full rows: every mark's row is as full as the grid's columns allow.
+  const rows = await page.evaluate(() => {
+    const cols = getComputedStyle(document.querySelector('.wgrid')).gridTemplateColumns.split(' ').length
+    const widths = new Map()
+    for (const el of [document.querySelector('.wlabel'), ...document.querySelectorAll('.wcell')]) {
+      const r = el.getBoundingClientRect()
+      const top = Math.round(r.top)
+      widths.set(top, (widths.get(top) ?? 0) + r.width)
+    }
+    const full = document.querySelector('.wgrid').getBoundingClientRect().width
+    return { cols, ragged: [...widths.values()].filter((w) => Math.abs(w - full) > 2).length }
+  })
+  check(ok && rows.ragged === 0, `T4.wall-desc.${name}`, `descriptors ${want}; ${rows.cols} columns, every row full`, JSON.stringify({ ...detail, rows }))
+  await context.close()
+}
+
 // ---------------------------------------------------------------- accessible link names
 // Every link's computed accessible name must equal its visible text (WCAG 2.5.3). Read from
 // Chrome's accessibility tree: Playwright's own snapshots normalise whitespace and would miss
