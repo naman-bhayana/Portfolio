@@ -78,7 +78,19 @@ npm run verify -- http://127.0.0.1:3000               # HTML, metadata, routes a
 node scripts/qa/browser-checks.mjs http://127.0.0.1:3000   # layout, motion, accessibility in Chrome
 node scripts/qa/concierge-routes.mjs http://127.0.0.1:3000 # the concierge's two routes (a concierge build)
 npm run assets                                        # rebuild the avatar, share card and icons
+node scripts/qa/lcp-lab.mjs http://127.0.0.1:3000          # first paint and LCP on a throttled phone, by variant
+node scripts/qa/load-cost.mjs http://127.0.0.1:3000        # what the styles cost a phone to lay out, by variant
 ```
+
+`verify-site.mjs` scans the copy against a list of forbidden terms kept outside this public repo: pass its path as `TERMS_FILE` (without it the scan only warns locally and fails on a preview or production). On a protected Vercel preview, pass `VERCEL_BYPASS` too.
+
+Speed is judged on a deployed build, not a local one: on Windows the first layout waits on the operating system looking up next/font's `local()` fallback faces, which a phone never does, so local phone numbers read up to two seconds slow. After a deploy, run Lighthouse's mobile profile three times against the live address and read the median (Performance 95 or more; Accessibility, Best Practices and SEO 100), or PageSpeed Insights for field data:
+
+```sh
+npx -y lighthouse@13.5.0 https://www.namanbhayana.com/ --form-factor=mobile --screenEmulation.mobile --throttling-method=simulate --only-categories=performance,accessibility,best-practices,seo --output=json --output-path=./lh.json --quiet --chrome-flags="--headless=new"
+```
+
+`browser-checks.mjs` holds the phone's LCP to 2.5 s on a deployed build (`T3.lcp-budget`) and reports it, unjudged, locally.
 
 When content changes, bump `UPDATED` in `src/content/site.js`.
 

@@ -877,14 +877,16 @@ await section('T7', async () => {
 
   // Every build's address answers, after its redirects, as a visitor's browser would see it.
   // A site behind a bot challenge (403 or 429 with cf-mitigated) and a free-tier demo still
-  // waking after 60 s are warnings; anything else that does not answer 2xx fails.
+  // waking (no answer in 60 s, or 502 to 504 while it starts) are warnings; anything else that
+  // does not answer 2xx fails.
   const buildLinks = [...new Map(BUILDS.flatMap((b) => (b.link ? [b.link] : (b.links ?? []))).map((l) => [l.href, l])).values()]
   const buildRes = await Promise.all(buildLinks.map(async (l) => [l, await get(l.href, { accept: HTML_ACCEPT, timeoutMs: /\.onrender\.com/.test(l.href) ? 60000 : 20000 })]))
   for (const [l, r] of buildRes) {
     const challenged = (r.status === 403 || r.status === 429) && !!r.headers?.get('cf-mitigated')
     if (r.status >= 200 && r.status < 300) pass('T7.build-link', `${l.label} ${r.status}${r.finalUrl && r.finalUrl !== l.href ? ` (${r.finalUrl})` : ''}`)
     else if (challenged) warn('T7.build-link', `${l.label} ${r.status} behind a bot challenge (${r.headers?.get('cf-mitigated') ?? 'no cf-mitigated header'}); check it in a browser`)
-    else if (r.timedOut && /\.onrender\.com/.test(l.href)) warn('T7.build-link', `${l.label}: the free-tier demo did not wake within 60 s`)
+    else if ((r.timedOut || [502, 503, 504].includes(r.status)) && /\.onrender\.com/.test(l.href))
+      warn('T7.build-link', `${l.label}: the free-tier demo is still waking (${r.timedOut ? 'no answer in 60 s' : `HTTP ${r.status}`}); check it in a browser`)
     else fail('T7.build-link', `${l.label} ${l.href} -> ${fetchErr(r)}`)
   }
 
