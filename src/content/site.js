@@ -6,12 +6,21 @@
 // Spelling is British. Figures come from live products and client work: add a number here
 // only when it is already public.
 // Pure data only: Node scripts (OG card, QA checks) import this file too.
+//
+// Two invisible characters keep words together on screen: "e-commerce" carries a word joiner
+// after its hyphen (the fonts have no non-breaking hyphen; a word joiner is never drawn, so no
+// fallback font shows), and "Delhi NCR" a no-break space. Copy read by machines (the meta
+// description, LLMS_SUMMARY) stays plain, and llms.txt strips the joiner.
+const ECOMMERCE = 'e-\u2060commerce'
+const DELHI_NCR = 'Delhi\u00a0NCR'
 
 export const SITE_URL = 'https://www.namanbhayana.com'
 
 // Date of the last content change. Bump on every edit: it feeds ProfilePage.dateModified,
 // the sitemap's lastmod and the footer year.
-export const UPDATED = '2026-10-15'
+export const UPDATED = '2026-10-30'
+// The day this build of the site went live: ProfilePage.dateCreated.
+export const LAUNCHED = '2026-10-20'
 
 const [updatedYear] = UPDATED.split('-').map(Number)
 
@@ -25,13 +34,14 @@ export const PERSON = {
   linkedin: 'https://www.linkedin.com/in/namanbhayana007/',
   github: 'https://github.com/naman-bhayana',
   x: 'https://x.com/bhayana_naman',
+  xHandle: '@bhayana_naman',
   instagram: 'https://www.instagram.com/naman_bhayana/',
 }
 
 // The studio's site. The page links it. Its Organization node joins the structured data only
 // once NEXERAH_LIVE is true: flip it when https://nexerah.com/ answers 200 (verify-site checks).
 export const NEXERAH_URL = 'https://nexerah.com/'
-export const NEXERAH_LIVE = false
+export const NEXERAH_LIVE = true
 
 // A pre-filled subject makes inbound mail countable without any analytics script; the body
 // prompts for the four things a first reply needs.
@@ -45,9 +55,9 @@ export const RESUME_DRIVE_URL = ''
 export const RESUME_PATH = '/resume'
 
 export const HEAD = {
-  title: 'Naman Bhayana | Head of AI Engineering, ideasIQ · Founder, Nexerah',
+  title: 'Naman Bhayana · Head of AI Engineering, ideasIQ · Founder, Nexerah',
   description:
-    'Head of AI Engineering at ideasIQ and founder of Nexerah. I take AI products from a working demo to a product people use: agents, retrieval and model governance. Delhi NCR.',
+    'Naman Bhayana builds enterprise AI that runs in production: agents, retrieval and model governance. Head of AI Engineering at ideasIQ, founder of Nexerah.',
 }
 
 export const OG_IMAGE = {
@@ -143,7 +153,7 @@ export const CAPABILITIES = [
   'Fine-tuning',
   'Small language models',
   'Model governance',
-  'Evidence guards',
+  'Evidence-checked answers',
   'Multi-tenant SaaS',
   'Go-to-market',
 ]
@@ -156,15 +166,15 @@ export const CAPABILITIES = [
 // where "I" would be nobody: that file describes him, the page speaks as him.
 export const PROOF = {
   heading: { lead: 'What’s running ', em: 'today.' },
-  sub: 'Figures from live products and client work. Nothing here is a projection.',
+  sub: 'Figures from live products, a private beta and client work. Nothing here is a projection.',
   wall: [
     {
       id: 'models',
       source: 'ideasIQ · model gateway',
       value: '400+',
       parts: [400, '+'],
-      label: 'models behind one gateway I architected. Every organisation gets its own access tier and policy is set once for all of them.',
-      llms: 'models behind one gateway he architected. Every organisation gets its own access tier and policy is set once for all of them.',
+      label: 'models behind one gateway I architected. Each organisation gets its own access tier and one policy covers every model.',
+      llms: 'models behind one gateway he architected. Each organisation gets its own access tier and one policy covers every model.',
       caption: 'Each dot is a model.',
     },
   ],
@@ -179,18 +189,18 @@ export const PROOF = {
     },
     {
       id: 'manual',
-      source: 'E-commerce clients',
+      source: 'E-\u2060commerce clients',
       value: '30-40%',
       say: '30 to 40%',
       parts: [30, '-', 40, '%'],
-      label: 'less manual work across three e-commerce operations.',
+      label: `less manual work across three ${ECOMMERCE} operations.`,
     },
     {
       id: 'agent',
       source: 'ideasIQ',
       value: '14-stage',
       parts: [14, '-stage'],
-      label: 'research agent on an in-house runtime. It challenges its own findings before it ranks them.',
+      label: 'research agent that challenges its own findings before it ranks them.',
     },
     {
       id: 'sources',
@@ -213,7 +223,7 @@ export const WORK = {
   flagship: {
     id: 'ideasiq',
     name: 'ideasIQ',
-    tags: ['Flagship', 'Enterprise AI', 'Enterprise SaaS', 'Multi-tenant', 'Head of AI Engineering'],
+    tags: ['Flagship', 'Enterprise AI', 'Multi-tenant SaaS', 'Live'],
     link: { href: 'https://ideasiq.ai/', label: 'ideasiq.ai' },
     summary:
       'I lead the engineering team at ideasIQ and own the AI architecture behind a platform that takes an organisation’s ideas from raw submission to scored, strategy-ready deliverables.',
@@ -221,13 +231,13 @@ export const WORK = {
     modules: [
       'Agent runtime, built in-house',
       'Multi-agent research pipeline',
-      'Model governance gateway with per-organisation access tiers',
-      'Semantic graph backbone for matching and recommendations',
+      'Model governance gateway',
+      'Knowledge graph behind matching and recommendations',
       'Deliverables engine: decks, video and live websites',
       'Knowledge Assistant over a company’s own documents',
       'Voice agent that qualifies visitors and books meetings',
       'Autonomous outbound engine',
-      'SEO and AEO growth programme',
+      'Search and answer-engine (AEO) growth programme',
     ],
     team: { label: 'Listed on the ideasIQ team page', href: 'https://ideasiq.ai/about#who-we-are' },
     image: {
@@ -270,31 +280,31 @@ export const WORK = {
       id: 'docpad',
       name: 'DocPad',
       mark: mark('docpad'),
-      tags: ['Healthcare', 'Private client build'],
+      tags: ['Healthcare', 'Hospital records', 'Client build'],
       role: 'Cloud hospital records.',
-      mech: 'An EMR on SNOMED CT terminology, OCR on medical documents and API-first exchange across hospitals and labs.',
+      mech: 'Electronic medical records coded in SNOMED CT, OCR on medical documents and API-first exchange across hospitals and labs.',
       links: [],
     },
     {
       id: 'prozone',
       name: 'Prozone',
       mark: mark('prozone'),
-      tags: ['Industrial', 'Hardware integration'],
+      tags: ['Industrial', 'Hardware integration', 'Client build'],
       role: 'A 2021 Electron app that emissions-testing centres run their gas analysers and smoke meters through.',
-      mech: 'I brought it back into service: Node 20 and current serial drivers, the smoke meter’s 53-byte frame and reliable port resets.',
-      llms: 'A 2021 Electron app that emissions-testing centres run their gas analysers and smoke meters through. He brought it back into service: Node 20 and current serial drivers, the smoke meter’s 53-byte frame and reliable port resets.',
+      mech: 'I brought it back into service: Node 20 and current serial drivers, the smoke meter’s serial protocol and reliable port resets.',
+      llms: 'A 2021 Electron app that emissions-testing centres run their gas analysers and smoke meters through. He brought it back into service: Node 20 and current serial drivers, the smoke meter’s serial protocol and reliable port resets.',
       links: [],
     },
     {
       id: 'artize-dental',
       name: 'Artize Dental',
       mark: mark('artize'),
-      tags: ['Healthcare', 'Client build'],
+      tags: ['Healthcare', 'Brand site', 'Live'],
       mech: 'Brand site for a cosmetic dentistry clinic in Delhi, built end to end.',
       links: [{ label: 'artizeclinic.com', href: 'https://www.artizeclinic.com/' }],
     },
   ],
-  indexLabel: 'All sixteen, on the record',
+  indexLabel: 'The other ten, on the record',
   index: [
     {
       builds: [
@@ -302,9 +312,8 @@ export const WORK = {
         { id: 'sterling-naturals', name: 'Sterling Naturals' },
         { id: 'new-gramophone-house', name: 'New Gramophone House' },
       ],
-      sector: 'E-commerce',
-      summary:
-        'Order, inventory and back-office automation for three e-commerce brands: a fresh dog-food label, a beauty and personal-care store and a music retailer.',
+      sector: 'E-\u2060commerce',
+      summary: `Order, inventory and back-office automation for three ${ECOMMERCE} brands: a fresh dog-food label, a beauty and personal-care store and a music retailer.`,
     },
     {
       builds: [{ id: 'techlive', name: 'Techlive Solutions' }],
@@ -319,7 +328,7 @@ export const WORK = {
     {
       builds: [{ id: 'wandernest', name: 'WanderNest' }],
       sector: 'Travel',
-      summary: 'A vacation-rental marketplace with listings, search, booking, reviews and live maps.',
+      summary: 'A holiday-rental marketplace with listings, search, booking, reviews and live maps.',
     },
     {
       builds: [{ id: 'plinko', name: 'Plinko' }],
@@ -349,19 +358,20 @@ export const BUILDS = [
 // The rail: what every build runs on, read left to right.
 export const INFRA = {
   heading: { lead: 'Built like infrastructure, ', em: 'not a demo.' },
-  sub: 'I build the whole stack. Every layer of it is the one I run in production at ideasIQ: tiered access for every organisation on it, evals on every change, your cloud and your keys.',
+  sub: 'I build the whole stack. Every layer of it is the one ideasIQ runs in production.',
   nodes: [
     { name: 'Your data', copy: 'Documents, CRM, orders, tickets, calls. Read where it lives.' },
-    { name: 'Ingest and retrieval', copy: 'Chunking, embeddings and a semantic graph for matching.' },
-    { name: 'Agent runtime', copy: 'In-house. Typed tool contracts, step limits, checkpoints.' },
-    { name: 'Evals and guardrails', copy: 'Run on every change. A claim the model cannot cite is downgraded.' },
-    { name: 'Model gateway', copy: '400+ models, tiered access, routed by eval score and cost.' },
+    { name: 'Ingest and retrieval', copy: 'Documents split into passages, indexed by meaning and linked for matching.' },
+    { name: 'Agent runtime', copy: 'Each tool has a fixed input and output shape, each run a step limit and a save point it can resume from.' },
+    { name: 'Evals and guardrails', copy: 'Each release is scored against a fixed test set before it ships.' },
+    { name: 'Model gateway', copy: '400+ models, routed by eval score and cost.' },
     { name: 'Observability', copy: 'Traces, budgets per tenant, a kill switch.' },
     { name: 'Deliverables', copy: 'Decks, video, live sites, voice, outbound.' },
-    { name: 'Your cloud', copy: 'Your accounts, your keys. Assigned to you on payment.' },
+    { name: 'Your cloud', copy: 'Deployed into your accounts, not ours.' },
   ],
   everyLabel: 'Every build',
-  every: ['Typed tool contracts', 'Evals on every change', 'A running-cost model', 'Your cloud, your keys', 'A written update every week'],
+  // The one home of each promise: the rail and the method describe, this row promises.
+  every: ['Evals on every change', 'A running-cost model', 'Your cloud, your keys', 'A written update every week'],
   toolboxLabel: 'Toolbox',
   toolbox: ['Python', 'TypeScript', 'Next.js', 'React', 'Node.js', 'FastAPI', 'PostgreSQL', 'MongoDB', 'Redis', 'AWS', 'Docker', 'LangChain', 'MCP'],
 }
@@ -370,7 +380,7 @@ export const INFRA = {
 export const STUDIO = {
   name: 'Nexerah',
   heading: { lead: 'Nexerah builds the production AI an enterprise runs on, then gets it ', em: 'used.' },
-  body: 'Nexerah is my studio: founder-led, in Delhi NCR, with clients worldwide. One founder on every call, specialists per project and the paperwork of a company you can buy from.',
+  body: `Nexerah is my studio: founder-led, in ${DELHI_NCR}, on US, EU and AU hours. One founder on every call, specialists per project and the paperwork of a company you can buy from.`,
   link: { label: 'nexerah.com', href: NEXERAH_URL },
   practices: [
     {
@@ -380,30 +390,30 @@ export const STUDIO = {
     },
     {
       name: 'Automation',
-      copy: 'The manual work in your operations, handed to software that does not take weekends off. Map the process, cut the steps that should not exist, automate what is left.',
-      seen: 'Seen in DocPad · three e-commerce operations',
+      copy: 'The manual work in your operations is handed to software that does not take weekends off. Orders, documents, tickets and the back office, run unattended, with every exception routed to a person.',
+      seen: `Seen in DocPad · three ${ECOMMERCE} operations`,
     },
     {
       name: 'Growth engine',
       copy: 'Launch is the start. Then it gets found, cited and bought: search, answer engines, paid and outbound, run as one programme against numbers you can see every week.',
-      seen: 'Seen in ideasIQ · myLeadsIQ',
+      seen: 'Seen in ideasIQ’s growth programme · myLeadsIQ’s outbound agent',
     },
   ],
   methodHeading: 'Two weeks to certainty. Then we build.',
   steps: [
-    { name: 'Sprint', when: '2 weeks', what: 'Interviews, a map of the repetitive work, a working prototype on your data, a running-cost model and a fixed quote.' },
+    { name: 'Sprint', when: '2 weeks', what: 'Interviews, a map of the repetitive work, a working prototype on your data and a fixed quote.' },
     { name: 'Design', when: '1 to 2 weeks', what: 'Map the workflow, remove the steps that should not exist, simplify. Product, brand and architecture drawn together.' },
-    { name: 'Build', when: '6 to 10 weeks', what: 'Working software in your repos as we build, evals on every change, a written update every week.' },
+    { name: 'Build', when: '6 to 10 weeks', what: 'Working software in your repos as we build, never a big reveal at the end.' },
     { name: 'Launch', when: '1 week', what: 'Product, site, analytics and first campaigns go live together.' },
-    { name: 'Grow', when: 'Monthly', what: 'Search, answer engines, paid and outbound, run against numbers you can see.' },
+    { name: 'Grow', when: 'Monthly', what: 'The growth engine, monthly, from the first week after launch.' },
   ],
   priced: 'Priced up front: the Sprint fee is published and every quote after it comes in writing before anything starts.',
-  pricedLink: { label: 'Engagements on nexerah.com', href: NEXERAH_URL },
+  pricedLink: { label: 'Engagements on nexerah.com', href: `${NEXERAH_URL}engagements#ai-sprint` },
   terms: [
     { name: 'Contracts', copy: 'A master services agreement, statements of work, a mutual NDA and a data processing agreement, ready to sign.' },
     { name: 'Ownership', copy: 'Code, designs, accounts and intellectual property are assigned to you on payment. Nothing is held back.' },
-    { name: 'Data', copy: 'Built in your cloud, under your keys. Your data never trains a model you have not approved.' },
-    { name: 'Reply', copy: 'Every brief is answered by me within one business day, with questions or a time to talk.' },
+    { name: 'Data', copy: 'Your data stays in your accounts and never trains a model you have not approved.' },
+    { name: 'Reply', copy: 'I answer every brief within one business day, with questions or a time to talk.' },
   ],
 }
 
@@ -414,9 +424,9 @@ export const ABOUT = {
   bio: [
     'I lead AI engineering at ',
     { text: 'ideasIQ', href: 'https://ideasiq.ai/' },
-    ' and run Nexerah, my studio. I’ve shipped sixteen products across enterprise AI, fintech, healthcare, e-commerce and industrial hardware. I’d rather be judged on what’s live than on what I say here.',
+    ` and run Nexerah, my studio. I’ve shipped sixteen builds across enterprise AI, fintech, healthcare, ${ECOMMERCE} and industrial hardware. I’d rather be judged on what’s live than on what I say here.`,
   ],
-  facts: ['Thapar Institute of Engineering and Technology', 'Delhi NCR', 'US, EU and AU hours'],
+  facts: ['Thapar Institute of Engineering and Technology', DELHI_NCR, 'US, EU and AU hours'],
   disclosure: 'Client work runs through Nexerah; I work with ideasIQ in my day role; nothing here is sponsored.',
   portrait: {
     src: '/images/naman-bhayana-portrait.webp',
@@ -443,7 +453,7 @@ export const CONTACT = {
   extra: 'A few lines on what you’re building and where it’s stuck is enough.',
   write: 'Write to me',
   resumeLabel: 'Resume',
-  microline: 'NDA before we talk, if you want one. Delhi NCR · US, EU and AU hours.',
+  microline: `NDA before we talk, if you want one. ${DELHI_NCR} · US, EU and AU hours.`,
   copy: { button: 'Copy', copied: 'Copied', hint: 'email address', done: 'Email address copied', fallback: 'Press Ctrl+C or Cmd+C to copy' },
 }
 
@@ -559,7 +569,7 @@ export const CONCIERGE = {
     docpad: 'DocPad',
     prozone: 'Prozone',
     artize_dental: 'Artize Dental',
-    more_builds: 'All sixteen builds',
+    more_builds: 'The other ten builds',
     stack: 'The stack',
     node_evals: 'Evals and guardrails',
     node_model_gateway: 'Model gateway',
@@ -610,11 +620,12 @@ export const SKIP_LINK = 'Skip to content'
 export const NOT_FOUND = {
   title: 'Page not found',
   body: 'There is nothing at this address.',
+  description: 'There is nothing at this address. Everything is on the home page.',
   home: 'Go to the home page',
 }
 
 export const LLMS_SUMMARY =
-  'Naman Bhayana is Head of AI Engineering at ideasIQ and the founder of Nexerah, an AI studio for enterprises. He takes AI products from a working demo to a product people use: agents, retrieval and model governance. Delhi NCR; US, EU and AU hours.'
+  'Naman Bhayana is Head of AI Engineering at ideasIQ and the founder of Nexerah, an AI studio for enterprises. He builds enterprise AI that runs in production: agents, retrieval and model governance. Delhi NCR; US, EU and AU hours.'
 
 // Structured data. Every value is backed by visible text on the page.
 export const ENTITY = {
@@ -631,7 +642,7 @@ export const ENTITY = {
 
 export const MANIFEST = {
   name: 'Naman Bhayana',
-  shortName: 'Naman Bhayana',
+  shortName: 'Naman',
   description: HEAD.description,
   color: '#05070B',
 }

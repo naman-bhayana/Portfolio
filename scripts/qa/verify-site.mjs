@@ -322,17 +322,18 @@ await section('C1', async () => {
   check(!!workRoot && JSON.stringify(headings) === JSON.stringify(want), 'C1.work-h3', `#work headings name all ${names.length} builds in order`,
     workRoot ? `#work headings are [${headings.join(' | ')}], expected [${want.join(' | ')}]` : 'no #work section')
 
-  // The number of builds is typed into the copy by hand, as a figure and as a word. Hold
-  // every mention to the length of the list.
+  // The number of builds is typed into the copy by hand, as a word. Hold each mention to the
+  // list it counts: the bio counts every build, the index label the index's own rows.
   const NUMBER_WORDS = 'zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty'.split(' ')
-  const asWord = new RegExp(`\\b${NUMBER_WORDS[names.length] ?? names.length}\\b`, 'i')
+  const asWord = (n) => new RegExp(`\\b${NUMBER_WORDS[n] ?? n}\\b`, 'i')
+  const inIndex = WORK.index.reduce((sum, row) => sum + row.builds.length, 0)
   const mentions = {
-    'WORK.indexLabel': asWord.test(WORK.indexLabel),
-    'ABOUT.bio': asWord.test(ABOUT.bio.map((s) => (typeof s === 'string' ? s : s.text)).join('')),
+    [`WORK.indexLabel (${inIndex})`]: asWord(inIndex).test(WORK.indexLabel),
+    [`ABOUT.bio (${names.length})`]: asWord(names.length).test(ABOUT.bio.map((s) => (typeof s === 'string' ? s : s.text)).join('')),
   }
   const stale = Object.keys(mentions).filter((place) => !mentions[place])
-  check(!stale.length, 'C1.build-count', `${names.length} builds, and the copy says so in ${Object.keys(mentions).length} places`,
-    `there are ${names.length} builds, but ${stale.join(', ')} says otherwise`)
+  check(!stale.length, 'C1.build-count', `${names.length} builds, ${inIndex} of them in the index, and the copy says so in each place`,
+    `the copy's count is stale in ${stale.join(', ')}`)
 
   // The studio block, and its address linked from there and the footer only
   const studio = [

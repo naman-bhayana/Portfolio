@@ -53,7 +53,9 @@ export function GET() {
     `- [GitHub](${PERSON.github})`,
     '',
   ]
-  return new Response(lines.join('\n'), {
+  // The copy's word joiners (site.js) keep words together on screen; plain text has no lines
+  // to break, so they go.
+  return new Response(lines.join('\n').replaceAll('\u2060', ''), {
     headers: { 'Content-Type': 'text/plain; charset=utf-8' },
   })
 }
