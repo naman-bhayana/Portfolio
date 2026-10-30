@@ -2,12 +2,15 @@
 
 import { useEffect } from 'react'
 
-const SCRAMBLE_MS = 400 // a figure shows random digits for this long before it counts
-const COUNT_MS = 1200
+const SCRAMBLE_MS = 520 // a figure shows random digits for this long before it counts
+const COUNT_MS = 1300
 const BLANK = ' ' // holds an empty digit slot open
 const ASSEMBLE_MS = 1500 // one dot's flight into the grid
-const DOT_RADIUS = 0.7 // a settled dot, as the grid in proof.css draws it
 const DPR_CAP = 1.5
+// A block that starts with less than this share of itself on screen may still wait for the
+// reader, if it is the wall and its marks have not risen yet (the approved design's threshold).
+const WAIT_SHARE = 0.12
+const BATCH = /^in\d+$/ // the hero's arrival (Hero.jsx), which the wall is part of
 
 // The particle field runs in a worker, on the canvas it is handed (field.worker.js). A frame
 // loop on the main thread would make Chrome update every CSS loop on the page there, every
@@ -20,7 +23,7 @@ let field = null
 // Always, because none of it moves anything:
 // - the nav marks the section on screen;
 // - scroll-driven parts far from the screen let go of their animation (.far, motion.css);
-// - the rail's pulse learns the rail's width.
+// - the rail's pulse learns the rail's width, and starts once the rail has arrived (.lit).
 // Only while motion runs, which is from the start, or from the first resume when the page
 // opens paused or with less motion asked for:
 // - the proof figures scramble, then count up (the server HTML already holds the final values);
@@ -202,18 +205,26 @@ export default function MotionIsland() {
           seen.observe(el)
         })
       }
-      // Nothing is touched until the visitor starts to scroll. Whatever reads the page without
-      // scrolling (a crawler, a link preview, a print) finds the real numbers.
+      // Nothing is touched until a visitor shows up: the first scroll, wheel, key, touch or
+      // pointer move, or a page that opens already scrolled (a link to a section, a restored
+      // position). Whatever reads the page without any of that (a crawler, a link preview, a
+      // print) finds the real numbers. Only figures below the screen are ever set to zero.
       const approach = watch({ rootMargin: '0px 0px 100% 0px' }, arm)
-      const start = () => document.querySelectorAll('[data-count]').forEach((el) => approach.observe(el))
-      listen(window, 'scroll', start, { once: true, passive: true })
+      let started = false
+      const start = () => {
+        if (started) return
+        started = true
+        document.querySelectorAll('[data-count]').forEach((el) => approach.observe(el))
+      }
+      for (const type of ['scroll', 'wheel', 'keydown', 'pointerdown', 'pointermove', 'touchstart']) listen(window, type, start, { once: true, passive: true })
       const settle = () => [...counting.keys()].forEach(finish)
 
       // -------------------------------------------------------------- the dots
-      // The 400 dots fly in from across the stage and settle into their grid, on one canvas,
-      // once, shrinking to the grid's own pinpoints as they land. The grid's place is read from
-      // offsets, which the arrival's transform does not move; they are summed up the
-      // offsetParent chain, because a transformed box counts as an offsetParent.
+      // The 400 dots fly in from across the stage and settle onto their grid, on one canvas,
+      // once, at full size and brightness; as they land the grid fades in under them and the
+      // canvas fades out. The grid's place is read from offsets, which the arrival's transform
+      // does not move; they are summed up the offsetParent chain, because a transformed box
+      // counts as an offsetParent.
       let assembling = null
       const offsetIn = (el, root) => {
         let x = 0
@@ -257,7 +268,10 @@ export default function MotionIsland() {
         }
         const done = () => {
           stage.classList.remove('assembling')
-          setTimeout(() => canvas.remove(), 260)
+          requestAnimationFrame(() => {
+            canvas.style.opacity = '0'
+          })
+          setTimeout(() => canvas.remove(), 520)
           assembling = null
         }
         let t0 = null
@@ -273,7 +287,7 @@ export default function MotionIsland() {
             const e = 1 - (1 - p) ** 4
             ctx.globalAlpha = 0.35 + 0.65 * e
             ctx.beginPath()
-            ctx.arc(dot.sx + (dot.tx - dot.sx) * e, dot.sy + (dot.ty - dot.sy) * e, dot.rad + (DOT_RADIUS - dot.rad) * e, 0, 6.2832)
+            ctx.arc(dot.sx + (dot.tx - dot.sx) * e, dot.sy + (dot.ty - dot.sy) * e, dot.rad, 0, 6.2832)
             ctx.fill()
           }
           if (finished) done()
@@ -319,17 +333,37 @@ export default function MotionIsland() {
         if (!block.classList.replace('rv-wait', 'rv-in')) return
         for (const type of ['animationend', 'animationcancel', 'transitionend']) block.addEventListener(type, released)
         if (block.classList.contains('pstage')) assemble(block)
+        if (block === rail) railwrap.classList.add('lit')
+      }
+      // A block waits for the reader (.rv-wait) when it is wholly below the fold. The wall, which
+      // arrives with the hero, also waits when less than 12% of it shows and its marks are still
+      // waiting to rise: they are not on screen yet, so hiding them changes nothing. Marked
+      // .rv-armed, it leaves the hero's arrival for good. Nothing the reader can already see, or
+      // has scrolled past, ever goes back.
+      const rising = (animation) => animation.currentTime > animation.effect.getKeyframes()[1].computedOffset * animation.effect.getComputedTiming().duration
+      const toWait = (block) => {
+        const r = block.getBoundingClientRect()
+        if (r.top >= window.innerHeight) return true
+        if (r.bottom <= 0 || r.height === 0) return false
+        const shown = (Math.min(r.bottom, window.innerHeight) - Math.max(r.top, 0)) / r.height
+        if (shown >= WAIT_SHARE) return false
+        const batch = block.getAnimations({ subtree: true }).filter((animation) => BATCH.test(animation.animationName))
+        return batch.length > 0 && !batch.some(rising)
       }
       const arriving = watch({ rootMargin: '0px 0px -10% 0px', threshold: 0.12 }, (blocks) => blocks.forEach(reveal))
       const idleArrivals = whenIdle(
         () => {
           if (still()) return
           html.classList.add('rv-on')
-          for (const block of [...document.querySelectorAll('[data-rv]')].filter(belowFold)) {
+          // A page that opens scrolled has a visitor: its figures below may count.
+          if (window.scrollY > 0) start()
+          for (const block of [...document.querySelectorAll('[data-rv]')].filter(toWait)) {
             block.querySelectorAll(':scope > .h2, :scope > .h2b').forEach(splitWords)
-            block.classList.add('rv-wait')
+            block.classList.add('rv-wait', 'rv-armed')
             arriving.observe(block)
           }
+          // The rail's pulse starts once the rail has arrived, or at once if it never waits.
+          if (rail && !rail.classList.contains('rv-wait')) railwrap.classList.add('lit')
         },
         { timeout: 2000 },
       )
@@ -409,10 +443,10 @@ export default function MotionIsland() {
         if (still()) return
         let moving = false
         for (const o of tilts) {
+          if (o.direct) continue
           o.rx += (o.tx - o.rx) * 0.11
           o.ry += (o.ty - o.ry) * 0.11
-          const ang = Math.hypot(o.rx, o.ry)
-          const value = ang < 0.03 ? '' : `${(o.rx / ang).toFixed(3)} ${(o.ry / ang).toFixed(3)} 0 ${ang.toFixed(2)}deg`
+          const value = angle(o.rx, o.ry)
           if (value !== o.last) {
             o.el.style.rotate = value
             o.last = value
@@ -430,20 +464,36 @@ export default function MotionIsland() {
       const run = () => {
         if (!tiltRaf && !still()) tiltRaf = requestAnimationFrame(loop)
       }
+      // The avatar stage and the plates take the angle straight from the pointer and let a
+      // short CSS transition ease it (base.css), as in the approved design; the cases of the
+      // deck, which also scale as they recede, and the light are eased by the loop.
+      const angle = (x, y) => {
+        const ang = Math.hypot(x, y)
+        return ang < 0.03 ? '' : `${(x / ang).toFixed(3)} ${(y / ang).toFixed(3)} 0 ${ang.toFixed(2)}deg`
+      }
+      const aim = (o) => {
+        if (!o.direct) return run()
+        if (still()) return
+        const value = angle(o.tx, o.ty)
+        if (value !== o.last) {
+          o.el.style.rotate = value
+          o.last = value
+        }
+      }
       if (hover) {
         for (const el of document.querySelectorAll('.tilt')) {
-          const o = { el, rx: 0, ry: 0, tx: 0, ty: 0, max: parseFloat(el.dataset.tilt) || 4, last: '' }
+          const o = { el, rx: 0, ry: 0, tx: 0, ty: 0, max: parseFloat(el.dataset.tilt) || 4, last: '', direct: !el.matches('.case') }
           tilts.push(o)
           listen(el, 'pointermove', (e) => {
             const r = el.getBoundingClientRect()
             o.tx = ((e.clientY - r.top) / r.height - 0.5) * -2 * o.max
             o.ty = ((e.clientX - r.left) / r.width - 0.5) * 2 * o.max
-            run()
+            aim(o)
           }, { passive: true })
           listen(el, 'pointerleave', () => {
             o.tx = 0
             o.ty = 0
-            run()
+            aim(o)
           })
         }
         listen(document, 'pointermove', (e) => {

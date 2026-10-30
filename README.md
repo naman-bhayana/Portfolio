@@ -43,7 +43,7 @@ Crawlers, answer engines and reader modes take the HTML as plain text, so the pa
 
 - Neighbouring inline elements get a space between them (`spaced()` in `src/lib/spaced.js`), even where a flex gap already separates them on screen.
 - Decoration that repeats what the text says is drawn by CSS from a `data-t` attribute: the letters of the name, the typed role line, the marquee's other copies. A case's wordmark is an image that only draws the name; the name is text beside it.
-- A proof figure is real text once and a labelled graphic to screen readers, so the count-up never changes what is read out. The figures only start from zero after the first scroll.
+- A proof figure is real text once and a labelled graphic to screen readers, so the count-up never changes what is read out. The figures only start from zero once a visitor scrolls, presses a key, touches or moves the pointer, or opens the page already scrolled; a crawler always reads the real numbers.
 - Every client mark on the wall is named by its alt text; its descriptor is text a pointer uncovers, and stands under the mark on a touch screen from tablets up.
 
 `verify-site.mjs` fails if any text is glued to its neighbour, and if any dash stands between words (ranges are "30-40%" or "2023 to 2024").

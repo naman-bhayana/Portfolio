@@ -1,18 +1,31 @@
-import { AVATAR, HERO, PERSON } from '@/content/site'
+import { AVATAR, HERO, PERSON, WALL } from '@/content/site'
 import { optimised, srcSet } from '@/lib/images'
 import Icon from './Icon'
 import TypedRole from './TypedRole'
 
-const ARRIVE = 2.2 // seconds from the first frame until the last piece of the hero has landed
+// Seconds from the first frame until the wall's light has crossed. The hero itself has landed
+// by 2.2 s; each piece holds its last frame until the end.
+const ARRIVE = 3.7
 const EASE = 'cubic-bezier(.2,.8,.2,1)' // --ease in base.css
 const MOVES = {
   rise: ['opacity:0;translate:0 22px', 'opacity:1;translate:0 0'],
   letter: ['transform:translateY(112%)', 'transform:none'],
   settle: ['scale:.94', 'scale:1'],
   pop: ['opacity:0;scale:.9', 'opacity:1;scale:1'],
+  wallin: ['opacity:0;translate:0 14px', 'opacity:1;translate:0 0'],
 }
+// A move with stops of its own: [share of its duration, declarations]. The wall's light.
+const SWEEP = [
+  [0, 'transform:translateX(-100%);opacity:0'],
+  [0.1, 'opacity:1'],
+  [0.9, 'opacity:1'],
+  [1, 'transform:translateX(100%);opacity:0'],
+]
+const SWEEP_EASE = 'cubic-bezier(.3,.6,.2,1)'
 
-// The hero arrives in a set order: [selector, move, wait, duration, loop to run alongside].
+// The hero arrives in a set order: [selector, move, wait, duration, loop to run alongside,
+// soft, pseudo-element]. A soft piece is written with no specificity at all, so the scroll
+// arrival of the same part (motion.css) wins whenever MotionIsland plays that instead.
 function arrivals() {
   const first = PERSON.firstName.length
   const letter = (word, i, n) => [`.${word} .l:nth-child(${i + 1})`, 'letter', 0.3 + n * 0.045, 0.95]
@@ -26,6 +39,12 @@ function arrivals() {
     ['.stage', 'settle', 0.1, 1.1],
     // The chips pop in one after another, each then bobbing a second out of step with the last.
     ...HERO.chips.map((chip, i) => [`.c${i + 1}`, 'pop', 0.85 + i * 0.13, 0.7, `bob 6s ease-in-out ${i ? `-${i}s ` : ''}infinite`]),
+    // The wall is the hero's closing band. On a laptop it is on the first screen and arrives with
+    // the hero, as in the approved design: the marks from 1.3 s, the light from 1.9 s. Where it
+    // starts below the fold, MotionIsland marks it (.rv-armed) before its marks rise, these
+    // rules let go, and it arrives as the reader reaches it instead.
+    ...WALL.marks.map((_, i) => [`.wall:not(.rv-armed) .wcell:nth-child(${i + 1})`, 'wallin', 1.3 + i * 0.035, 0.8, null, true]),
+    ['.wall:not(.rv-armed)', SWEEP, 1.9, 1.8, null, true, '::after'],
   ]
 }
 
@@ -39,11 +58,26 @@ function arrivalCss() {
   const pct = (seconds) => `${Number(((seconds / ARRIVE) * 100).toFixed(2))}%`
   const frames = []
   const rules = []
-  arrivals().forEach(([selector, move, wait, duration, loop], i) => {
-    const [from, to] = MOVES[move]
-    const stops = [`0%,${pct(wait)}{${from};animation-timing-function:${EASE}}`, `${pct(wait + duration)},100%{${to}}`]
-    frames.push(`@keyframes in${i + 1}{${stops.join('').replace('100%,100%', '100%')}}`)
-    rules.push(`html:not(.arrived) ${selector}{animation:in${i + 1} ${ARRIVE}s both${loop ? `,${loop}` : ''}}`)
+  arrivals().forEach(([selector, move, wait, duration, loop, soft, pseudo = ''], i) => {
+    const name = `in${i + 1}`
+    let stops
+    if (Array.isArray(move)) {
+      stops = move.map(([share, declarations], k) => {
+        const at = pct(wait + share * duration)
+        if (k === 0) return `0%,${at}{${declarations};animation-timing-function:${SWEEP_EASE}}`
+        if (k === move.length - 1) return `${at},100%{${declarations}}`
+        return `${at}{${declarations};animation-timing-function:${SWEEP_EASE}}`
+      })
+    } else {
+      const [from, to] = MOVES[move]
+      stops = [`0%,${pct(wait)}{${from};animation-timing-function:${EASE}}`, `${pct(wait + duration)},100%{${to}}`]
+    }
+    frames.push(`@keyframes ${name}{${stops.join('').replace('100%,100%', '100%')}}`)
+    rules.push(
+      soft
+        ? `:where(html:not(.arrived) ${selector})${pseudo}{animation:${name} ${ARRIVE}s backwards}`
+        : `html:not(.arrived) ${selector}${pseudo}{animation:${name} ${ARRIVE}s both${loop ? `,${loop}` : ''}}`,
+    )
   })
   return `${frames.join('')}@media (prefers-reduced-motion:no-preference){${rules.join('')}}`
 }

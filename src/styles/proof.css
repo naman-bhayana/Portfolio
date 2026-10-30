@@ -75,7 +75,9 @@
   transition: opacity .5s;
 }
 
+/* The dots' flight. It fades out as the grid fades in under it. */
 .assemble {
+  transition: opacity .5s;
   position: absolute;
   left: 0;
   top: 0;

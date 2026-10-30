@@ -421,6 +421,12 @@ main:focus {
   opacity: 1;
 }
 
+/* The avatar stage and the plates follow the pointer through a short transition (MotionIsland
+   sets the angle); the deck's cases are eased by script instead. */
+.tilt:not(.case) {
+  transition: rotate .15s linear;
+}
+
 /* A statement whose words catch the light once (motion.css). Each word is clipped to its own
    slice of the gradient once MotionIsland has split the line. */
 .shine .wd:not(:has(.emc)) {

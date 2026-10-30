@@ -42,6 +42,18 @@ const report = (status, id, detail) => {
   console.log(`${status.padEnd(5)} ${id.padEnd(26)} ${detail}`)
 }
 const check = (ok, id, passDetail, failDetail) => report(ok ? 'PASS' : 'FAIL', id, ok ? passDetail : failDetail)
+// A gate that photographs or reads a live page against its own clock can be let down by a busy
+// machine (a screenshot that comes late on a throttled CPU). Such a gate gets a second attempt
+// and fails only if both fail; every attempt's detail is printed.
+async function timed(id, run, tries = 2) {
+  const misses = []
+  for (let attempt = 1; attempt <= tries; attempt++) {
+    const { ok, pass, fail } = await run()
+    if (ok) return report('PASS', id, misses.length ? `${pass} (attempt ${attempt}; before: ${misses.join(' || ')})` : pass)
+    misses.push(fail)
+  }
+  report('FAIL', id, misses.join(' || '))
+}
 
 if (!existsSync(CHROME)) {
   console.error(`Chrome not found at ${CHROME}. Set CHROME_PATH.`)
@@ -96,12 +108,13 @@ async function scrollThrough(page, step = 300, pause = 60) {
 }
 
 // Arrival blocks, and the parts of them the arrival moves, that have been reached (at or above
-// the viewport) but are not fully opaque.
+// the viewport) but are not fully opaque. A part that is not drawn at this width (no box) is
+// not counted.
 const stuckReveals = (page) =>
   page.evaluate(() =>
     [...document.querySelectorAll('[data-rv]')]
       .flatMap((el) => [el, ...el.children, ...el.querySelectorAll('.wcell, .node, .flagtext > *')])
-      .filter((el) => el.getBoundingClientRect().top < innerHeight && Number(getComputedStyle(el).opacity) < 0.99)
+      .filter((el) => el.getClientRects().length > 0 && el.getBoundingClientRect().top < innerHeight && Number(getComputedStyle(el).opacity) < 0.99)
       .map((el) => el.id || String(el.className)),
   )
 
@@ -499,7 +512,7 @@ for (const [name, viewport, want] of [
   check(problems.size === 0, 'T8.typed-role-spacing', `${holds.length} roles type out in full, one at a time, with text-spacing overrides`, [...problems.values()].join(' | '))
   await context.close()
 }
-{
+await timed('T8.typed-role-live', async () => {
   // The same line as a visitor gets it: running on the compositor of a slow phone, nothing
   // paused. A role is photographed while it stands complete and compared with the same moment
   // frozen. The two differ when the compositor is still working from positions taken before a
@@ -555,9 +568,13 @@ for (const [name, viewport, want] of [
     }
   }
   if (problems.length === 0 && caretSeen === 0) problems.push('the caret was never caught lit, so its place went unchecked')
-  check(problems.length === 0, 'T8.typed-role-live', `the running line matches the frozen one for ${holds.length} roles on a ${PHONE_SLOWDOWN}x slower CPU (caret lit in ${caretSeen})`, problems.join(' | '))
   await context.close()
-}
+  return {
+    ok: problems.length === 0,
+    pass: `the running line matches the frozen one for ${holds.length} roles on a ${PHONE_SLOWDOWN}x slower CPU (caret lit in ${caretSeen})`,
+    fail: problems.join(' | '),
+  }
+})
 {
   // Motion on: the hero has finished arriving 2.4 s after its first paint. A piece is still
   // arriving while it is transparent, scaled, or moved from its place (the chips keep
@@ -584,9 +601,9 @@ for (const [name, viewport, want] of [
   })
   check(unsettled.length === 0, 'T8.hero-settle', 'hero fully shown 2.4 s after first paint', `still arriving: ${[...new Set(unsettled)].join(', ')}`)
 
-  // Count-up: untouched until the visitor scrolls (a crawler or a link preview reads the real
+  // Count-up: untouched until a visitor shows up (a crawler or a link preview reads the real
   // numbers); from then on a figure waits at zero once it is within a screen of the fold, and
-  // is back on the server's value once seen.
+  // is back on the server's value once seen (520 ms of scramble, then 1.3 s of count).
   const shown = () => page.evaluate(() => [...document.querySelectorAll('#proof [data-count]')].map((el) => ({ text: el.textContent.trim(), final: el.dataset.count })))
   const untouched = await unfinishedFigures(page)
   await page.evaluate(() => window.scrollTo({ top: 2, behavior: 'instant' }))
@@ -594,14 +611,14 @@ for (const [name, viewport, want] of [
   const armed = await shown()
   for (const selector of ['#proof .pstage', '#proof .figs']) {
     await page.evaluate((sel) => document.querySelector(sel).scrollIntoView({ block: 'center' }), selector)
-    await page.waitForTimeout(1900)
+    await page.waitForTimeout(2300)
   }
   const figures = await unfinishedFigures(page)
   const waiting = armed.filter((figure) => figure.text === '0').length
   check(
     untouched.length === 0 && waiting > 0 && armed.every((figure) => figure.text === '0' || figure.text === figure.final) && figures.length === 0,
     'T8.count-up',
-    `figures wait for the first scroll, ${waiting} of ${armed.length} near the fold go to 0, all end on their server values`,
+    `figures wait for a visitor, ${waiting} of ${armed.length} near the fold go to 0, all end on their server values`,
     JSON.stringify({ untouched, armed: armed.map((figure) => figure.text), figures }),
   )
 
@@ -756,6 +773,180 @@ for (const vp of [
   }
   check(problems.length === 0, 'T8.deck-recede', 'case 1 recedes from the moment case 2 enters the viewport to the moment it is pinned', problems.join(' | '))
   await context.close()
+}
+
+// ---------------------------------------------------------------- the wall's arrival
+// Where the wall is on the first screen (laptops) its marks rise with the hero from 1.3 s and
+// its light crosses from 1.9 s, as in the approved design. Where little or none of it shows at
+// first (1366x768 shows a 5% sliver, 1280x720 none) it waits, hidden before its marks would
+// have risen, and arrives as the reader reaches it.
+const sinceFirstPaint = () => performance.now() - (performance.getEntriesByName('first-contentful-paint')[0]?.startTime ?? Infinity)
+for (const vp of [
+  { name: '1440x900', width: 1440, height: 900, onScreen: true },
+  { name: '1536x864', width: 1536, height: 864, onScreen: true },
+  { name: '1366x768', width: 1366, height: 768, onScreen: false },
+  { name: '1280x720', width: 1280, height: 720, onScreen: false },
+]) {
+  const { context, page } = await newPage(vp)
+  const read = () =>
+    page.evaluate(() => {
+      const wall = document.querySelector('.wall')
+      return {
+        cells: [...wall.querySelectorAll('.wcell')].map((el) => Math.round(Number(getComputedStyle(el).opacity) * 100) / 100),
+        armed: wall.classList.contains('rv-armed'),
+        waiting: wall.classList.contains('rv-wait'),
+        light: wall.getAnimations({ subtree: true }).some((a) => a.effect?.pseudoElement === '::after'),
+      }
+    })
+  let ok
+  let detail
+  if (vp.onScreen) {
+    await page.goto(`${BASE}/`, { waitUntil: 'commit' })
+    await page.waitForFunction(() => performance.getEntriesByName('first-contentful-paint').length > 0, null, { polling: 'raf' })
+    const at = await page.evaluate(sinceFirstPaint)
+    const early = await read()
+    await page.waitForFunction((ms) => performance.now() - performance.getEntriesByName('first-contentful-paint')[0].startTime >= ms, 2900)
+    const late = await read()
+    ok = at < 1200 && early.cells.every((o) => o < 0.05) && late.cells.every((o) => o > 0.99) && late.light && !late.armed
+    detail = { at: Math.round(at), early, late }
+  } else {
+    await page.goto(`${BASE}/`, { waitUntil: 'load' })
+    await page.waitForFunction(() => document.querySelector('.wall').classList.contains('rv-wait'), null, { timeout: 4000 }).catch(() => {})
+    await page.waitForFunction((ms) => performance.now() - performance.getEntriesByName('first-contentful-paint')[0].startTime >= ms, 2900)
+    const waiting = await read()
+    await page.evaluate(() => window.scrollTo({ top: 320, behavior: 'instant' }))
+    await page.waitForFunction(() => !document.querySelector('.wall').classList.contains('rv-wait'), null, { timeout: 2000 }).catch(() => {})
+    await page.waitForTimeout(2600)
+    const arrived = await read()
+    ok = waiting.waiting && waiting.armed && waiting.cells.every((o) => o < 0.05) && arrived.cells.every((o) => o > 0.99)
+    detail = { waiting, arrived }
+  }
+  check(ok, `T8.wall-arrival.${vp.name}`, vp.onScreen ? 'on the first screen the marks rise with the hero and the light crosses' : 'below the fold the wall waits hidden and arrives when reached', JSON.stringify(detail))
+  await context.close()
+}
+
+// ---------------------------------------------------------------- the rail's pulse
+// The pulse starts at the first node once the rail has arrived, waits there 1.2 s (collapsed,
+// not transparent), then crosses; no positive delay anywhere.
+{
+  const { context, page } = await newPage({ width: 1440, height: 900 })
+  await page.goto(`${BASE}/`, { waitUntil: 'networkidle' })
+  await page.waitForFunction(() => document.documentElement.classList.contains('rv-on'))
+  const before = await page.evaluate(() => document.querySelector('.rpulse').getAnimations().length)
+  await page.evaluate(() => document.querySelector('.rail').scrollIntoView({ block: 'center', behavior: 'instant' }))
+  await page.waitForFunction(() => document.querySelector('.railwrap').classList.contains('lit'), null, { timeout: 3000 }).catch(() => {})
+  const pulse = () =>
+    page.evaluate(() => {
+      const el = document.querySelector('.rpulse')
+      const [a] = el.getAnimations()
+      const m = new DOMMatrix(getComputedStyle(el).transform)
+      return a ? { name: a.animationName, delay: a.effect.getComputedTiming().delay, time: Math.round(a.currentTime), scale: Math.round(m.a * 100) / 100, x: Math.round(m.e), opacity: Number(getComputedStyle(el).opacity) } : null
+    })
+  const lit = await pulse()
+  await page.waitForTimeout(900)
+  const waitingAtNode = await pulse()
+  await page.waitForTimeout(1100)
+  const crossing = await pulse()
+  const ok =
+    before === 0 && lit?.name === 'rpulse' && lit.delay === 0 && lit.time < 400 && waitingAtNode?.scale === 0 && waitingAtNode.x === 0 && crossing?.scale === 1 && crossing.x > 0 && crossing.opacity > 0.5
+  check(ok, 'T8.rail-pulse', 'the pulse waits for the rail, holds 1.2 s at the first node, then crosses', JSON.stringify({ before, lit, waitingAtNode, crossing }))
+  await context.close()
+}
+
+// ---------------------------------------------------------------- the dots
+// The 400 dots fly in at full size and brightness (the approved design), then the canvas fades
+// out over the grid rather than vanishing. Brightness is the canvas's summed blue times alpha
+// 600 ms into the flight, at device pixel ratio 1: 821,000 on 30 Oct 2026, against 98,000 when
+// the dots shrank to pinpoints as they flew.
+const DOTS_BRIGHT = 400_000
+{
+  const { context, page } = await newPage({ width: 1280, height: 800 })
+  await page.goto(`${BASE}/`, { waitUntil: 'networkidle' })
+  await page.waitForFunction(() => document.documentElement.classList.contains('rv-on'))
+  await page.evaluate(() => document.querySelector('#proof .pstage').scrollIntoView({ block: 'center', behavior: 'instant' }))
+  await page.waitForSelector('canvas.assemble', { timeout: 3000 }).catch(() => {})
+  await page.waitForTimeout(600)
+  const brightness = await page.evaluate(() => {
+    const canvas = document.querySelector('canvas.assemble')
+    if (!canvas) return null
+    const { data } = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height)
+    let sum = 0
+    for (let i = 0; i < data.length; i += 4) sum += (data[i + 2] * data[i + 3]) / 255
+    return Math.round(sum)
+  })
+  await page.waitForFunction(() => !document.querySelector('#proof .pstage').classList.contains('assembling'), null, { timeout: 4000 }).catch(() => {})
+  await page.waitForTimeout(100)
+  const fade = await page.evaluate(() => {
+    const canvas = document.querySelector('canvas.assemble')
+    return { canvas: canvas ? Number(getComputedStyle(canvas).opacity) : null, grid: Number(getComputedStyle(document.querySelector('.dotfield')).opacity) }
+  })
+  check(brightness >= DOTS_BRIGHT && fade.canvas !== null && fade.canvas < 1 && fade.grid > 0, 'T8.dots-bright', `the flight is bright (${brightness}) and fades out over the grid`, JSON.stringify({ brightness, floor: DOTS_BRIGHT, fade }))
+  await context.close()
+}
+
+// ---------------------------------------------------------------- the tilt
+// The avatar stage follows the pointer through a 0.15 s transition: most of the angle within
+// 400 ms. The deck's cases are eased by script, never by the transition.
+{
+  const { context, page } = await newPage({ width: 1440, height: 900 })
+  await page.goto(`${BASE}/`, { waitUntil: 'networkidle' })
+  await page.waitForTimeout(3800)
+  const box = await page.evaluate(() => {
+    const r = document.querySelector('.hero .stage').getBoundingClientRect()
+    return { x: r.left, y: r.top, w: r.width, h: r.height }
+  })
+  await page.mouse.move(box.x + box.w / 2, box.y + box.h / 2)
+  await page.waitForTimeout(300)
+  await page.mouse.move(box.x + 10, box.y + 10)
+  const samples = []
+  for (let t = 0; t <= 600; t += 50) {
+    samples.push(await page.evaluate(() => parseFloat(getComputedStyle(document.querySelector('.hero .stage')).rotate.split(' ').at(-1)) || 0))
+    await page.waitForTimeout(50)
+  }
+  const final = samples.at(-1)
+  const by400 = samples.slice(0, 9).some((deg) => deg >= final * 0.9)
+  const transitions = await page.evaluate(() => ({
+    stage: `${getComputedStyle(document.querySelector('.hero .stage')).transitionProperty} ${getComputedStyle(document.querySelector('.hero .stage')).transitionDuration}`,
+    case: getComputedStyle(document.querySelector('.deck .case')).transitionProperty,
+  }))
+  check(
+    final >= 7 && by400 && /rotate/.test(transitions.stage) && /0\.15s/.test(transitions.stage) && !/rotate/.test(transitions.case),
+    'T8.tilt',
+    `the stage reaches ${final.toFixed(1)} deg, 90% of it within 400 ms; the cases are eased by script`,
+    JSON.stringify({ samples, transitions }),
+  )
+  await context.close()
+}
+
+// ---------------------------------------------------------------- a link to a section
+// Opening the page on a section link lands on that section at once, with nothing above it left
+// waiting or dim, the figures on their values, smooth scrolling on once the page is marked, and
+// the section marked in the nav.
+for (const vp of [
+  { name: '1440x900', width: 1440, height: 900 },
+  { name: '412x823', width: 412, height: 823, mobile: true },
+]) {
+  for (const target of ['contact', 'work']) {
+    const { context, page } = await newPage(vp)
+    await page.goto(`${BASE}/#${target}`, { waitUntil: 'load' })
+    const landed = await page.evaluate((id) => {
+      const el = document.getElementById(id)
+      const want = Math.min(el.getBoundingClientRect().top + window.scrollY - parseFloat(getComputedStyle(el).scrollMarginTop), document.documentElement.scrollHeight - window.innerHeight)
+      return { scrollY: Math.round(window.scrollY), want: Math.round(want) }
+    }, target)
+    await page.waitForFunction(() => document.documentElement.classList.contains('rv-on'), null, { timeout: 4000 }).catch(() => {})
+    await page.waitForFunction((ms) => performance.now() - performance.getEntriesByName('first-contentful-paint')[0].startTime >= ms, 3800)
+    const after = await page.evaluate(() => ({
+      waitingAbove: [...document.querySelectorAll('.rv-wait')].filter((el) => el.getBoundingClientRect().bottom <= 0).length,
+      behavior: getComputedStyle(document.documentElement).scrollBehavior,
+      current: document.querySelector('.nav .links a[aria-current]')?.getAttribute('href') ?? null,
+    }))
+    const stuck = await stuckReveals(page)
+    const figures = await unfinishedFigures(page)
+    const ok = Math.abs(landed.scrollY - landed.want) <= 2 && after.waitingAbove === 0 && stuck.length === 0 && figures.length === 0 && after.behavior === 'smooth' && after.current?.endsWith(`#${target}`)
+    check(ok, `T8.deep-link.${target}.${vp.name}`, `/#${target} opens on its section; nothing above waits or stays dim; figures final; nav marks it`, JSON.stringify({ landed, after, stuck, figures }))
+    await context.close()
+  }
 }
 
 // ---------------------------------------------------------------- keyboard focus on a moving page

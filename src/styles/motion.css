@@ -62,19 +62,27 @@
   }
 }
 
+/* The rail's pulse waits 1.2 s at the first node, then crosses in 6.5 s (7.7 s a loop). The
+   wait is in the keyframes, with the pulse collapsed (scale 0) rather than transparent, so there
+   is no positive delay and no transparent rest for Chrome to wake the main thread over. */
 @keyframes rpulse {
-  0% {
-    transform: translateX(0);
-    opacity: 0;
-  }
-  8% {
+  0%,
+  15.58% {
+    transform: translateX(0) scale(0);
     opacity: 1;
   }
-  92% {
+  15.59% {
+    transform: translateX(0) scale(1);
+    opacity: 0;
+  }
+  22.3% {
+    opacity: 1;
+  }
+  93.2% {
     opacity: 1;
   }
   100% {
-    transform: translateX(var(--railw, 1000px));
+    transform: translateX(var(--railw, 1000px)) scale(1);
     opacity: 0;
   }
 }
@@ -353,7 +361,9 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  html {
+  /* Smooth from the moment the page is marked (MotionIsland, once idle): a link to a section
+     opens on that section at once, before any arrival is armed. */
+  html.rv-on {
     scroll-behavior: smooth;
   }
 
@@ -402,8 +412,11 @@
   .orb-b {
     animation: orb-b 32s ease-in-out -14s infinite alternate;
   }
-  .rpulse {
-    animation: rpulse 6.5s linear -5.3s infinite;
+  /* From the first node, once the rail has arrived (MotionIsland marks .railwrap.lit); before
+     the page is marked, and without a script, it simply runs. */
+  html:not(.rv-on) .rpulse,
+  .railwrap.lit .rpulse {
+    animation: rpulse 7.7s linear infinite;
   }
   /* The primary button's sheen runs once on hover. */
   .pill-primary:hover::after {
