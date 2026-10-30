@@ -426,6 +426,9 @@
     font-size: clamp(36px, 11.2vw, 44px);
     white-space: normal;
   }
+  .num2 wbr {
+    display: inline;
+  }
   /* Two figures a row: a source that wraps starts level with its neighbour's. */
   .figs .src {
     min-height: calc(14px + 3em);

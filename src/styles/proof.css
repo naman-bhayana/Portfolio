@@ -120,6 +120,12 @@
   white-space: nowrap;
 }
 
+/* The range figure's break opportunity (Proof.jsx) is for a phone under a reader's own text
+   spacing. Chrome honours <wbr> even under nowrap, so everywhere else it is removed. */
+.num2 wbr {
+  display: none;
+}
+
 .flab2 {
   margin-top: 14px;
   font-size: 15.5px;
