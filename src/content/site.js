@@ -213,8 +213,10 @@ export const PROOF = {
 }
 
 // Sixteen builds: the flagship, five cases, ten index rows in six groups. Page order follows
-// this order. A build gets a link only when the address is live and is really its own.
-// Wordmarks come from the wall's files; card images are 1.91:1.
+// this order. A build gets a link only when the address is live and is really its own: a site
+// or a demo, and its code where the code is public. A link's label names its build, so it
+// reads on its own ("WanderNest demo"). Never linked: myLeadsIQ, DocPad, Techlive and Allianz
+// (private), nor AlphaGPT's code. Wordmarks come from the wall's files; card images are 1.91:1.
 const mark = (id) => WALL.marks.find((m) => m.id === id)
 
 export const WORK = {
@@ -308,9 +310,9 @@ export const WORK = {
   index: [
     {
       builds: [
-        { id: 'sigmabites', name: 'SigmaBites' },
-        { id: 'sterling-naturals', name: 'Sterling Naturals' },
-        { id: 'new-gramophone-house', name: 'New Gramophone House' },
+        { id: 'sigmabites', name: 'SigmaBites', links: [{ label: 'SigmaBites site', href: 'https://sigmabites.com/' }] },
+        { id: 'sterling-naturals', name: 'Sterling Naturals', links: [{ label: 'Sterling Naturals site', href: 'https://sterlingnaturals.in/' }] },
+        { id: 'new-gramophone-house', name: 'New Gramophone House', links: [{ label: 'New Gramophone House site', href: 'https://newgramophonehouse.com/' }] },
       ],
       sector: 'E-\u2060commerce',
       summary: `Order, inventory and back-office automation for three ${ECOMMERCE} brands: a fresh dog-food label, a beauty and personal-care store and a music retailer.`,
@@ -326,20 +328,38 @@ export const WORK = {
       summary: 'Trading strategies on proprietary indicators in Python and Pine Script, tuned through backtesting.',
     },
     {
-      builds: [{ id: 'wandernest', name: 'WanderNest' }],
+      builds: [
+        {
+          id: 'wandernest',
+          name: 'WanderNest',
+          links: [
+            { label: 'WanderNest demo', href: 'https://wandernest-j69y.onrender.com/' },
+            { label: 'WanderNest code', href: 'https://github.com/naman-bhayana/WanderNest' },
+          ],
+        },
+      ],
       sector: 'Travel',
       summary: 'A holiday-rental marketplace with listings, search, booking, reviews and live maps.',
     },
     {
-      builds: [{ id: 'plinko', name: 'Plinko' }],
+      builds: [
+        {
+          id: 'plinko',
+          name: 'Plinko',
+          links: [
+            { label: 'Plinko demo', href: 'https://plinko-frontend-hvak.onrender.com/' },
+            { label: 'Plinko code', href: 'https://github.com/naman-bhayana/Plinko' },
+          ],
+        },
+      ],
       sector: 'Gaming',
       summary: 'A real-time physics game in the browser.',
     },
     {
       builds: [
-        { id: 'alphagpt', name: 'AlphaGPT' },
-        { id: 'jobzee', name: 'Jobzee' },
-        { id: 'intellishop', name: 'Intellishop' },
+        { id: 'alphagpt', name: 'AlphaGPT', links: [{ label: 'AlphaGPT demo', href: 'https://alpha-gpt-eight.vercel.app/' }] },
+        { id: 'jobzee', name: 'Jobzee', links: [{ label: 'Jobzee code', href: 'https://github.com/naman-bhayana/Jobzee' }] },
+        { id: 'intellishop', name: 'Intellishop', links: [{ label: 'Intellishop code', href: 'https://github.com/naman-bhayana/Intellishop' }] },
       ],
       sector: 'University projects at Thapar',
       summary: 'A chat assistant with persistent memory, a job platform and a team-built retail inventory robot.',
@@ -352,7 +372,7 @@ export const WORK = {
 export const BUILDS = [
   WORK.flagship,
   ...WORK.cards.map((card) => ({ ...card, summary: [card.role, card.mech].filter(Boolean).join(' ') })),
-  ...WORK.index.flatMap((row) => row.builds.map((build) => ({ ...build, category: row.sector, summary: row.summary, links: [] }))),
+  ...WORK.index.flatMap((row) => row.builds.map((build) => ({ ...build, category: row.sector, summary: row.summary, links: build.links ?? [] }))),
 ]
 
 // The rail: what every build runs on, read left to right.

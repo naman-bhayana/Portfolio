@@ -368,9 +368,17 @@ export default function MotionIsland() {
         { timeout: 2000 },
       )
       stops.push(() => cancelIdle(idleArrivals))
+      // Focus never lands on anything still hidden or fading in: a waiting block is shown at once,
+      // and a block mid-arrival (reached a moment ago by the previous tab stop) finishes it.
       listen(document, 'focusin', (event) => {
-        const block = event.target.closest?.('.rv-wait')
+        const block = event.target.closest?.('.rv-wait, .rv-in')
         if (!block) return
+        if (block.classList.contains('rv-in')) {
+          for (const animation of block.getAnimations({ subtree: true })) {
+            if (animation.timeline === document.timeline && animation.effect?.getComputedTiming().iterations !== Infinity) animation.finish()
+          }
+          return
+        }
         arriving.unobserve(block)
         block.classList.remove('rv-wait')
       })

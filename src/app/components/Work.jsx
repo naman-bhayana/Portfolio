@@ -42,6 +42,22 @@ function Wordmark({ build }) {
 
 // A row of the index that groups several builds is read as a list ("A, B and C") and drawn as
 // names set apart. The drawn names are CSS (data-t), so the text holds each name once.
+// A row's links, after its line: each label names its build, so it reads on its own.
+function IndexLinks({ builds }) {
+  const links = builds.flatMap((build) => build.links ?? [])
+  if (!links.length) return null
+  return (
+    <p className="ixlinks">
+      {links.flatMap((link, i) => [
+        ...(i ? [<span key={`dot-${link.href}`} aria-hidden="true">{' · '}</span>] : []),
+        <a key={link.href} className="ext" href={link.href}>
+          {link.label}
+        </a>,
+      ])}
+    </p>
+  )
+}
+
 function IndexName({ builds }) {
   const names = builds.map((build) => build.name)
   if (names.length === 1) {
@@ -173,6 +189,7 @@ export default function Work() {
                 <IndexName builds={row.builds} />
                 <p className="ixsector">{row.sector}</p>
                 <p className="ixwhat">{row.summary}</p>
+                <IndexLinks builds={row.builds} />
               </li>
             ))}
           </ul>

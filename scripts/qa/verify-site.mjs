@@ -335,6 +335,19 @@ await section('C1', async () => {
   check(!stale.length, 'C1.build-count', `${names.length} builds, ${inIndex} of them in the index, and the copy says so in each place`,
     `the copy's count is stale in ${stale.join(', ')}`)
 
+  // The index: each row carries exactly its builds' links from site.js, in order, labelled as
+  // there (the label names the build).
+  const ixRows = (workRoot || body).querySelectorAll('.ix > li')
+  const ixProblems = []
+  if (ixRows.length !== WORK.index.length) ixProblems.push(`${ixRows.length} index rows, expected ${WORK.index.length}`)
+  WORK.index.forEach((row, i) => {
+    const want = row.builds.flatMap((b) => b.links ?? []).map((l) => `${l.label} -> ${l.href}`)
+    const got = (ixRows[i]?.querySelectorAll('.ixlinks a') ?? []).map((a) => `${norm(a.text)} -> ${a.getAttribute('href')}`)
+    if (JSON.stringify(got) !== JSON.stringify(want)) ixProblems.push(`row ${i + 1}: [${got.join(', ')}], expected [${want.join(', ')}]`)
+  })
+  const ixCount = WORK.index.reduce((n, row) => n + row.builds.reduce((m, b) => m + (b.links?.length ?? 0), 0), 0)
+  check(!ixProblems.length, 'C1.index-links', `${ixCount} index links, each row's in order and named for its build`, ixProblems.join('; '))
+
   // The studio block, and its address linked from there and the footer only
   const studio = [
     ['heading', STUDIO.heading.lead + STUDIO.heading.em],
@@ -521,6 +534,12 @@ await section('C4', async () => {
     `\\b(?:19|20)\\d{2}\\s*${H}\\s*(?:\\d{2}(?:\\d{2})?\\b(?!${H}\\d)|present\\b|now\\b|today\\b)` +
       `|\\b${MON}(?:\\s+\\d{4})?\\s*${H}\\s*(?:${MON}\\s+)?(?:\\d{4}|present)\\b`, 'i'), voice, 'hyphenated range')
   scan('C4.weak-verbs', /\b(helped with|worked on|responsible for)\b/i, voice)
+
+  // Link policy: the private builds are never linked, and AlphaGPT never to its code.
+  const hrefs = doc.querySelectorAll('a[href]').map((a) => a.getAttribute('href'))
+  const llmsLinks = [...(llms.text ?? '').matchAll(/\]\((https?:[^)\s]+)\)/g)].map((m) => m[1])
+  const policy = [...hrefs, ...llmsLinks].filter((h) => /myleadsiq|docpad|techlive|allianz/i.test(h) || /github\.com\/[^/]+\/alpha/i.test(h))
+  check(!policy.length, 'C4.link-policy', 'no link to myLeadsIQ, DocPad, Techlive or Allianz, and none to AlphaGPT\'s code', `linked: ${[...new Set(policy)].join(', ')}`)
 
   // ideasIQ casing: only 'ideasIQ' or the domain 'ideasiq.ai'
   let badCase = 0
@@ -855,6 +874,19 @@ await section('T7', async () => {
   }
   if (!urls.length) warn('T7.listed-url', 'no same-site URLs found in sitemap.xml or llms.txt')
   else if (!linkBad) pass('T7.listed-url', `${urls.length} same-site URLs from sitemap.xml and llms.txt return 200`)
+
+  // Every build's address answers, after its redirects, as a visitor's browser would see it.
+  // A site behind a bot challenge (403 or 429 with cf-mitigated) and a free-tier demo still
+  // waking after 60 s are warnings; anything else that does not answer 2xx fails.
+  const buildLinks = [...new Map(BUILDS.flatMap((b) => (b.link ? [b.link] : (b.links ?? []))).map((l) => [l.href, l])).values()]
+  const buildRes = await Promise.all(buildLinks.map(async (l) => [l, await get(l.href, { accept: HTML_ACCEPT, timeoutMs: /\.onrender\.com/.test(l.href) ? 60000 : 20000 })]))
+  for (const [l, r] of buildRes) {
+    const challenged = (r.status === 403 || r.status === 429) && !!r.headers?.get('cf-mitigated')
+    if (r.status >= 200 && r.status < 300) pass('T7.build-link', `${l.label} ${r.status}${r.finalUrl && r.finalUrl !== l.href ? ` (${r.finalUrl})` : ''}`)
+    else if (challenged) warn('T7.build-link', `${l.label} ${r.status} behind a bot challenge (${r.headers?.get('cf-mitigated') ?? 'no cf-mitigated header'}); check it in a browser`)
+    else if (r.timedOut && /\.onrender\.com/.test(l.href)) warn('T7.build-link', `${l.label}: the free-tier demo did not wake within 60 s`)
+    else fail('T7.build-link', `${l.label} ${l.href} -> ${fetchErr(r)}`)
+  }
 
   // /resume
   const rs = await get(at(RESUME_PATH), { redirect: 'manual' })

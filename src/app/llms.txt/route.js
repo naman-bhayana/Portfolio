@@ -19,9 +19,10 @@ const row = (item) => `- ${andList(item.builds.map((b) => b.name))} (${item.sect
 export function GET() {
   const figures = [...PROOF.wall, ...PROOF.cells].map(figure)
   const builds = [build(WORK.flagship), ...WORK.cards.map(build), ...WORK.index.map(row)]
+  // A build's first link goes under its name, any further one under its own label (its code).
   const linked = BUILDS.flatMap((item) => {
-    const link = item.link ?? item.links?.[0]
-    return link ? [`- [${item.name}](${link.href})`] : []
+    const links = item.link ? [item.link] : (item.links ?? [])
+    return links.map((link, i) => `- [${i ? link.label : item.name}](${link.href})`)
   })
   const lines = [
     `# ${PERSON.name}`,

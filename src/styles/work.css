@@ -349,6 +349,17 @@
   color: var(--dim);
 }
 
+/* A row's links: quiet labels after its line, each a 24 px target. */
+.ixlinks {
+  margin-top: 4px;
+  font: var(--label);
+  color: var(--dim);
+}
+
+.ixlinks .ext {
+  padding: 6px 0 5px;
+}
+
 .ixwhat {
   margin-top: 8px;
   font-size: 14.5px;

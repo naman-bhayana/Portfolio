@@ -27,20 +27,21 @@ export function requestHeaders(ua, accept) {
 
 const cache = new Map()
 
-// GET with the built-in fetch. redirect: 'follow' | 'manual'.
-export function get(url, { ua, redirect = 'follow', accept } = {}) {
-  const key = [url, ua || '', redirect, accept || ''].join('|')
-  if (!cache.has(key)) cache.set(key, doGet(url, ua, redirect, accept))
+// GET with the built-in fetch. redirect: 'follow' | 'manual'. timeoutMs: for an address that
+// may need to wake up first (a free-tier demo).
+export function get(url, { ua, redirect = 'follow', accept, timeoutMs = TIMEOUT_MS } = {}) {
+  const key = [url, ua || '', redirect, accept || '', timeoutMs].join('|')
+  if (!cache.has(key)) cache.set(key, doGet(url, ua, redirect, accept, timeoutMs))
   return cache.get(key)
 }
 
-async function doGet(url, ua, redirect, accept) {
+async function doGet(url, ua, redirect, accept, timeoutMs) {
   const empty = { url, status: 0, contentType: '', location: null, buf: Buffer.alloc(0), text: '' }
   try {
     const res = await fetch(url, {
       headers: requestHeaders(ua, accept),
       redirect,
-      signal: AbortSignal.timeout(TIMEOUT_MS),
+      signal: AbortSignal.timeout(timeoutMs),
     })
     const buf = Buffer.from(await res.arrayBuffer())
     return {
@@ -55,7 +56,8 @@ async function doGet(url, ua, redirect, accept) {
       text: buf.toString('utf8'),
     }
   } catch (e) {
-    return { ...empty, ok: false, error: describeError(e) }
+    const timedOut = e.name === 'TimeoutError' || e.name === 'AbortError'
+    return { ...empty, ok: false, timedOut, error: timedOut ? `timeout after ${timeoutMs} ms` : describeError(e) }
   }
 }
 
