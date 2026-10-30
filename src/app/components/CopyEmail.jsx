@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState, useSyncExternalStore } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 
 const subscribe = () => () => {}
 const COPIED_MS = 1600 // how long the button says "Copied"
@@ -21,6 +21,14 @@ export default function CopyEmail({ email, targetId, labels, className = 'pill p
   const showTimer = useRef(0)
   const clearTimer = useRef(0)
   const copiedTimer = useRef(0)
+
+  // No timer outlives the button.
+  useEffect(
+    () => () => {
+      for (const timer of [showTimer, clearTimer, copiedTimer]) window.clearTimeout(timer.current)
+    },
+    [],
+  )
 
   // Empty the region first and fill it a moment later, so a second copy is announced too
   // (screen readers only speak changes).

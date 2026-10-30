@@ -725,6 +725,42 @@ for (const vp of [
   await context.close()
 }
 
+// ---------------------------------------------------------------- React's animationiteration listener
+// The behavioural proof is T8.idle-main-thread; this names the cause. React registers every
+// event on its root (the document) and on each portal container, the route announcer's
+// included; instrumentation-client.js drops that one registration. None may be left.
+{
+  const { context, page } = await newPage({ width: 1280, height: 800 })
+  const cdp = await context.newCDPSession(page)
+  await page.goto(`${BASE}/`, { waitUntil: 'networkidle' })
+  const holders = []
+  for (const [name, expression] of [
+    ['document', 'document'],
+    ['route announcer', "document.querySelector('next-route-announcer')"],
+    ['route announcer shadow root', "document.querySelector('next-route-announcer')?.shadowRoot ?? null"],
+  ]) {
+    const { result } = await cdp.send('Runtime.evaluate', { expression })
+    if (!result.objectId) continue
+    const { listeners } = await cdp.send('DOMDebugger.getEventListeners', { objectId: result.objectId, depth: 0 })
+    if (listeners.some((l) => l.type === 'animationiteration')) holders.push(name)
+  }
+  check(holders.length === 0, 'T8.no-iteration-listener', 'no animationiteration listener on the React root or the route announcer', `animationiteration listened for on: ${holders.join(', ')}`)
+  await context.close()
+}
+
+// ---------------------------------------------------------------- printed page
+// Paper gets the page, not its decorations.
+{
+  const { context, page } = await newPage({ width: 1280, height: 800 })
+  await page.goto(`${BASE}/`, { waitUntil: 'networkidle' })
+  await page.emulateMedia({ media: 'print' })
+  const shown = await page.evaluate(() =>
+    ['.field', '.ambient', '.grain', '.progress', '.cursor', '.pause', '#pause-motion'].filter((sel) => [...document.querySelectorAll(sel)].some((el) => getComputedStyle(el).display !== 'none')),
+  )
+  check(shown.length === 0, 'T8.print-decor', 'the field, light, grain, reading line, cursor and motion switch are not printed', `printed: ${shown.join(', ')}`)
+  await context.close()
+}
+
 // ---------------------------------------------------------------- main thread while scrolling
 // A full scroll at phone width with motion on. The page animates on purpose, so its frames
 // are not free; what matters is that none of them would hold up a slow phone. The CPU time

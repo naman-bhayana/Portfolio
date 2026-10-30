@@ -469,4 +469,16 @@ main:focus {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
+
+  /* Paper gets the page, not its decorations: the particle field, the light, the grain, the
+     reading line, the cursor and the motion switch. */
+  .field,
+  .ambient,
+  .grain,
+  .progress,
+  .cursor,
+  .pause,
+  #pause-motion {
+    display: none !important;
+  }
 }

@@ -92,6 +92,9 @@ function compare(id, what, keep) {
 
 compare('CSS.motion-declarations', 'animation and timeline declarations', (decl) => MOTION.test(decl.prop))
 compare('CSS.has-selectors', 'declarations under :has() selectors', (decl, rule) => rule.selector.includes(':has('))
+// Vendor-prefixed declarations are there for a browser that still reads them (iOS Safari's
+// -webkit-text-size-adjust, -webkit-backdrop-filter, the masks): a prefixer must not strip them.
+compare('CSS.prefixed', 'vendor-prefixed declarations', (decl) => decl.prop.startsWith('-webkit-'))
 // The still states: everything a rule sets when motion is paused, reduced, printed or not
 // supported, and the rules that draw decoration from data-t or uncover a focused block.
 compare('CSS.still-states', 'declarations for the paused, reduced, printed and fallback states', (decl, rule) => {

@@ -59,7 +59,7 @@ function letters(word, gradient = false) {
       data-t={letter}
       style={
         gradient
-          ? { backgroundSize: `${word.length * 100}% 100%`, backgroundPosition: `${((i / (word.length - 1)) * 100).toFixed(2)}% 0` }
+          ? { backgroundSize: `${word.length * 100}% 100%`, backgroundPosition: `${word.length > 1 ? ((i / (word.length - 1)) * 100).toFixed(2) : 0}% 0` }
           : undefined
       }
     />

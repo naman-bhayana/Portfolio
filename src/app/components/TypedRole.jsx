@@ -52,23 +52,26 @@ function typingCss(roles) {
 
 // The roles type themselves in turn with CSS alone. Without motion the first role is shown.
 // The line is drawn by CSS (data-t); the text of the paragraph is one plain sentence, which is
-// what screen readers and anything else reading the HTML get instead of the animation.
+// what screen readers and anything else reading the HTML get instead of the animation. The
+// keyframes sit beside the paragraph, not in it: a <style> is not phrasing content.
 export default function TypedRole() {
   return (
-    <p className="role d2">
+    <>
       <style dangerouslySetInnerHTML={{ __html: typingCss(HERO.roles) }} />
-      <span className="sr">{HERO.rolesSummary}</span>
-      <span className="pro" aria-hidden="true" data-t=">" />
-      <span className="tw" aria-hidden="true">
-        {HERO.roles.map((role, i) => (
-          <span key={role} className={`t t${i + 1}`}>
-            <span className="tc">
-              <span data-t={role} />
+      <p className="role d2">
+        <span className="sr">{HERO.rolesSummary}</span>
+        <span className="pro" aria-hidden="true" data-t=">" />
+        <span className="tw" aria-hidden="true">
+          {HERO.roles.map((role, i) => (
+            <span key={role} className={`t t${i + 1}`}>
+              <span className="tc">
+                <span data-t={role} />
+              </span>
+              <span className="caret" />
             </span>
-            <span className="caret" />
-          </span>
-        ))}
-      </span>
-    </p>
+          ))}
+        </span>
+      </p>
+    </>
   )
 }

@@ -6,11 +6,13 @@
 // re-styles all of them: about sixty frames of work a second on a page that is standing still.
 // Without the listener the loops stay on the compositor and the main thread rests.
 //
-// So that one registration is dropped, for good: React adds it again whenever a portal mounts.
-// If something here ever needs animationiteration, this is the place to let it through.
+// So React's registration is dropped, for good: React adds it again whenever a portal mounts.
+// React marks a root or portal container (_reactListening…) just before it adds its listeners,
+// so only those are dropped; anything else that asks for animationiteration still gets it.
 const { addEventListener } = EventTarget.prototype
+const isReactContainer = (target) => target != null && Object.keys(target).some((key) => key.startsWith('_reactListening'))
 
 EventTarget.prototype.addEventListener = function (type, ...rest) {
-  if (type === 'animationiteration') return
+  if (type === 'animationiteration' && isReactContainer(this)) return
   return addEventListener.call(this, type, ...rest)
 }

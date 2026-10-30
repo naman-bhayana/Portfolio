@@ -17,7 +17,7 @@ import '@/styles/studio.css'
 import '@/styles/about.css'
 import '@/styles/contact.css'
 
-// The concierge, only in a build made with NEXT_PUBLIC_CONCIERGE=on. next.config.js always
+// The concierge, only in a build with NEXT_PUBLIC_CONCIERGE=on. next.config.js always
 // defines the flag ('on' or 'off'), so the bundler settles each condition and a build without
 // the concierge carries none of its code or styles. The condition is written out each time:
 // the bundler settles the expression, not a variable holding it.
