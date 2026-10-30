@@ -650,6 +650,18 @@ await section('SHARE', async () => {
     .filter((tag) => /as="font"/.test(tag) && /\/_next\/static\/media\/[^"]+\.p\.woff2/.test(tag))
   if (fontPreloads.length === FONT_PRELOADS) pass('SHARE.font-preload', `${FONT_PRELOADS} woff2 font preloads in <head>`)
   else (PROFILE === 'local' ? warn : fail)('SHARE.font-preload', `${fontPreloads.length} font preload link(s), expected ${FONT_PRELOADS}`)
+
+  // One image is preloaded: the avatar, the first screen's largest paint, at high priority.
+  // React preloads every eager <img> it renders unless it is lazy or low priority; the wall's
+  // marks and the wordmarks are, so they do not share the line with the CSS and fonts.
+  const imagePreloads = [...(home.text ?? '').matchAll(/<link\b[^>]*rel="preload"[^>]*>/g)].map((m) => m[0]).filter((tag) => /as="image"/.test(tag))
+  const avatarFile = encodeURIComponent(AVATAR.src)
+  check(
+    imagePreloads.length === 1 && imagePreloads[0].includes(avatarFile) && /fetchpriority="high"/i.test(imagePreloads[0]),
+    'T6.image-preloads',
+    'one image preload in <head>: the avatar, high priority',
+    `${imagePreloads.length} image preload(s): ${imagePreloads.map((t) => q(t, 90)).slice(0, 4).join(' | ')}`,
+  )
 })
 
 // ---------------------------------------------------------------- LD
@@ -1000,6 +1012,19 @@ await section('T10', async () => {
     if (fails.length) fail(id, `${p}: ${[...fails, ...warns].join('; ')}`)
     else if (warns.length) warn(id, `${p}: ${warns.join('; ')}`)
     else pass(id, `${p}: security headers once each${CONCIERGE_ON ? ', microphone and ElevenLabs allowed (concierge build)' : ''}`)
+  }
+
+  // The brand files are immutable for a year (renamed when they change); the optimiser's
+  // copies too. Locally the optimiser answers from .next/cache/images, whose files keep the age
+  // they were written with, so a cache older than the setting makes this only a warning there.
+  const pngMark = WALL.marks.find((m) => m.file.endsWith('.png'))
+  const optimisedLogo = `/_next/image?url=${encodeURIComponent(pngMark.file)}&w=256&q=75`
+  for (const [p, immutable] of [[AVATAR.src, true], [OG_IMAGE.url, true], [WALL.marks[0].file, true], [optimisedLogo, false]]) {
+    const r = await rawGet(at(p))
+    const cc = r.ok ? (headerMap(r.rawHeaders).get('cache-control') || []).join(', ') : `request failed: ${r.error}`
+    const ok = /max-age=31536000\b/.test(cc) && (!immutable || /\bimmutable\b/.test(cc))
+    if (ok) pass('T10.cache', `${q(p, 70)}: ${cc}`)
+    else (!immutable && PROFILE === 'local' ? warn : fail)('T10.cache', `${q(p, 70)}: cache-control ${q(cc, 90)}, expected max-age=31536000${immutable ? ', immutable' : ''}`)
   }
 
   // The page and its headers come from the same build: the concierge's inline entry

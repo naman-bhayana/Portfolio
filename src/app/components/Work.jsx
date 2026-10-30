@@ -27,6 +27,9 @@ function Wordmark({ build }) {
         height={mark.height}
         alt=""
         aria-hidden="true"
+        // Several screens down everywhere: never preloaded, never ahead of the first screen.
+        // (Not loading=lazy: at a CSS height with an auto width Chrome flags it as an issue.)
+        fetchPriority="low"
         decoding="async"
       />
       <span className="sr">{build.name}</span>

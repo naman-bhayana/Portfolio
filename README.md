@@ -80,4 +80,6 @@ node scripts/qa/concierge-routes.mjs http://127.0.0.1:3000 # the concierge's two
 npm run assets                                        # rebuild the avatar, share card and icons
 ```
 
-When content changes, bump `UPDATED` in `src/content/site.js`. If the share card changes after it has been live, give the image a new file name so link previews refresh.
+When content changes, bump `UPDATED` in `src/content/site.js`.
+
+Everything under `public/images`, `public/logos`, `public/work` and `public/og` is cached for a year as immutable, and the image optimiser keeps its copies as long. So a changed file always gets a new name, never the old one: update the path in `site.js` (`AVATAR.src`, `OG_IMAGE`, the wall's marks, the wordmarks) and have `npm run assets` write under the new name. The share card needs a new name in any case for link previews to refresh.

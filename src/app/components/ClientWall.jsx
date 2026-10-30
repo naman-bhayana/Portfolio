@@ -17,6 +17,9 @@ function Mark({ mark }) {
       height={mark.height}
       alt={mark.name}
       decoding="async"
+      // Eager (on a laptop the wall is on the first screen) but never ahead of the avatar, and
+      // with no preload of its own in the head, where it would share the line with the fonts.
+      fetchPriority="low"
     />
   )
 }

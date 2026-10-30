@@ -41,6 +41,14 @@ const securityHeaders = [
     : []),
 ]
 
+// The brand files are replaced by renaming, never in place (README): a year in the browser.
+// The optimiser (/_next/image) caches its own copies for the larger of this and minimumCacheTTL.
+const YEAR = 'public, max-age=31536000, immutable'
+const cacheHeaders = ['/images/:path*', '/logos/:path*', '/work/:path*', '/og/:path*'].map((source) => ({
+  source,
+  headers: [{ key: 'Cache-Control', value: YEAR }],
+}))
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   poweredByHeader: false,
@@ -54,6 +62,7 @@ const nextConfig = {
     deviceSizes: IMAGE_WIDTHS,
     imageSizes: LOGO_WIDTHS,
     qualities: [IMAGE_QUALITY],
+    minimumCacheTTL: 31536000,
     localPatterns: [
       { pathname: '/images/**', search: '' },
       { pathname: '/work/**', search: '' },
@@ -61,7 +70,7 @@ const nextConfig = {
     ],
   },
   async headers() {
-    return [{ source: '/:path*', headers: securityHeaders }]
+    return [{ source: '/:path*', headers: securityHeaders }, ...cacheHeaders]
   },
   async redirects() {
     if (!RESUME_DRIVE_URL) return []
