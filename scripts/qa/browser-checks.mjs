@@ -717,6 +717,47 @@ for (const vp of [
   await context.close()
 }
 
+// ---------------------------------------------------------------- the deck's recede
+// Case 1 recedes from the moment case 2 enters the viewport to the moment case 2 is pinned (the
+// approved design's timing): read at four scroll positions against the design's values.
+{
+  const { context, page } = await newPage({ width: 1440, height: 900 })
+  await page.goto(`${BASE}/`, { waitUntil: 'networkidle' })
+  const geometry = await page.evaluate(() => {
+    const [c1, c2] = document.querySelectorAll('.deck .case')
+    return { c2: Math.round(c2.getBoundingClientRect().top + window.scrollY), top: parseFloat(getComputedStyle(c1).top), step: parseFloat(getComputedStyle(c2).top) - parseFloat(getComputedStyle(c1).top), vh: window.innerHeight }
+  })
+  const at = async (y) => {
+    await page.evaluate(async (y) => {
+      window.scrollTo({ top: y, behavior: 'instant' })
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
+    }, y)
+    await page.waitForTimeout(120)
+    return page.evaluate(() => {
+      const c1 = document.querySelector('.deck .case')
+      const m = new DOMMatrix(getComputedStyle(c1).transform)
+      return { scale: Math.round(m.a * 1000) / 1000, veil: Math.round(Number(getComputedStyle(c1, '::after').opacity) * 100) / 100 }
+    })
+  }
+  const { c2, top, step, vh } = geometry
+  const pinnedAt = c2 - top - step
+  const progress = (y) => Math.min(1, Math.max(0, (y - (c2 - vh)) / (pinnedAt - (c2 - vh))))
+  const problems = []
+  for (const [y, name] of [
+    [c2 - vh - 10, 'case 2 just below the viewport'],
+    [c2 - vh / 2, 'case 2 half way up'],
+    [c2 - top - 216, 'case 2 touching case 1'],
+    [pinnedAt + 5, 'case 2 pinned'],
+  ]) {
+    const got = await at(y)
+    const p = progress(y)
+    const want = { scale: Math.round((1 - 0.035 * p) * 1000) / 1000, veil: Math.round(0.94 * p * 100) / 100 }
+    if (Math.abs(got.scale - want.scale) > 0.004 || Math.abs(got.veil - want.veil) > 0.04) problems.push(`${name}: got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`)
+  }
+  check(problems.length === 0, 'T8.deck-recede', 'case 1 recedes from the moment case 2 enters the viewport to the moment it is pinned', problems.join(' | '))
+  await context.close()
+}
+
 // ---------------------------------------------------------------- keyboard focus on a moving page
 // Tabbing down, a link must not take focus while the block around it is still transparent
 // (the scroll reveal). Tabbing up, focus must not land under the sticky header (WCAG 2.4.11).

@@ -20,7 +20,6 @@ let field = null
 // Always, because none of it moves anything:
 // - the nav marks the section on screen;
 // - scroll-driven parts far from the screen let go of their animation (.far, motion.css);
-// - each case of the deck learns its height, which times its recede (--h, motion.css);
 // - the rail's pulse learns the rail's width.
 // Only while motion runs, which is from the start, or from the first resume when the page
 // opens paused or with less motion asked for:
@@ -97,18 +96,6 @@ export default function MotionIsland() {
     )
     observers.push(far)
     for (const el of document.querySelectorAll('.light, .para-soft, .para-img, .case')) far.observe(el)
-
-    // ---------------------------------------------------------------- the deck's heights
-    // A case recedes while the next one covers it, from the moment the two meet; on narrow
-    // screens a case's height is its content's, so it is measured. Without a script the CSS
-    // falls back to the desktop height, which starts the recede a little late, never early.
-    if ('ResizeObserver' in window) {
-      const heights = new ResizeObserver((entries) => {
-        for (const entry of entries) entry.target.style.setProperty('--h', `${Math.round(entry.target.offsetHeight)}px`)
-      })
-      observers.push(heights)
-      for (const el of document.querySelectorAll('.case')) heights.observe(el)
-    }
 
     // ---------------------------------------------------------------- the rail's pulse
     const railwrap = document.querySelector('.railwrap')

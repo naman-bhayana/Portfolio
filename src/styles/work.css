@@ -159,8 +159,8 @@
 /* Five cases, each sticky, each pinned a step lower than the one before and clear of the
    sticky header (--top0 per breakpoint, responsive.css). As the next case slides over, the
    previous one recedes: it scales down a touch and a flat dark veil (its ::after) fades over
-   it, from the moment the two meet (--h, measured by MotionIsland) to the moment the next one
-   is pinned (motion.css). The cases are opaque, so a covered case never shows through, with
+   it, from the moment the next one enters the viewport to the moment it is pinned
+   (motion.css). The cases are opaque, so a covered case never shows through, with
    or without the veil. */
 .deck {
   position: relative;
@@ -172,7 +172,6 @@
 .case {
   --top0: 96px;
   --step: 12px;
-  --h: 224px;
   --top: var(--top0);
   position: sticky;
   top: var(--top);
