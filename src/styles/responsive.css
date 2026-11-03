@@ -210,11 +210,9 @@
   }
   .mqg {
     gap: 28px;
-    padding: 16px 14px 16px 28px;
   }
   .mqg li {
     gap: 28px;
-    font-size: 22px;
   }
   .pstage {
     grid-template-columns: minmax(0, 1fr);
@@ -285,6 +283,9 @@
     --pad: 60px;
     --rplate: 20px;
     --accent: 19px;
+  }
+  .mqg li {
+    font-size: 22px;
   }
   .field {
     opacity: .8;

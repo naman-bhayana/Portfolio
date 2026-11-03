@@ -302,7 +302,7 @@
   height: 7px;
   margin-left: -3.5px;
   border-radius: 50%;
-  background: #9DEFFF;
+  background: var(--c-200);
   box-shadow: 0 0 16px 2px var(--cyan);
 }
 

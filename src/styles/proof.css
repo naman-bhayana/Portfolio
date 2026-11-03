@@ -54,7 +54,7 @@
   height: 1.2em;
   margin: -.6em 0 0 -.6em;
   border-radius: 50%;
-  border: 2px solid #5CE6FF;
+  border: 2px solid var(--c-300);
   opacity: 0;
   pointer-events: none;
 }

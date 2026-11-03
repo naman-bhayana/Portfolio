@@ -47,7 +47,7 @@
   border-radius: var(--rplate);
   background: var(--g-glaze), rgba(12, 17, 25, .9);
   box-shadow: var(--sh-2);
-  transition: box-shadow var(--t-slow) var(--ease-snap), border-color var(--t-base), translate var(--t-slow) var(--ease-snap);
+  transition: box-shadow var(--t-slow) var(--ease-snap), border-color var(--t-base), translate var(--t-slow) var(--ease-snap), rotate .15s linear;
 }
 
 /* Under the pointer the plate lifts a step and its ring lights; a glint crosses it once
@@ -63,7 +63,7 @@
   position: absolute;
   inset: -40% -60%;
   z-index: 0;
-  background: linear-gradient(104deg, transparent 42%, rgba(255, 255, 255, .07) 50%, transparent 58%);
+  background: var(--g-glint);
   transform: translateX(-70%);
   opacity: 0;
   pointer-events: none;
@@ -417,4 +417,17 @@
   line-height: 1.5;
   color: var(--muted);
   text-wrap: pretty;
+}
+
+/* The plate clips its glint to its corners with a 2 px margin for its hover ring (base.css
+   .spotcard). Safari has no overflow-clip-margin, so there the plate is left unclipped, keeping
+   the ring, and the glint is left out. At the end of the file so it wins over the rule above. */
+@supports not (overflow-clip-margin: 1px) {
+  .flag {
+    overflow: visible;
+  }
+
+  .flag::after {
+    display: none;
+  }
 }

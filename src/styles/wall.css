@@ -82,7 +82,10 @@
 }
 
 /* Five, four and four on a tablet; four and three threes on a narrow screen; three a row on a
-   phone, the thirteenth centred under them. */
+   phone, the thirteenth centred under them. On a tablet and a narrow screen each row after the first
+   starts on line 2 by an explicit grid-column on its first cell; on a narrow screen one of those
+   is the eighth cell's rule above, kept on purpose, since resetting it would leave the third row
+   ragged. On a phone the rows place themselves and the thirteenth starts on line 3. */
 @media (min-width: 961px) and (max-width: 1160px) {
   .wlist {
     grid-template-columns: repeat(10, minmax(0, 1fr));

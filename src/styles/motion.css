@@ -209,7 +209,11 @@
     opacity: 0;
     transform: scale(2.6);
   }
-  14.01%,
+  14.01% {
+    opacity: 0;
+    transform: scale(0);
+  }
+  14.02%,
   100% {
     opacity: 1;
     transform: scale(0);
@@ -565,7 +569,7 @@
     animation: rpulse 7.7s linear infinite;
   }
   /* Two more pulses at their own speeds, and each node's flare as the first one's bright centre
-     reaches it: the first node flares as the pulse sets out, then one node every .93 s. Before
+     reaches it: the first node flares just before the pulse appears on it, then one node every .93 s. Before
      the page is marked the flares run with the pulse, so the two never drift apart. */
   html:not(.rv-on) .rpulse.rp2,
   .railwrap.lit .rpulse.rp2 {

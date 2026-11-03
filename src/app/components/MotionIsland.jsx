@@ -89,6 +89,9 @@ export default function MotionIsland() {
       navline.style.setProperty('--on', '1')
     }
     on(window, 'resize', placeNavline, { passive: true })
+    // The links change width as the web fonts land; the line follows them.
+    document.fonts?.ready.then(placeNavline)
+    if (document.fonts) on(document.fonts, 'loadingdone', placeNavline)
     const current = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
@@ -362,7 +365,8 @@ export default function MotionIsland() {
       }
       const released = (event) => {
         const block = event.currentTarget
-        const live = block.getAnimations({ subtree: true }).some((a) => a.timeline === document.timeline && a.playState !== 'finished')
+        // Loops inside a block (the rail's flares, the proof stage's halo) never finish: they do not hold it.
+        const live = block.getAnimations({ subtree: true }).some((a) => a.timeline === document.timeline && a.playState !== 'finished' && a.effect?.getComputedTiming().iterations !== Infinity)
         if (!live) block.classList.remove('rv-in')
       }
       const reveal = (block) => {
