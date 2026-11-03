@@ -13,15 +13,18 @@
   position: relative;
 }
 
-/* The pulse that travels the rail; --railw is the rail's width, set by MotionIsland. */
+/* The pulse that travels the rail; --railw is the rail's width, set by MotionIsland. Centred on
+   the rail's line, which sits 11.5 px from the top of the wrapper: the rail's own margin collapses
+   through the wrapper, so it does not count. */
 .rpulse {
   position: absolute;
   left: 0;
-  top: 44px;
+  top: 11.5px;
   z-index: 2;
-  width: 140px;
+  --pw: 140px;
+  width: var(--pw);
   height: 12px;
-  margin-top: 29px;
+  margin-top: -6px;
   border-radius: 999px;
   background: radial-gradient(closest-side, rgba(255, 255, 255, .9), rgba(0, 225, 255, .55) 35%, transparent 70%);
   filter: blur(1px);
@@ -29,16 +32,17 @@
   pointer-events: none;
 }
 
-/* Two more pulses, a short sharp one and a long soft one (motion.css gives each its speed). */
+/* Two more pulses, a short sharp one and a long soft one (motion.css gives each its speed). Each
+   stops with its own tail at the rail's end, whatever its width (--pw). */
 .rpulse.rp2 {
-  width: 90px;
+  --pw: 90px;
   filter: blur(.5px);
 }
 
 .rpulse.rp3 {
-  width: 200px;
+  --pw: 200px;
   height: 8px;
-  margin-top: 31px;
+  margin-top: -4px;
 }
 
 .rail {

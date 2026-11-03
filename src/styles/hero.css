@@ -279,15 +279,26 @@
   transform: translateZ(6px);
 }
 
-.sring.a {
+.sring.b {
+  inset: -13%;
+}
+
+/* The arc is a layer of its own, so its mask and blur leave the satellite whole and bright. */
+.sring::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+}
+
+.sring.a::before {
   background: conic-gradient(from 180deg, transparent 0 58%, rgba(0, 225, 255, .9) 76%, rgba(26, 140, 255, .85) 88%, transparent 97%);
   -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 18px), #000 calc(100% - 16px), #000 calc(100% - 3px), transparent 100%);
   mask: radial-gradient(farthest-side, transparent calc(100% - 18px), #000 calc(100% - 16px), #000 calc(100% - 3px), transparent 100%);
   filter: blur(3px);
 }
 
-.sring.b {
-  inset: -13%;
+.sring.b::before {
   background: conic-gradient(from 0deg, transparent 0 72%, rgba(0, 225, 255, .75) 93%, transparent 100%);
   -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1px));
   mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1px));
@@ -456,4 +467,29 @@
   background: var(--cyan);
   transform: rotate(45deg);
   box-shadow: 0 0 12px var(--cyan);
+}
+
+/* Where the strip does not move (less motion asked for, or on paper) a cut-off line would hide
+   most of the list for good, so the list wraps and shows each service once. */
+@media (prefers-reduced-motion: reduce), print {
+  .mq {
+    white-space: normal;
+  }
+
+  .mqt {
+    display: block;
+  }
+
+  .mq .mqg {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px 32px;
+    padding: 17px 20px;
+  }
+
+  .mq .mqg[aria-hidden="true"],
+  .mq .mqg li:last-child::after {
+    display: none;
+  }
 }

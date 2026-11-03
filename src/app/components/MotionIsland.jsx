@@ -126,7 +126,7 @@ export default function MotionIsland() {
     const railwrap = document.querySelector('.railwrap')
     const rail = railwrap?.querySelector('.rail')
     if (rail) {
-      const setRail = () => railwrap.style.setProperty('--railw', `${rail.clientWidth - 140}px`)
+      const setRail = () => railwrap.style.setProperty('--railw', `${rail.clientWidth}px`)
       setRail()
       on(window, 'resize', setRail, { passive: true })
     }

@@ -802,6 +802,26 @@ for (const vp of [
   await context.close()
 }
 
+// ---------------------------------------------------------------- the strip with less motion
+// Nothing moves the services strip along, so every service must be on screen, once.
+for (const vp of [
+  { name: '1280', width: 1280, height: 800 },
+  { name: '390', width: 390, height: 844, mobile: true },
+]) {
+  const { context, page } = await newPage({ ...vp, reducedMotion: 'reduce' })
+  await page.goto(`${BASE}/`, { waitUntil: 'networkidle' })
+  const strip = await page.evaluate(() => {
+    const cut = [...document.querySelectorAll('.mqg[aria-label] li')].filter((li) => {
+      const box = li.getBoundingClientRect()
+      return box.left < 0 || box.right > window.innerWidth + 0.5
+    })
+    const copies = [...document.querySelectorAll('.mqg[aria-hidden]')].filter((ul) => getComputedStyle(ul).display !== 'none')
+    return { cut: cut.map((li) => li.textContent.trim()), copies: copies.length, items: document.querySelectorAll('.mqg[aria-label] li').length }
+  })
+  check(strip.items > 0 && strip.cut.length === 0 && strip.copies === 0, `T8.reduced-strip.${vp.name}`, `all ${strip.items} services show, once, without moving`, JSON.stringify(strip))
+  await context.close()
+}
+
 // ---------------------------------------------------------------- the deck's recede
 // Case 1 recedes from the moment case 2 enters the viewport to the moment case 2 is pinned (the
 // approved design's timing): read at four scroll positions against the design's values.
@@ -918,9 +938,18 @@ for (const vp of [
   const waitingAtNode = await pulse()
   await page.waitForTimeout(1100)
   const crossing = await pulse()
+  // Every pulse rides the rail's line, not somewhere below it.
+  const offLine = await page.evaluate(() => {
+    const rail = document.querySelector('.rail')
+    const line = rail.getBoundingClientRect().top + parseFloat(getComputedStyle(rail, '::before').top) + 0.5
+    return [...document.querySelectorAll('.rpulse')].map((el) => {
+      const box = el.getBoundingClientRect()
+      return Math.round(Math.abs(box.top + box.height / 2 - line) * 10) / 10
+    })
+  })
   const ok =
-    before === 0 && lit?.name === 'rpulse' && lit.delay === 0 && lit.time < 400 && waitingAtNode?.scale === 0 && waitingAtNode.x === 0 && crossing?.scale === 1 && crossing.x > 0 && crossing.opacity > 0.5
-  check(ok, 'T8.rail-pulse', 'the pulse waits for the rail, holds 1.2 s at the first node, then crosses', JSON.stringify({ before, lit, waitingAtNode, crossing }))
+    before === 0 && lit?.name === 'rpulse' && lit.delay === 0 && lit.time < 400 && waitingAtNode?.scale === 0 && waitingAtNode.x === 0 && crossing?.scale === 1 && crossing.x > 0 && crossing.opacity > 0.5 && offLine.every((px) => px <= 1)
+  check(ok, 'T8.rail-pulse', 'the pulses ride the rail; the first waits for it, holds 1.2 s at the first node, then crosses', JSON.stringify({ before, lit, waitingAtNode, crossing, offLine }))
   await context.close()
 }
 

@@ -124,15 +124,7 @@
     border-top: 1px solid var(--line);
   }
   .aboutgrid {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 48px;
-  }
-  .portrait {
-    grid-row: auto;
-  }
-  .abouttext,
-  .log {
-    grid-column: 1;
+    column-gap: 48px;
   }
 }
 
@@ -158,6 +150,16 @@
 }
 
 @media (max-width: 960px) {
+  /* The portrait keeps the bio beside it, as on a laptop; the ledger takes the full width below. */
+  .aboutgrid {
+    gap: 32px 40px;
+  }
+  .portrait {
+    grid-row: auto;
+  }
+  .log {
+    grid-column: 1 / -1;
+  }
   .wrap {
     width: min(1240px, 100% - 32px);
   }
@@ -583,7 +585,13 @@
     max-width: 240px;
   }
   .aboutgrid {
+    grid-template-columns: minmax(0, 1fr);
     gap: 36px;
+  }
+  /* The footer's links in two even rows, none left alone on a line. */
+  .footl {
+    display: grid;
+    grid-template-columns: repeat(3, max-content);
   }
   .person {
     margin-top: 16px;

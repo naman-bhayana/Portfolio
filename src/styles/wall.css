@@ -239,8 +239,11 @@
 /* Nothing hovers on a touch screen. From tablets up the descriptor stands under its mark, in
    rows tall enough for both; phones keep the marks alone. */
 @media (hover: none) and (min-width: 601px) {
+  /* The gap between rows is wider than the one between a mark and its descriptor, so each
+     descriptor reads as its own mark's. */
   .wlist {
-    grid-auto-rows: 92px;
+    grid-auto-rows: 80px;
+    row-gap: 22px;
   }
 
   .wcell {

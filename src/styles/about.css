@@ -50,16 +50,20 @@
   position: absolute;
   inset: 0;
   z-index: 1;
+  border-radius: calc(var(--rplate) - 1px);
   background: var(--g-glaze), var(--ink-3);
   transform: scaleY(0);
   transform-origin: 50% 0;
   pointer-events: none;
 }
 
+/* The grade and the dark foot. It carries the frame's corners itself: without them its square
+   corners show outside the curve. */
 .pframe::after {
   content: "";
   position: absolute;
   inset: 0;
+  border-radius: calc(var(--rplate) - 1px);
   background: linear-gradient(to bottom, rgba(5, 7, 11, 0) 50%, rgba(5, 7, 11, .94) 100%), linear-gradient(rgba(20, 60, 140, .16), rgba(20, 60, 140, .16));
   pointer-events: none;
 }
