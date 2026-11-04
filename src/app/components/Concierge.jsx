@@ -43,7 +43,7 @@ class Guard extends Component {
 }
 
 const subscribe = () => () => {}
-const LANDING_CAP_MS = 5000 // the hero's arrival takes 2.2 s (Hero.jsx); never wait longer than this
+const LANDING_CAP_MS = 5000 // the hero's arrival takes 3.7 s (Hero.jsx); never wait longer than this
 const IDLE_MS = 1200
 const PEEKED = 'cg-peeked' // sessionStorage: the quick questions show once per visit
 const MODES = ['text', 'voice']

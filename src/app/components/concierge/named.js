@@ -19,7 +19,7 @@ const NAMED = [
   ['docpad', /\bDocPad\b/i],
   ['prozone', /\bProzone\b/i],
   ['artize_dental', /\bArtize\b/i],
-  ['more_builds', /\b(sixteen|16)\s+builds\b/i],
+  ['more_builds', /\b(sixteen|16)\s+builds\b|\bother\s+(ten|10)\b|\b(SigmaBites|Sterling Naturals|New Gramophone House|Techlive|Allianz|WanderNest|Plinko|AlphaGPT|Jobzee|Intellishop)\b/i],
 ]
 const PRACTICES = [
   ['practice_ai_products', /\bAI products?\b/i],

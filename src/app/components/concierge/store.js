@@ -348,6 +348,8 @@ function message({ role, message: text, event_id: eventId, response_id: response
       return
     }
     if (text.startsWith('[Brief')) return
+    // Silence on a call comes back as "...": nothing was said, so nothing is shown.
+    if (!/[\p{L}\p{N}]/u.test(text)) return
     const log = append(state.log, { k: 'user', text })
     const voice = state.call && state.mode === 'voice'
     set({ log, compact: compactWith(log), ...(voice ? { heard: text, ...status('thinking', 'thinking') } : {}) })

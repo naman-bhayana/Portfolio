@@ -5,6 +5,7 @@
   --cg-gap: 20px;
   --cg-glass: rgba(8, 12, 19, .8);
   --cg-glass-strong: rgba(7, 10, 16, .93);
+  --cg-solid: rgb(7, 10, 16);
   --cg-cyan-soft: rgba(0, 225, 255, .08);
   --cg-cyan-edge: rgba(0, 225, 255, .45);
   --cg-rose: #FF8A98;
@@ -669,16 +670,30 @@
   color: var(--dim);
 }
 
-/* voice: pinned while the conversation scrolls under it */
+/* voice: pinned while the conversation scrolls under it. Solid and the panel's full width, from
+   the panel's head down, so the log never shows through or above it (.cg-body's padding is 20/18);
+   the margins and padding cancel out, so the orb stays where the flow puts it. */
 .nb .cg-voice {
   position: sticky;
-  top: 0;
+  top: -20px;
   z-index: 1;
   display: grid;
   justify-items: center;
   gap: 12px;
-  padding: 2px 0 10px;
-  background: var(--cg-glass-strong);
+  margin: -18px -18px 0;
+  padding: 20px 18px 10px;
+  background: var(--cg-solid);
+}
+
+.nb .cg-voice::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  height: 14px;
+  background: linear-gradient(var(--cg-solid), transparent);
+  pointer-events: none;
 }
 
 .nb .cg-orb {
@@ -1145,6 +1160,8 @@
     justify-items: start;
     align-items: center;
     gap: 4px 14px;
+    margin-inline: 0;
+    padding-inline: 0;
     padding-bottom: 2px;
   }
 
