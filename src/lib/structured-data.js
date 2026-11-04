@@ -1,6 +1,7 @@
-import { AVATAR, ENTITY, HERO, NEXERAH_LIVE, PERSON, SITE_URL, UPDATED } from '@/content/site'
+import { AVATAR, ENTITY, HERO, LAUNCHED, NEXERAH_LIVE, PERSON, SITE_URL, UPDATED } from '@/content/site'
 
-const HOME = `${SITE_URL}/`
+// The home page's address as its canonical link prints it: the bare origin.
+const HOME = SITE_URL
 const ID = {
   person: `${SITE_URL}/#person`,
   profilePage: `${SITE_URL}/#profilepage`,
@@ -27,10 +28,13 @@ export function buildGraph() {
         '@type': 'Person',
         '@id': ID.person,
         name: PERSON.name,
+        givenName: PERSON.firstName,
+        familyName: PERSON.lastName,
         url: HOME,
         image: `${SITE_URL}${AVATAR.src}`,
         description: HERO.eyebrow,
         jobTitle: ENTITY.jobTitle,
+        hasOccupation: { '@type': 'Occupation', name: ENTITY.jobTitle },
         worksFor: {
           '@type': 'Organization',
           '@id': ENTITY.employer.id,
@@ -39,7 +43,7 @@ export function buildGraph() {
         },
         ...(studio ? { affiliation: { '@id': studio['@id'] } } : {}),
         email: `mailto:${PERSON.email}`,
-        sameAs: [PERSON.linkedin, PERSON.github, PERSON.x, PERSON.instagram, ENTITY.employerProfile],
+        sameAs: [PERSON.linkedin, PERSON.github, PERSON.x, PERSON.instagram, ...ENTITY.sameAs.filter((url) => NEXERAH_LIVE || !/nexerah/i.test(url))],
         alumniOf: { '@type': 'CollegeOrUniversity', name: ENTITY.alumniOf },
         address: { '@type': 'PostalAddress', addressLocality: ENTITY.locality, addressCountry: ENTITY.country },
         knowsAbout: ENTITY.knowsAbout,
@@ -51,6 +55,7 @@ export function buildGraph() {
         name: ENTITY.profilePageName,
         mainEntity: { '@id': ID.person },
         isPartOf: { '@id': ID.website },
+        dateCreated: `${LAUNCHED}T00:00:00+05:30`,
         dateModified: `${UPDATED}T00:00:00+05:30`,
       },
       {
@@ -58,7 +63,7 @@ export function buildGraph() {
         '@id': ID.website,
         url: HOME,
         name: PERSON.name,
-        inLanguage: 'en',
+        inLanguage: 'en-GB',
         publisher: { '@id': ID.person },
       },
       ...(studio ? [studio] : []),

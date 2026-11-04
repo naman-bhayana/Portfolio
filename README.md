@@ -15,6 +15,10 @@ npm run build && npm start
 npm run lint
 ```
 
+## How the page looks
+
+The shared values are tokens on `.nb` in `base.css`: an ink ladder for the grounds (`--ink-0` to `--ink-5`), an accent scale (`--c-100` to `--c-700`), the gradients, three stacked shadows and the motion lengths. The page sits in three tiers: the page itself, a tinted scene (`--g-tint`) and a band with a seam of light where it meets the page (`--band-flat`, `--g-seam`; the wall and the marquee are one band, the marquee closing it). Every plate (the flagship, the cases, the practices, the portrait) has a glaze along its top edge, a hairline and a stacked shadow (`--sh-1` to `--sh-3`); the flagship and the practices also lift, light their ring and catch a glint (`--g-glint`) under the pointer. The buttons carry a liquid highlight (`.lq`) that follows the pointer. The motion tokens are three lengths (`--t-fast`, `--t-base`, `--t-slow`) and two curves (`--ease-snap`, `--ease-spring`) for hovers and presses; a few older ones still write their own. A value two parts share belongs in a token; a few grounds and hairlines that belong to one part, such as each case's own ground, are written in its own file.
+
 ## How the page moves
 
 The styles are in `src/styles/`, one file per section, with every animation in `motion.css`. The page is complete in the server HTML and reads the same with JavaScript off, with reduced motion, or with the pause switch in the header.
@@ -29,7 +33,9 @@ Below the hero, a block arrives once as the reader reaches it. `MotionIsland.jsx
 
 `MotionIsland.jsx` also flies the 400 dots of the proof stage into their grid, scrambles and counts the figures, and tilts the avatar stage and the plates towards the pointer, which carries a light. The particle field under the page runs in a worker (`field.worker.js`) on a canvas handed over to it, started once the browser is idle after load. On the main thread, a frame loop would make Chrome update every CSS loop there each frame, so the page could never rest; in a worker the field drifts for as long as the page is open and `T8.idle-main-thread` still measures nothing. The tilt and the light only ease while the pointer moves, and nothing reads the DOM in a frame. The pause switch stops it all, and a page that opens paused starts its motion on the first resume.
 
-The deck of cases is the one scroll effect that holds a state: a case recedes while the next one covers it, from the moment they meet to the moment the next is pinned, and stays receded under it. That resting state applies only on screen and only while motion runs, so a paused, printed or reduced-motion page shows every case as it is. The cases are opaque, and they pin below the sticky header at every width.
+The pointer also pulls at what it nears. A button, the pause switch and the copy button drift a few pixels towards it and carry its position for their highlight; the chips round the avatar drift away from it and settle back. Each is written as a style the CSS eases: the pulls as `translate`, the chips as `transform`, because the chips' bob animates `translate` and a running animation wins over a style. The rest of the new motion is loops and arrivals under the three rules above: two rings turn behind the avatar and the halos breathe; three pulses travel the rail and, on a wide screen where the rail is one line, each node flares as the first one passes it, timed from its index; a figure's rule draws as its row arrives and the hero figure rings once its count has landed; the practices fan in from either side and the portrait develops from the bottom up; a covered case rises, shrinks and tilts in the deck as the next one covers it.
+
+The deck of cases is the one scroll effect that holds a state: a case recedes while the next one comes up to cover it, from the moment the next enters the viewport to the moment it is pinned, and stays receded under it. That resting state applies only on screen and only while motion runs, so a paused, printed or reduced-motion page shows every case as it is. The cases are opaque, and they pin below the sticky header at every width.
 
 Two more Chrome behaviours shape the rest. A scroll-driven animation whose subject is several screens away is still serviced on the main thread every frame, so the lights, the brand card, the portrait and the cases drop their animation while they are more than a screen and a half off (`.far`, set by an observer); pausing is not enough. And the 400 dots are one repeating gradient, not 400 elements: as elements they were most of the first layout's cost on a phone.
 
@@ -43,14 +49,31 @@ Crawlers, answer engines and reader modes take the HTML as plain text, so the pa
 
 - Neighbouring inline elements get a space between them (`spaced()` in `src/lib/spaced.js`), even where a flex gap already separates them on screen.
 - Decoration that repeats what the text says is drawn by CSS from a `data-t` attribute: the letters of the name, the typed role line, the marquee's other copies. A case's wordmark is an image that only draws the name; the name is text beside it.
-- A proof figure is real text once and a labelled graphic to screen readers, so the count-up never changes what is read out. The figures only start from zero after the first scroll.
-- Every client mark on the wall is named by its alt text; its descriptor is text a pointer uncovers.
+- A proof figure is real text once and a labelled graphic to screen readers, so the count-up never changes what is read out. The figures only start from zero once a visitor scrolls, presses a key, touches or moves the pointer, or opens the page already scrolled; a crawler always reads the real numbers.
+- Every client mark on the wall is named by its alt text; its descriptor is text a pointer uncovers, and stands under the mark on a touch screen from tablets up.
 
 `verify-site.mjs` fails if any text is glued to its neighbour, and if any dash stands between words (ranges are "30-40%" or "2023 to 2024").
 
 ## The studio's address
 
 The page links nexerah.com. Its Organization node joins the structured data only once `NEXERAH_LIVE` is set in `site.js`, which `verify-site.mjs` checks against the live address; until the domain answers, the HTTP check warns.
+
+## The concierge
+
+An AI assistant on the page that answers visitors by voice or text: it says how Naman can help, shows the part of the page it is talking about and passes him a brief the visitor checks and sends. The page follows the agent's words rather than a tool call: a reply that names a figure, a build, a practice, the Sprint, the terms or the email brings that part of the page up and rings it (`concierge/named.js`), so every turn is one reply with nothing for the page to wait on. The agent runs on ElevenLabs. Its prompt, knowledge, voice and tool definitions are configured there, outside this public repo; its visible strings are `CONCIERGE` in `site.js`.
+
+It exists only in a build with `NEXT_PUBLIC_CONCIERGE=on` (`NEXT_PUBLIC_CONCIERGE=on npm run build`). Anything else builds the site exactly as it was: no launcher, no entry, the old headers, and both routes answer 404. The server reads `ELEVENLABS_API_KEY`, `ELEVENLABS_AGENT_ID`, `ELEVENLABS_WEBHOOK_SECRET`, `CONCIERGE_RESEND_KEY`, `CONCIERGE_FROM`, `CONCIERGE_TO`, `CONCIERGE_PAUSED` (the kill switch) and `CONCIERGE_ORIGINS`. `.env.example` lists them; their values live in Vercel and `.env.local`, never here.
+
+Nothing loads until the visitor asks. The page carries two small pieces: a launcher (`Concierge.jsx`), which renders nothing on the server, arrives only after the hero and steps aside while Contact is on screen, and an entry in Contact (`ConciergeEntry.jsx`), hidden until the page hydrates like the copy button. The panel and the ElevenLabs client are chunks of their own, fetched on a click; hover, focus or touch only warms the panel's chunk and opens a connection to ElevenLabs a moment early. Nothing reaches ElevenLabs or `/api/concierge` before a conversation starts. A voice call asks for the microphone inside the visitor's click and rests the page's motion while it lasts (`html[data-call]`). The audio worklets are copied into `public/vendor/elevenlabs/` before each build, so the Content Security Policy needs no `blob:` scripts.
+
+Two routes, neither cached:
+
+- `GET /api/concierge/session?mode=voice|text` mints a short-lived credential for one conversation, so the key never leaves the server. It refuses other methods (405), any origin but the site's own (403), an unknown mode (400) and a visitor asking too often (429, `LIMITS` in `src/lib/concierge-server.js`). It answers 503 when paused or unconfigured and 502 when ElevenLabs fails, and never passes on the key or an upstream body.
+- `POST /api/concierge/post-call` takes ElevenLabs' post-call webhook. It refuses a missing, forged or stale signature (401), ignores other agents and events, and emails Naman through Resend when the visitor left an address, sent a brief or stayed for three turns.
+
+For the checks, on 127.0.0.1 or localhost only, `localStorage['cg-mock'] = '1'` stands a scripted conversation in for ElevenLabs (the route is never called) and hands the agent's client tools to `window.__cgMock`, with `window.__cgMock.say(text)` to make the agent say a line the page then follows. `cg-mock-mic` set to `denied` or `missing` fails the microphone; `cg-mock-route` set to a status fails the route with it.
+
+`browser-checks.mjs` runs the concierge's gates (`C9.concierge-*`: quiet until asked, the launcher's arrival, the panel opening, axe on the open panel, a mock conversation) when the served page carries `[data-concierge]`, and reports them as skipped otherwise. `npm run budget` lists its chunks with budgets of their own (panel 25 KB, ElevenLabs client 190 KB, gzip) and fails if the home page references any. `concierge-routes.mjs` signs its test webhooks with the secret from the environment or `.env.local`; with the server's key set it mints a few short-lived sessions, and with `CONCIERGE_RESEND_KEY` set it sends one test email.
 
 ## Checks
 
@@ -59,7 +82,22 @@ npm run budget                                        # gzip JavaScript of the b
 node scripts/qa/css-survival.mjs                      # the motion CSS survived the minifier
 npm run verify -- http://127.0.0.1:3000               # HTML, metadata, routes and headers
 node scripts/qa/browser-checks.mjs http://127.0.0.1:3000   # layout, motion, accessibility in Chrome
+node scripts/qa/concierge-routes.mjs http://127.0.0.1:3000 # the concierge's two routes (a concierge build)
 npm run assets                                        # rebuild the avatar, share card and icons
+node scripts/qa/lcp-lab.mjs http://127.0.0.1:3000          # first paint and LCP on a throttled phone, by variant
+node scripts/qa/load-cost.mjs http://127.0.0.1:3000        # what the styles cost a phone to lay out, by variant
 ```
 
-When content changes, bump `UPDATED` in `src/content/site.js`. If the share card changes after it has been live, give the image a new file name so link previews refresh.
+`verify-site.mjs` scans the copy against a list of forbidden terms kept outside this public repo: pass its path as `TERMS_FILE` (without it the scan only warns locally and fails on a preview or production). On a protected Vercel preview, pass `VERCEL_BYPASS` too.
+
+Speed is judged on a deployed build, not a local one: on Windows the first layout waits on the operating system looking up next/font's `local()` fallback faces, which a phone never does, so local phone numbers read up to two seconds slow. After a deploy, run Lighthouse's mobile profile three times against the live address and read the median (Performance 95 or more; Accessibility, Best Practices and SEO 100), or PageSpeed Insights for field data:
+
+```sh
+npx -y lighthouse@13.5.0 https://www.namanbhayana.com/ --form-factor=mobile --screenEmulation.mobile --throttling-method=simulate --only-categories=performance,accessibility,best-practices,seo --output=json --output-path=./lh.json --quiet --chrome-flags="--headless=new"
+```
+
+`browser-checks.mjs` holds the phone's LCP to 2.5 s on a deployed build (`T3.lcp-budget`) and reports it, unjudged, locally.
+
+When content changes, bump `UPDATED` in `src/content/site.js`.
+
+Everything under `public/images`, `public/logos`, `public/work` and `public/og` is cached for a year as immutable, and the image optimiser keeps its copies as long. So a changed file always gets a new name, never the old one: change its path in `site.js` (`AVATAR.src`, `OG_IMAGE.url`, the wall's marks, the wordmarks); `npm run assets` writes the avatar and the share card under the names `site.js` gives them. The share card needs a new name in any case for link previews to refresh.

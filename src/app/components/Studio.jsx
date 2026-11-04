@@ -8,7 +8,7 @@ export default function Studio() {
       <div className="light light-studio para" aria-hidden="true" />
       <div className="wrap">
         <div className="studiohead" data-rv="seq">
-          <h2 id="studio-heading" className="h2b h2studio">
+          <h2 id="studio-heading" className="h2b">
             {STUDIO.heading.lead}
             <span className="emc">{STUDIO.heading.em}</span>
           </h2>

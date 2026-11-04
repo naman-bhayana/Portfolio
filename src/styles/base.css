@@ -58,24 +58,42 @@ main:focus {
 }
 
 .nb {
-  --bg: #05070B;
-  --s1: #070A10;
-  --s2: #0A0E16;
-  --s3: #0D121B;
-  --s4: #10161F;
-  --plate: #0A0F17;
-  --black: #030508;
-  --line: rgba(148, 170, 200, .13);
-  --line2: rgba(148, 170, 200, .22);
+  /* The ink ladder: six steps, each one notch closer to the reader. Every ground on the page is
+     one of them. */
+  --ink-0: #030508;
+  --ink-1: #05070B;
+  --ink-2: #080C13;
+  --ink-3: #0C1119;
+  --ink-4: #111826;
+  --ink-5: #182334;
+  --bg: var(--ink-1);
+  --s1: var(--ink-2);
+  --s2: var(--ink-3);
+  --s3: var(--ink-4);
+  --s4: var(--ink-5);
+  --plate: var(--ink-3);
+  --black: var(--ink-0);
+  --line: rgba(148, 170, 200, .12);
+  --line2: rgba(148, 170, 200, .2);
+  --edge: rgba(255, 255, 255, .07);
+  --ring: rgba(0, 225, 255, .34);
   --grid: rgba(120, 160, 210, .045);
   --fg: #EEF3F8;
   --soft: #C5CFDB;
   --muted: #93A0B1;
   --dim: #7B8798;
-  --cyan: #00E1FF;
-  --blue: #1A7DFF;
+  /* The accent scale, lightest to deepest; the cyan and the blue are two of its steps. */
+  --c-100: #CFF8FF;
+  --c-200: #9DEFFF;
+  --c-300: #5CE6FF;
+  --c-400: #00E1FF;
+  --c-500: #1A8CFF;
+  --c-600: #1A7DFF;
+  --c-700: #4F5BFF;
+  --cyan: var(--c-400);
+  --blue: var(--c-600);
   --grad: linear-gradient(100deg, #00E5FF 0%, #1A8CFF 55%, #4F5BFF 100%);
-  --gradbtn: linear-gradient(100deg, #00E5FF 0%, #2D9BFF 100%);
+  --gradbtn: var(--g-cta);
   --display: var(--font-poppins), system-ui, -apple-system, 'Segoe UI', sans-serif;
   --serif: var(--font-serif), 'Iowan Old Style', Georgia, serif;
   --mono: var(--font-mono), ui-monospace, 'Cascadia Mono', Consolas, monospace;
@@ -87,6 +105,37 @@ main:focus {
   --fig: clamp(52px, 5.4vw, 78px);
   --fighero: clamp(128px, 17vw, 248px);
   --lede2: clamp(17px, 1.35vw, 20px);
+  /* One system for the small type and the plates: every scene lede at one measure, every small
+     mono label at one size with two trackings (uppercase, sentence case), one serif accent line,
+     one radius for plates and one for the frames inside them. */
+  --measure: 62ch;
+  --label: 500 12.5px/1.5 var(--mono);
+  --trk-up: .12em;
+  --trk: .04em;
+  --accent: clamp(20px, 1.6vw, 24px);
+  --rplate: 24px;
+  --rframe: 14px;
+  /* Light: a glaze on every plate's top edge, the three section tiers (page, tint, band), one
+     bloom where the eye enters a band, a seam where a band meets the page, a glazed button. */
+  --g-glaze: linear-gradient(180deg, rgba(255, 255, 255, .075), rgba(255, 255, 255, 0) 46%);
+  --g-tint: linear-gradient(180deg, rgba(10, 15, 24, .56), rgba(10, 15, 24, .56));
+  --g-band: linear-gradient(180deg, rgba(17, 25, 39, .84), rgba(9, 13, 21, .78));
+  --band-flat: rgba(13, 19, 30, .8);
+  --g-bloom: radial-gradient(60% 55% at 88% -8%, rgba(0, 225, 255, .16), transparent 70%);
+  --g-bloom-l: radial-gradient(60% 55% at 8% 0%, rgba(26, 140, 255, .16), transparent 70%);
+  --g-seam: linear-gradient(90deg, transparent, rgba(0, 225, 255, .55) 28% 72%, transparent);
+  --g-cta: linear-gradient(180deg, #3BEBFF 0%, #00D4F5 48%, #1A8CFF 100%);
+  --g-glint: linear-gradient(104deg, transparent 42%, rgba(255, 255, 255, .07) 50%, transparent 58%);
+  /* Depth: stacked, low, tinted to the ground. The glow is for a hovered plate only. */
+  --sh-1: inset 0 1px 0 var(--edge), 0 1px 1px rgba(0, 0, 0, .35), 0 10px 20px -12px rgba(0, 0, 0, .7);
+  --sh-2: inset 0 1px 0 var(--edge), 0 2px 2px rgba(0, 0, 0, .3), 0 16px 32px -16px rgba(0, 0, 0, .8), 0 36px 72px -36px rgba(0, 0, 0, .9);
+  --sh-3: inset 0 1px 0 rgba(255, 255, 255, .1), 0 2px 2px rgba(0, 0, 0, .3), 0 24px 48px -20px rgba(0, 0, 0, .9), 0 0 0 1px rgba(0, 225, 255, .12), 0 40px 90px -40px rgba(0, 190, 255, .4);
+  /* Motion: three lengths and two curves for hovers and presses. */
+  --t-fast: 120ms;
+  --t-base: 180ms;
+  --t-slow: 320ms;
+  --ease-snap: cubic-bezier(.2, .7, .2, 1);
+  --ease-spring: cubic-bezier(.34, 1.3, .64, 1);
   position: relative;
   overflow-x: clip;
   background-color: var(--bg);
@@ -98,6 +147,13 @@ main:focus {
 .nb :where(a) {
   color: inherit;
   text-decoration: none;
+}
+
+/* Taps act at once (no double-tap zoom wait) and show the page's own pressed states rather
+   than the browser's grey flash. */
+.nb :where(a[href], button, label, input) {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .nb :where(img) {
@@ -162,7 +218,7 @@ main:focus {
   display: block;
   border-radius: 50%;
   filter: blur(60px);
-  opacity: .55;
+  opacity: .7;
   will-change: transform;
 }
 
@@ -171,7 +227,7 @@ main:focus {
   top: -18%;
   width: 52vw;
   height: 52vw;
-  background: radial-gradient(circle, rgba(0, 140, 255, .16), transparent 62%);
+  background: radial-gradient(circle, rgba(0, 140, 255, .2), transparent 62%);
 }
 
 .orb-b {
@@ -179,7 +235,7 @@ main:focus {
   bottom: -24%;
   width: 60vw;
   height: 60vw;
-  background: radial-gradient(circle, rgba(0, 225, 255, .09), transparent 62%);
+  background: radial-gradient(circle, rgba(0, 225, 255, .12), transparent 62%);
 }
 
 /* A film grain over the whole page. */
@@ -233,12 +289,23 @@ main:focus {
   z-index: 1;
 }
 
+/* The page is at least a screen tall, so a short one (the 404) keeps its footer at the foot. */
+.nb {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+.nb > main {
+  flex: 1 0 auto;
+}
+
 /* ---------------------------------------------------------------- shared type */
 
 .mono,
 .eyebrow {
-  font: 500 12.5px/1.4 var(--mono);
-  letter-spacing: .14em;
+  font: var(--label);
+  letter-spacing: var(--trk-up);
   text-transform: uppercase;
   color: var(--muted);
 }
@@ -276,6 +343,7 @@ main:focus {
   font: 700 var(--d1)/.96 var(--display);
   letter-spacing: -.045em;
   color: var(--fg);
+  text-wrap: balance;
 }
 
 .h2b {
@@ -285,22 +353,16 @@ main:focus {
   text-wrap: balance;
 }
 
-.h2c {
-  font: 700 clamp(46px, 7.2vw, 104px)/.98 var(--display);
-  letter-spacing: -.045em;
-  color: var(--fg);
-  text-wrap: balance;
-}
-
 .h3 {
   font: italic 400 clamp(24px, 2.1vw, 30px)/1.1 var(--serif);
   letter-spacing: -.01em;
   color: var(--fg);
+  text-wrap: balance;
 }
 
 .sub {
   margin-top: 22px;
-  max-width: 820px;
+  max-width: var(--measure);
   font-size: var(--lede2);
   line-height: 1.5;
   color: var(--muted);
@@ -316,15 +378,17 @@ main:focus {
 
 .src {
   margin-top: 14px;
-  font: 500 12.5px/1.5 var(--mono);
-  letter-spacing: .04em;
+  font: var(--label);
+  letter-spacing: var(--trk);
   color: var(--dim);
+  text-wrap: balance;
 }
 
 .cap {
-  font: 500 12.5px/1.5 var(--mono);
-  letter-spacing: .02em;
+  font: var(--label);
+  letter-spacing: var(--trk);
   color: var(--dim);
+  text-wrap: balance;
 }
 
 /* A figure's unit, set in the serif. */
@@ -341,21 +405,57 @@ main:focus {
 .ext {
   display: inline-block;
   padding: 14px 0;
-  font: 500 13px/1 var(--mono);
-  letter-spacing: .04em;
+  font: var(--label);
+  line-height: 1;
+  letter-spacing: var(--trk);
   color: var(--cyan);
   border-bottom: 1px solid rgba(0, 225, 255, .35);
-  transition: border-color .2s, color .2s;
 }
 
 .inl {
   color: var(--fg);
   border-bottom: 1px solid var(--line2);
-  transition: border-color .2s;
 }
 
-.ext:hover,
-.inl:hover {
+/* Every underlined link answers a pointer and the keyboard alike: a cyan rule draws from the
+   left over its own. The address link, set large, only turns its rule cyan. */
+.ext,
+.inl,
+.quiet a,
+.addr a {
+  transition: color var(--t-base), border-color var(--t-base);
+}
+
+.ext,
+.inl,
+.quiet a {
+  position: relative;
+}
+
+.ext::after,
+.inl::after,
+.quiet a::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+  background: var(--cyan);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  transition: transform var(--t-slow) var(--ease-snap);
+}
+
+:is(.ext, .inl, .quiet a):is(:hover, :focus-visible)::after {
+  transform: scaleX(1);
+}
+
+:is(.ext, .inl, .quiet a):is(:hover, :focus-visible) {
+  border-bottom-color: transparent;
+}
+
+.addr a:is(:hover, :focus-visible) {
   border-bottom-color: var(--cyan);
 }
 
@@ -364,6 +464,7 @@ main:focus {
 .scene {
   position: relative;
   overflow: clip;
+  padding: var(--pad) 0;
   scroll-margin-top: 80px;
 }
 
@@ -390,10 +491,6 @@ main:focus {
   max-width: 1100px;
 }
 
-.headrow .sub {
-  max-width: 60ch;
-}
-
 /* A plate with a border that lights up under the pointer. */
 .spotcard {
   position: relative;
@@ -406,7 +503,7 @@ main:focus {
   z-index: 3;
   border-radius: inherit;
   padding: 1px;
-  background: radial-gradient(360px circle at 50% 0%, rgba(0, 225, 255, .55), transparent 60%);
+  background: radial-gradient(420px circle at 50% 0%, rgba(0, 225, 255, .6), transparent 60%);
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
@@ -417,6 +514,13 @@ main:focus {
 
 .spotcard:hover::before {
   opacity: 1;
+}
+
+/* The avatar stage and the plates follow the pointer through a short transition (MotionIsland
+   sets the angle); the deck's cases are eased by script instead. :where() keeps this from
+   overriding a plate's own transitions, which list rotate with the rest (work.css, studio.css). */
+:where(.tilt:not(.case)) {
+  transition: rotate .15s linear;
 }
 
 /* A statement whose words catch the light once (motion.css). Each word is clipped to its own
@@ -438,13 +542,22 @@ main:focus {
 /* An accent phrase sets as one unit, as it does once the headline is split into words for its
    arrival (MotionIsland), so a headline wraps the same with motion, without it, or with no
    script at all. */
-:is(.h2, .h2b, .h2c) > :is(.emc, .emw, .grad) {
+:is(.h2, .h2b) > :is(.emc, .emw, .grad) {
   display: inline-block;
 }
 
 /* Focus moving up the page must not land under the sticky header (WCAG 2.4.11). */
 .nb :where(a[href], button) {
   scroll-margin-top: 120px;
+}
+
+/* Forced colours draw a backplate behind each line of text; at the headlines' tight leading it
+   would cover the descenders of the line above. */
+@media (forced-colors: active) {
+  .h2,
+  .h2b {
+    line-height: 1.1;
+  }
 }
 
 /* The 404 page. */
@@ -468,5 +581,27 @@ main:focus {
   :root {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+  }
+
+  /* Paper gets the page, not its decorations: the particle field, the light, the grain, the
+     reading line, the cursor and the motion switch. */
+  .field,
+  .ambient,
+  .grain,
+  .progress,
+  .cursor,
+  .pause,
+  #pause-motion {
+    display: none !important;
+  }
+
+  /* Printed mid-flight, the dots print as their grid. */
+  .assemble {
+    display: none !important;
+  }
+
+  .dotfield {
+    opacity: 1 !important;
+    transition: none !important;
   }
 }

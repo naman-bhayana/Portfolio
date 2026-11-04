@@ -16,11 +16,15 @@ export default function Infra() {
           <p className="sub">{INFRA.sub}</p>
         </div>
         <div className="railwrap">
+          {/* Three pulses travel the rail at their own speeds; each node flares as the first one
+              passes it, timed from its index (motion.css). */}
           <i className="rpulse" aria-hidden="true" />
+          <i className="rpulse rp2" aria-hidden="true" />
+          <i className="rpulse rp3" aria-hidden="true" />
           <ol className="rail" data-rv="rail" role="list">
-            {INFRA.nodes.map((node) => (
+            {INFRA.nodes.map((node, k) => (
               <li key={node.name} className="node">
-                <span className="rdot" aria-hidden="true" />
+                <span className="rdot" aria-hidden="true" style={{ '--k': k }} />
                 <h3>{node.name}</h3>
                 <p>{node.copy}</p>
               </li>

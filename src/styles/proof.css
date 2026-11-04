@@ -1,11 +1,12 @@
 /* Proof: the one figure on its stage, a dot per model beside it, then four figures in a row. */
 
+/* A tinted tier, lit where the figure stands. */
 .proof {
-  padding: var(--pad) 0 calc(var(--pad) * .75);
+  background: var(--g-tint);
 }
 
 .light-proof {
-  background: radial-gradient(640px 420px at 18% 62%, rgba(26, 125, 255, .12), transparent 70%);
+  background: radial-gradient(700px 440px at 14% 60%, rgba(26, 125, 255, .14), transparent 70%);
 }
 
 .pstage {
@@ -13,7 +14,8 @@
   display: grid;
   grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr);
   gap: 48px 64px;
-  align-items: center;
+  /* The figure's source and the field's caption share a baseline. */
+  align-items: end;
   margin-top: 56px;
 }
 
@@ -42,6 +44,21 @@
   color: #fff;
 }
 
+/* The ring that pulses out of the figure once it has landed (MotionIsland marks .landed). */
+.num::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 1.2em;
+  height: 1.2em;
+  margin: -.6em 0 0 -.6em;
+  border-radius: 50%;
+  border: 2px solid var(--c-300);
+  opacity: 0;
+  pointer-events: none;
+}
+
 .numtxt {
   display: inline-block;
 }
@@ -56,8 +73,10 @@
   text-wrap: pretty;
 }
 
+/* Muted rather than dim: it sits on the halo, which lifts the ground behind it. */
 .hfig .src {
   position: relative;
+  color: var(--muted);
 }
 
 .fieldwrap {
@@ -77,7 +96,9 @@
   transition: opacity .5s;
 }
 
+/* The dots' flight. It fades out as the grid fades in under it. */
 .assemble {
+  transition: opacity .5s;
   position: absolute;
   left: 0;
   top: 0;
@@ -97,9 +118,31 @@
   margin-top: 72px;
 }
 
+/* Each figure is a column: number, label, then its bars and its source at the foot, so the
+   sources line up across the row whatever the labels' lengths. */
 .figs > li {
+  position: relative;
+  display: flex;
+  flex-direction: column;
   padding: 6px 0 2px 26px;
-  border-left: 1px solid var(--line);
+  border-left: 1px solid transparent;
+}
+
+/* Each column's rule, drawn as the row arrives (motion.css). */
+.figs > li::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: linear-gradient(180deg, var(--cyan), rgba(0, 225, 255, .15));
+  transform-origin: 50% 0;
+}
+
+.figs .src {
+  margin-top: auto;
+  padding-top: 14px;
 }
 
 .num2 {
@@ -110,12 +153,18 @@
   white-space: nowrap;
 }
 
+/* The range figure's break opportunity (Proof.jsx) is for a phone under a reader's own text
+   spacing. Chrome honours <wbr> even under nowrap, so everywhere else it is removed. */
+.num2 wbr {
+  display: none;
+}
+
 .flab2 {
   margin-top: 14px;
   font-size: 15.5px;
   line-height: 1.5;
   color: var(--soft);
-  text-wrap: pretty;
+  text-wrap: balance;
 }
 
 /* One bar per live source. */
@@ -123,7 +172,7 @@
   display: flex;
   gap: 4px;
   height: 20px;
-  margin-top: 16px;
+  margin-top: 14px;
 }
 
 .bars i {

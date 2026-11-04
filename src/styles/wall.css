@@ -1,12 +1,28 @@
-/* The client wall: the hero's closing band. Marks only, each at the height that gives it the
-   same visual weight as the others (public/logos files are optical boxes: centring the file
-   centres the mark). The descriptor sits under the mark and shows under the pointer. */
+/* The client wall: the hero's closing band, and with the services strip under it one object,
+   the association band. The label sits centred between two fading rules; the marks sit in
+   centred rows with no cell rules, each at the height that gives it the same visual weight as
+   the others (public/logos files are optical boxes: centring the file centres the mark). The
+   descriptor sits under the mark: a pointer uncovers it, and on a touch screen from tablets up
+   it simply stands there. */
 
 .wall {
   position: relative;
   z-index: 1;
-  border-top: 1px solid var(--line);
-  background: rgba(8, 12, 18, .6);
+  background: var(--g-bloom-l), var(--band-flat);
+}
+
+/* The seam where the band meets the hero. */
+.wall::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  z-index: 2;
+  height: 1px;
+  background: var(--g-seam);
+  opacity: .7;
+  pointer-events: none;
 }
 
 /* One light crosses the band once it has arrived (motion.css). */
@@ -20,16 +36,36 @@
 }
 
 .wgrid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  grid-auto-rows: 84px;
+  padding: 34px 0 30px;
 }
 
 .wlabel {
-  grid-column: span 2;
   display: flex;
   align-items: center;
-  padding-right: 24px;
+  justify-content: center;
+  gap: 22px;
+  margin-bottom: 28px;
+}
+
+.wlabel::before,
+.wlabel::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(148, 170, 200, .24));
+}
+
+.wlabel::after {
+  background: linear-gradient(90deg, rgba(148, 170, 200, .24), transparent);
+}
+
+/* The marks: seven then six on a laptop. A fourteen-column grid, two columns a mark, lets the
+   shorter row start half a cell in, so it centres. */
+.wlist {
+  display: grid;
+  grid-template-columns: repeat(14, minmax(0, 1fr));
+  grid-auto-rows: 72px;
+  gap: 14px 0;
 }
 
 .wcell {
@@ -37,69 +73,92 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  grid-column: span 2;
+  padding: 0 10px;
 }
 
-.wgrid > li:nth-child(n+5) {
-  border-top: 1px solid var(--line);
+.wcell:nth-child(8) {
+  grid-column: 2 / span 2;
 }
 
-/* A short rule between neighbouring marks, never at the start of a row. */
-.wcell::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 50%;
-  width: 1px;
-  height: 36px;
-  margin-top: -18px;
-  background: var(--line);
-  display: none;
-}
+/* Five, four and four on a tablet; four and three threes on a narrow screen; three a row on a
+   phone, the thirteenth centred under them. On a tablet and a narrow screen each row after the first
+   starts on line 2 by an explicit grid-column on its first cell; on a narrow screen one of those
+   is the eighth cell's rule above, kept on purpose, since resetting it would leave the third row
+   ragged. On a phone the rows place themselves and the thirteenth starts on line 3. */
+@media (min-width: 961px) and (max-width: 1160px) {
+  .wlist {
+    grid-template-columns: repeat(10, minmax(0, 1fr));
+    grid-auto-rows: 66px;
+  }
 
-/* Which cells start a row depends on the columns, so each layout lists its own: five columns
-   with the label taking two, three with the label taking two, then two with the label taking one. */
-@media (min-width: 1161px) {
-  .wgrid > li:nth-child(3)::before,
-  .wgrid > li:nth-child(4)::before,
-  .wgrid > li:nth-child(6)::before,
-  .wgrid > li:nth-child(7)::before,
-  .wgrid > li:nth-child(8)::before,
-  .wgrid > li:nth-child(9)::before,
-  .wgrid > li:nth-child(11)::before,
-  .wgrid > li:nth-child(12)::before,
-  .wgrid > li:nth-child(13)::before,
-  .wgrid > li:nth-child(14)::before {
-    display: block;
+  .wcell:nth-child(8) {
+    grid-column: span 2;
+  }
+
+  .wcell:nth-child(6),
+  .wcell:nth-child(10) {
+    grid-column: 2 / span 2;
   }
 }
 
-@media (min-width: 601px) and (max-width: 1160px) {
-  .wgrid > li:nth-child(4)::before,
-  .wgrid > li:nth-child(5)::before,
-  .wgrid > li:nth-child(7)::before,
-  .wgrid > li:nth-child(8)::before,
-  .wgrid > li:nth-child(10)::before,
-  .wgrid > li:nth-child(11)::before,
-  .wgrid > li:nth-child(13)::before,
-  .wgrid > li:nth-child(14)::before {
-    display: block;
+@media (min-width: 601px) and (max-width: 960px) {
+  .wlist {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    grid-auto-rows: 62px;
+  }
+
+  .wcell:nth-child(5),
+  .wcell:nth-child(11) {
+    grid-column: 2 / span 2;
   }
 }
 
 @media (max-width: 600px) {
-  .wgrid > li:nth-child(4)::before,
-  .wgrid > li:nth-child(6)::before,
-  .wgrid > li:nth-child(8)::before,
-  .wgrid > li:nth-child(10)::before,
-  .wgrid > li:nth-child(12)::before,
-  .wgrid > li:nth-child(14)::before {
-    display: block;
+  .wgrid {
+    padding: 26px 0 22px;
+  }
+
+  .wlabel {
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+
+  .wlist {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    grid-auto-rows: 54px;
+    gap: 4px 0;
+  }
+
+  .wcell {
+    padding: 0 6px;
+  }
+
+  .wcell:nth-child(8) {
+    grid-column: span 2;
+  }
+
+  .wcell:nth-child(13) {
+    grid-column: 3 / span 2;
   }
 }
 
 .lg {
   width: auto;
   max-width: none;
+  transition: translate var(--t-base) var(--ease-snap), filter var(--t-base);
+}
+
+/* A mark never runs into its neighbour: in a narrow cell (a foldable, a small phone) the widest
+   marks scale down inside their own box rather than overflow it. */
+.wcell .lg {
+  max-width: calc(100% - 20px);
+  object-fit: contain;
+}
+
+.wcell:hover .lg {
+  translate: 0 -2px;
+  filter: brightness(1.15);
 }
 
 .lg-ideasiq {
@@ -111,7 +170,7 @@
 }
 
 .lg-artize {
-  height: 23.1px;
+  height: 26px;
 }
 
 .lg-docpad {
@@ -158,16 +217,49 @@
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 8px;
+  bottom: 2px;
   text-align: center;
-  font: 500 12px/1.3 var(--mono);
-  letter-spacing: .06em;
+  font: var(--label);
+  line-height: 1;
+  letter-spacing: var(--trk);
   color: var(--muted);
   opacity: 0;
-  transition: opacity .25s;
+  transition: opacity var(--t-base);
   pointer-events: none;
 }
 
-.wcell:hover .wdesc {
-  opacity: 1;
+/* Only a real pointer uncovers it, and not in the phone layout, whose cells are too short for
+   both: a tap on a phone leaves a sticky :hover behind. */
+@media (hover: hover) and (min-width: 601px) {
+  .wcell:hover .wdesc {
+    opacity: 1;
+  }
+}
+
+/* Nothing hovers on a touch screen. From tablets up the descriptor stands under its mark, in
+   rows tall enough for both; phones keep the marks alone. */
+@media (hover: none) and (min-width: 601px) {
+  /* The gap between rows is wider than the one between a mark and its descriptor, so each
+     descriptor reads as its own mark's. */
+  .wlist {
+    grid-auto-rows: 80px;
+    row-gap: 22px;
+  }
+
+  .wcell {
+    padding-bottom: 22px;
+  }
+
+  .wdesc {
+    opacity: 1;
+  }
+}
+
+/* Forced colours would set the white marks on a light ground: the band keeps its own, edge to
+   edge. */
+@media (forced-colors: active) {
+  .wall {
+    forced-color-adjust: none;
+    background: var(--black);
+  }
 }

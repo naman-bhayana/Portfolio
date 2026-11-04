@@ -14,10 +14,12 @@
 
 # production
 /build
+/public/vendor/elevenlabs/
 
 # misc
 .DS_Store
 *.pem
+/.playwright-mcp/
 
 # debug
 npm-debug.log*

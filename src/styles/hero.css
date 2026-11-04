@@ -258,15 +258,70 @@
   border-radius: 50%;
   background: radial-gradient(circle at 50% 36%, #17324E 0%, #0D1724 46%, #090E15 76%);
   border: 1px solid var(--line);
-  box-shadow: inset 0 -40px 80px rgba(0, 0, 0, .5), 0 40px 120px -30px rgba(0, 150, 255, .5);
+  box-shadow: inset 0 -40px 80px rgba(0, 0, 0, .5), 0 0 0 1px rgba(148, 170, 200, .1), 0 50px 140px -30px rgba(0, 150, 255, .6);
 }
 
 .halo {
   position: absolute;
   inset: 18% 18% 8%;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(0, 200, 255, .36), transparent 65%);
+  background: radial-gradient(circle, rgba(0, 210, 255, .42), transparent 65%);
   filter: blur(24px);
+}
+
+/* Two rings behind the avatar, turning in opposite senses (motion.css), a satellite riding each:
+   a broad soft arc close in, a thin bright one further out. */
+.sring {
+  position: absolute;
+  inset: -3%;
+  border-radius: 50%;
+  pointer-events: none;
+  transform: translateZ(6px);
+}
+
+.sring.b {
+  inset: -13%;
+}
+
+/* The arc is a layer of its own, so its mask and blur leave the satellite whole and bright. */
+.sring::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+}
+
+.sring.a::before {
+  background: conic-gradient(from 180deg, transparent 0 58%, rgba(0, 225, 255, .9) 76%, rgba(26, 140, 255, .85) 88%, transparent 97%);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 18px), #000 calc(100% - 16px), #000 calc(100% - 3px), transparent 100%);
+  mask: radial-gradient(farthest-side, transparent calc(100% - 18px), #000 calc(100% - 16px), #000 calc(100% - 3px), transparent 100%);
+  filter: blur(3px);
+}
+
+.sring.b::before {
+  background: conic-gradient(from 0deg, transparent 0 72%, rgba(0, 225, 255, .75) 93%, transparent 100%);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1px));
+}
+
+.sring::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: -3px;
+  width: 7px;
+  height: 7px;
+  margin-left: -3.5px;
+  border-radius: 50%;
+  background: var(--c-200);
+  box-shadow: 0 0 16px 2px var(--cyan);
+}
+
+.sring.a::after {
+  top: 7px;
+  width: 5px;
+  height: 5px;
+  margin-left: -2.5px;
 }
 
 .cut {
@@ -294,49 +349,91 @@
   position: absolute;
   display: flex;
   align-items: center;
-  gap: 9px;
-  padding: 10px 14px;
-  border-radius: 14px;
-  background: rgba(12, 19, 28, .84);
-  border: 1px solid var(--line2);
+  gap: 10px;
+  padding: 12px 17px;
+  border-radius: var(--rframe);
+  background: var(--g-glaze), rgba(14, 21, 32, .86);
+  border: 1px solid rgba(148, 170, 200, .26);
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 600;
   line-height: 1.3;
   white-space: nowrap;
-  box-shadow: 0 20px 40px -20px rgba(0, 0, 0, .8);
+  box-shadow: inset 0 1px 0 var(--edge), 0 20px 40px -20px rgba(0, 0, 0, .9);
   transform: translateZ(40px);
+  transition: transform var(--t-slow) var(--ease-spring), border-color var(--t-base);
+}
+
+.chip:hover {
+  border-color: var(--ring);
 }
 
 .chip .dm {
-  width: 7px;
-  height: 7px;
+  flex: none;
+  width: 8px;
+  height: 8px;
   border-radius: 2px;
   background: var(--cyan);
   transform: rotate(45deg);
   box-shadow: 0 0 10px var(--cyan);
 }
 
+/* Round the avatar and clear of the face: three down the left, three down the right. The right
+   ones end inside the stage, which has only the page's margin beside it from 1280 px down, and
+   standing proud of a tilting stage draws a chip a little further out than its box. */
 .c1 {
-  top: 8%;
-  left: -6%;
+  top: 3%;
+  left: -10%;
+}
+
+.c2 {
+  top: 15%;
+  right: 3%;
 }
 
 .c3 {
-  bottom: 22%;
-  left: -9%;
+  top: 45%;
+  left: -20%;
+}
+
+.c4 {
+  top: 58%;
+  right: 3%;
+}
+
+.c5 {
+  top: 76%;
+  left: -7%;
+}
+
+.c6 {
+  top: 89%;
+  right: 8%;
 }
 
 /* ---------------------------------------------------------------- the marquee */
 
+/* The services strip closes the association band: the same ground as the wall above it, a faint
+   rule between the two, the band's seam under it. */
 .mq {
   position: relative;
   z-index: 1;
-  border-block: 1px solid var(--line);
-  background: rgba(8, 12, 18, .66);
+  border-top: 1px solid rgba(148, 170, 200, .1);
+  background: var(--band-flat);
   overflow: clip;
   white-space: nowrap;
+}
+
+.mq::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--g-seam);
+  pointer-events: none;
 }
 
 .mqt {
@@ -351,12 +448,12 @@
 }
 
 .mqg {
-  padding: 20px 20px 20px 40px;
+  padding: 17px 20px 17px 40px;
   list-style: none;
 }
 
 .mqg li {
-  font: italic 400 30px/1.1 var(--serif);
+  font: italic 400 27px/1.1 var(--serif);
   color: #CBD5E1;
 }
 
@@ -370,4 +467,29 @@
   background: var(--cyan);
   transform: rotate(45deg);
   box-shadow: 0 0 12px var(--cyan);
+}
+
+/* Where the strip does not move (less motion asked for, or on paper) a cut-off line would hide
+   most of the list for good, so the list wraps and shows each service once. */
+@media (prefers-reduced-motion: reduce), print {
+  .mq {
+    white-space: normal;
+  }
+
+  .mqt {
+    display: block;
+  }
+
+  .mq .mqg {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px 32px;
+    padding: 17px 20px;
+  }
+
+  .mq .mqg[aria-hidden="true"],
+  .mq .mqg li:last-child::after {
+    display: none;
+  }
 }

@@ -4,10 +4,22 @@
   position: sticky;
   top: 0;
   z-index: 30;
-  background: rgba(5, 7, 11, .68);
+  background: rgba(5, 7, 11, .62);
   -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid transparent;
+}
+
+/* A seam under the glass. */
+.nav::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(148, 170, 200, .08), rgba(0, 225, 255, .35) 50%, rgba(148, 170, 200, .08));
+  pointer-events: none;
 }
 
 .navin {
@@ -40,6 +52,7 @@
   font-weight: 700;
   font-size: 14px;
   box-shadow: 0 0 26px rgba(0, 190, 255, .45);
+  transition: transform .2s var(--ease);
 }
 
 .links {
@@ -50,12 +63,13 @@
 }
 
 .links a {
+  position: relative;
   display: inline-flex;
   align-items: center;
   min-height: 44px;
   padding: 0 14px;
   border-radius: 999px;
-  transition: color .2s, background .2s;
+  transition: color .2s, background .2s, opacity .1s;
 }
 
 .links a:hover {
@@ -63,11 +77,34 @@
   background: rgba(255, 255, 255, .05);
 }
 
-/* The section on screen (MotionIsland sets aria-current). */
+/* The section on screen (MotionIsland sets aria-current): a cyan line along its foot, one bar
+   for the whole row that slides from link to link (MotionIsland sets --x, --w and --on). */
+.links {
+  position: relative;
+}
+
 .links a[aria-current] {
   color: var(--fg);
-  border-radius: 0;
-  box-shadow: inset 0 -2px 0 var(--cyan);
+}
+
+.navline {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100px;
+  height: 2px;
+  background: var(--cyan);
+  transform: translateX(var(--x, 0px)) scaleX(calc(var(--w, 0) / 100));
+  transform-origin: 0 50%;
+  opacity: var(--on, 0);
+  transition: transform var(--t-slow) var(--ease-snap), opacity var(--t-base);
+  pointer-events: none;
+}
+
+/* A press answers at once: links dim, buttons settle a touch. */
+.links a:active,
+.footl a:active {
+  opacity: .7;
 }
 
 .pill {
@@ -81,7 +118,29 @@
   font-weight: 600;
   font-size: 15px;
   white-space: nowrap;
-  transition: transform .25s var(--ease), box-shadow .25s, background .25s;
+  position: relative;
+  isolation: isolate;
+  transition: transform var(--t-slow) var(--ease-snap), translate var(--t-slow) var(--ease-spring), box-shadow var(--t-slow), background var(--t-slow);
+}
+
+/* The liquid light: a highlight under the pointer (MotionIsland sets --mx and --my), under
+   the label. */
+.pill .lq {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(130px circle at var(--mx, 50%) var(--my, 50%), rgba(255, 255, 255, .34), transparent 62%);
+  opacity: 0;
+  transition: opacity var(--t-base);
+  pointer-events: none;
+}
+
+.pill-ghost .lq {
+  background: radial-gradient(130px circle at var(--mx, 50%) var(--my, 50%), rgba(0, 225, 255, .22), transparent 62%);
+}
+
+.pill:hover .lq {
+  opacity: 1;
 }
 
 .ic {
@@ -112,12 +171,13 @@ button.pill {
   overflow: clip;
   background: var(--gradbtn);
   color: #03111B;
-  box-shadow: 0 12px 34px -10px rgba(0, 170, 255, .65);
+  /* glazed: a highlight on the top edge, a shade at the foot */
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .4), inset 0 -1px 0 rgba(0, 40, 80, .25), 0 12px 34px -10px rgba(0, 170, 255, .65);
 }
 
 .pill-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 18px 46px -10px rgba(0, 170, 255, .95);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .5), inset 0 -1px 0 rgba(0, 40, 80, .25), 0 18px 46px -10px rgba(0, 170, 255, .95);
 }
 
 .pill-primary::after {
@@ -132,8 +192,10 @@ button.pill {
 
 .pill-ghost {
   position: relative;
+  overflow: clip;
   color: var(--fg);
-  background: rgba(255, 255, 255, .02);
+  background: rgba(255, 255, 255, .025);
+  box-shadow: inset 0 1px 0 var(--edge);
 }
 
 .pill-ghost::before {
@@ -151,7 +213,7 @@ button.pill {
 
 .pill-ghost:hover {
   transform: translateY(-2px);
-  background: rgba(0, 180, 255, .08);
+  background: rgba(0, 180, 255, .09);
 }
 
 .navcta {
@@ -161,8 +223,20 @@ button.pill {
 }
 
 .foot {
-  border-top: 1px solid var(--line);
-  background: rgba(3, 5, 8, .78);
+  position: relative;
+  background: var(--ink-0);
+}
+
+.foot::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  z-index: 2;
+  height: 1px;
+  background: var(--g-seam);
+  pointer-events: none;
 }
 
 .footin {
@@ -197,7 +271,7 @@ button.pill {
   padding: 0 12px;
   font-size: 13.5px;
   color: var(--muted);
-  transition: color .2s;
+  transition: color .2s, opacity .1s;
 }
 
 .footl a:hover {
@@ -229,7 +303,7 @@ button.pill {
   border: 1px solid var(--line2);
   color: var(--muted);
   cursor: pointer;
-  transition: color .2s, border-color .2s;
+  transition: color var(--t-base), border-color var(--t-base), transform var(--t-fast) var(--ease-snap), translate var(--t-slow) var(--ease-spring);
 }
 
 .pause:hover {
@@ -237,23 +311,51 @@ button.pill {
   color: var(--fg);
 }
 
+/* Both icons share the button's one cell; the switch cross-fades from one to the other. */
 .pause .ic {
+  grid-area: 1 / 1;
   fill: currentColor;
   stroke: none;
+  transition: opacity .2s, transform .2s var(--ease);
 }
 
 .pause .when-paused,
 #pause-motion:checked ~ .nb .pause .when-playing {
-  display: none;
+  opacity: 0;
+  transform: scale(.6);
 }
 
 #pause-motion:checked ~ .nb .pause .when-paused {
-  display: block;
+  opacity: 1;
+  transform: none;
 }
 
 #pause-motion:focus-visible ~ .nb .pause {
   outline: 2px solid #00E1FF;
   outline-offset: 3px;
+}
+
+/* The small movements of a hover or a press, only for visitors who have not asked for less. */
+@media (prefers-reduced-motion: no-preference) {
+  .brand:focus-visible .mark {
+    transform: rotate(-8deg) scale(1.06);
+  }
+
+  .pill:active {
+    transform: scale(.97);
+    transition-duration: var(--t-fast);
+  }
+
+  .pause:active {
+    transform: scale(.92);
+  }
+}
+
+/* Only a real pointer turns the monogram: a tap on a touch screen leaves a sticky :hover. */
+@media (prefers-reduced-motion: no-preference) and (hover: hover) {
+  .brand:hover .mark {
+    transform: rotate(-8deg) scale(1.06);
+  }
 }
 
 /* Visitors who already asked for less motion get none, so there is nothing to pause. */
@@ -262,14 +364,20 @@ button.pill {
   .pause {
     display: none;
   }
+
+  /* The line under the nav moves to the current section at once instead of sliding there. */
+  .navline {
+    transition: none;
+  }
 }
 
 /* Forced colours drop backgrounds, and with them the gradient that draws these outlines.
-   `button.pill` is named because the button reset above removes its border. */
+   `button.pill` and the copy button are named because their resets remove the border. */
 @media (forced-colors: active) {
   .pill-primary,
   .pill-ghost,
-  button.pill {
+  button.pill,
+  button.copybtn {
     border: 1px solid ButtonText;
   }
 }

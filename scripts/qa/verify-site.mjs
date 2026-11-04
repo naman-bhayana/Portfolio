@@ -11,7 +11,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { parse } from 'node-html-parser'
-import { CHROME_UA, HTML_ACCEPT, get, headerMap, rawGet } from './lib/net.mjs'
+import { CHROME_UA, HTML_ACCEPT, describeError, get, headerMap, rawGet, requestHeaders, setBypassOrigin } from './lib/net.mjs'
 import {
   findEmoji,
   gluedText,
@@ -56,6 +56,7 @@ try {
   process.exit(2)
 }
 const BASE = base.origin
+setBypassOrigin(BASE)
 const PROD = new URL(SITE_URL)
 const PROD_HOSTS = new Set([PROD.host, PROD.host.replace(/^www\./, '')])
 const pIdx = argv.indexOf('--profile')
@@ -188,6 +189,28 @@ if (ldScripts.length) {
 }
 const ldStrings = ld ? stringLeaves(ld) : []
 
+// A concierge build (NEXT_PUBLIC_CONCIERGE=on) is known by its headers: it allows the microphone
+// on this origin. T7 and T10 hold the routes and the headers to the build that is being served.
+const permissionsOf = (value) =>
+  new Map(
+    String(value ?? '')
+      .split(',')
+      .map((d) => d.split('='))
+      .filter((d) => d.length === 2 && d[0].trim())
+      .map(([feature, allow]) => [feature.trim().toLowerCase(), allow.replace(/\s+/g, ' ').trim()]),
+  )
+const cspSources = (policy, name) => {
+  const directive = String(policy ?? '')
+    .split(';')
+    .map((d) => d.trim().split(/\s+/))
+    .find(([n]) => n.toLowerCase() === name)
+  return directive ? directive.slice(1) : null
+}
+const CONCIERGE_HOSTS = ['https://api.elevenlabs.io', 'wss://api.elevenlabs.io', 'https://livekit.rtc.elevenlabs.io', 'wss://livekit.rtc.elevenlabs.io']
+const CONCIERGE_ON = permissionsOf(home.headers?.get?.('permissions-policy')).get('microphone') === '(self)'
+const CSP_HEADER = CONCIERGE_ON ? 'content-security-policy-report-only' : 'content-security-policy'
+const OTHER_CSP_HEADER = CONCIERGE_ON ? 'content-security-policy' : 'content-security-policy-report-only'
+
 const textOrEmpty = (r) => (r.ok && r.status === 200 ? r.text : '')
 // Corpora shared by C2 (terms, emoji) and C4 (voice). `voice` marks prose-like corpora.
 const corpora = [
@@ -302,17 +325,31 @@ await section('C1', async () => {
   check(!!workRoot && JSON.stringify(headings) === JSON.stringify(want), 'C1.work-h3', `#work headings name all ${names.length} builds in order`,
     workRoot ? `#work headings are [${headings.join(' | ')}], expected [${want.join(' | ')}]` : 'no #work section')
 
-  // The number of builds is typed into the copy by hand, as a figure and as a word. Hold
-  // every mention to the length of the list.
+  // The number of builds is typed into the copy by hand, as a word. Hold each mention to the
+  // list it counts: the bio counts every build, the index label the index's own rows.
   const NUMBER_WORDS = 'zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty'.split(' ')
-  const asWord = new RegExp(`\\b${NUMBER_WORDS[names.length] ?? names.length}\\b`, 'i')
+  const asWord = (n) => new RegExp(`\\b${NUMBER_WORDS[n] ?? n}\\b`, 'i')
+  const inIndex = WORK.index.reduce((sum, row) => sum + row.builds.length, 0)
   const mentions = {
-    'WORK.indexLabel': asWord.test(WORK.indexLabel),
-    'ABOUT.bio': asWord.test(ABOUT.bio.map((s) => (typeof s === 'string' ? s : s.text)).join('')),
+    [`WORK.indexLabel (${inIndex})`]: asWord(inIndex).test(WORK.indexLabel),
+    [`ABOUT.bio (${names.length})`]: asWord(names.length).test(ABOUT.bio.map((s) => (typeof s === 'string' ? s : s.text)).join('')),
   }
   const stale = Object.keys(mentions).filter((place) => !mentions[place])
-  check(!stale.length, 'C1.build-count', `${names.length} builds, and the copy says so in ${Object.keys(mentions).length} places`,
-    `there are ${names.length} builds, but ${stale.join(', ')} says otherwise`)
+  check(!stale.length, 'C1.build-count', `${names.length} builds, ${inIndex} of them in the index, and the copy says so in each place`,
+    `the copy's count is stale in ${stale.join(', ')}`)
+
+  // The index: each row carries exactly its builds' links from site.js, in order, labelled as
+  // there (the label names the build).
+  const ixRows = (workRoot || body).querySelectorAll('.ix > li')
+  const ixProblems = []
+  if (ixRows.length !== WORK.index.length) ixProblems.push(`${ixRows.length} index rows, expected ${WORK.index.length}`)
+  WORK.index.forEach((row, i) => {
+    const want = row.builds.flatMap((b) => b.links ?? []).map((l) => `${l.label} -> ${l.href}`)
+    const got = (ixRows[i]?.querySelectorAll('.ixlinks a') ?? []).map((a) => `${norm(a.text)} -> ${a.getAttribute('href')}`)
+    if (JSON.stringify(got) !== JSON.stringify(want)) ixProblems.push(`row ${i + 1}: [${got.join(', ')}], expected [${want.join(', ')}]`)
+  })
+  const ixCount = WORK.index.reduce((n, row) => n + row.builds.reduce((m, b) => m + (b.links?.length ?? 0), 0), 0)
+  check(!ixProblems.length, 'C1.index-links', `${ixCount} index links, each row's in order and named for its build`, ixProblems.join('; '))
 
   // The studio block, and its address linked from there and the footer only
   const studio = [
@@ -381,14 +418,17 @@ await section('C1', async () => {
     .filter((e) => /opacity\s*:\s*0*(\.0*)?\s*(;|!|$)|visibility\s*:\s*hidden/i.test(e.getAttribute('style') || ''))
   check(!hiddenStyle.length, 'C1.inline-hidden', 'no inline opacity:0 or visibility:hidden',
     `${hiddenStyle.length} element(s) hidden by inline style, first <${tagOf(hiddenStyle[0])}> style=${q(hiddenStyle[0]?.getAttribute('style') ?? '')}`)
-  const markedCopy = (e) => {
-    for (let p = e; p && p.nodeType === 1; p = p.parentNode) if (p.hasAttribute && p.hasAttribute('data-copy-email')) return true
+  // Enhancements that need JavaScript stay hidden until the page hydrates: the copy button
+  // (data-copy-email) and the concierge's inline entry (data-concierge).
+  const enhancement = (e) => {
+    for (let p = e; p && p.nodeType === 1; p = p.parentNode)
+      if (p.hasAttribute && (p.hasAttribute('data-copy-email') || p.hasAttribute('data-concierge'))) return true
     return false
   }
   // Empty hidden elements are framework markers (Next renders <div hidden><!--$--><!--/$--></div>);
   // only hidden elements that carry content count.
-  const hidden = body.querySelectorAll('[hidden]').filter((e) => !markedCopy(e) && (textOf(e) || e.querySelector('*')))
-  check(!hidden.length, 'C1.hidden-attr', 'no [hidden] content outside data-copy-email',
+  const hidden = body.querySelectorAll('[hidden]').filter((e) => !enhancement(e) && (textOf(e) || e.querySelector('*')))
+  check(!hidden.length, 'C1.hidden-attr', 'no [hidden] content outside data-copy-email and data-concierge',
     `${hidden.length} [hidden] element(s), first <${tagOf(hidden[0])}> ${q(textOf(hidden[0]), 50)}`)
 })
 
@@ -497,6 +537,12 @@ await section('C4', async () => {
     `\\b(?:19|20)\\d{2}\\s*${H}\\s*(?:\\d{2}(?:\\d{2})?\\b(?!${H}\\d)|present\\b|now\\b|today\\b)` +
       `|\\b${MON}(?:\\s+\\d{4})?\\s*${H}\\s*(?:${MON}\\s+)?(?:\\d{4}|present)\\b`, 'i'), voice, 'hyphenated range')
   scan('C4.weak-verbs', /\b(helped with|worked on|responsible for)\b/i, voice)
+
+  // Link policy: the private builds are never linked, and AlphaGPT never to its code.
+  const hrefs = doc.querySelectorAll('a[href]').map((a) => a.getAttribute('href'))
+  const llmsLinks = [...(llms.text ?? '').matchAll(/\]\((https?:[^)\s]+)\)/g)].map((m) => m[1])
+  const policy = [...hrefs, ...llmsLinks].filter((h) => /myleadsiq|docpad|techlive|allianz/i.test(h) || /github\.com\/[^/]+\/alpha/i.test(h))
+  check(!policy.length, 'C4.link-policy', 'no link to myLeadsIQ, DocPad, Techlive or Allianz, and none to AlphaGPT\'s code', `linked: ${[...new Set(policy)].join(', ')}`)
 
   // ideasIQ casing: only 'ideasIQ' or the domain 'ideasiq.ai'
   let badCase = 0
@@ -627,6 +673,18 @@ await section('SHARE', async () => {
     .filter((tag) => /as="font"/.test(tag) && /\/_next\/static\/media\/[^"]+\.p\.woff2/.test(tag))
   if (fontPreloads.length === FONT_PRELOADS) pass('SHARE.font-preload', `${FONT_PRELOADS} woff2 font preloads in <head>`)
   else (PROFILE === 'local' ? warn : fail)('SHARE.font-preload', `${fontPreloads.length} font preload link(s), expected ${FONT_PRELOADS}`)
+
+  // One image is preloaded: the avatar, the first screen's largest paint, at high priority.
+  // React preloads every eager <img> it renders unless it is lazy or low priority; the wall's
+  // marks and the wordmarks are, so they do not share the line with the CSS and fonts.
+  const imagePreloads = [...(home.text ?? '').matchAll(/<link\b[^>]*rel="preload"[^>]*>/g)].map((m) => m[0]).filter((tag) => /as="image"/.test(tag))
+  const avatarFile = encodeURIComponent(AVATAR.src)
+  check(
+    imagePreloads.length === 1 && imagePreloads[0].includes(avatarFile) && /fetchpriority="high"/i.test(imagePreloads[0]),
+    'T6.image-preloads',
+    'one image preload in <head>: the avatar, high priority',
+    `${imagePreloads.length} image preload(s): ${imagePreloads.map((t) => q(t, 90)).slice(0, 4).join(' | ')}`,
+  )
 })
 
 // ---------------------------------------------------------------- LD
@@ -820,6 +878,21 @@ await section('T7', async () => {
   if (!urls.length) warn('T7.listed-url', 'no same-site URLs found in sitemap.xml or llms.txt')
   else if (!linkBad) pass('T7.listed-url', `${urls.length} same-site URLs from sitemap.xml and llms.txt return 200`)
 
+  // Every build's address answers, after its redirects, as a visitor's browser would see it.
+  // A site behind a bot challenge (403 or 429 with cf-mitigated) and a free-tier demo still
+  // waking (no answer in 60 s, or 502 to 504 while it starts) are warnings; anything else that
+  // does not answer 2xx fails.
+  const buildLinks = [...new Map(BUILDS.flatMap((b) => (b.link ? [b.link] : (b.links ?? []))).map((l) => [l.href, l])).values()]
+  const buildRes = await Promise.all(buildLinks.map(async (l) => [l, await get(l.href, { accept: HTML_ACCEPT, timeoutMs: /\.onrender\.com/.test(l.href) ? 60000 : 20000 })]))
+  for (const [l, r] of buildRes) {
+    const challenged = (r.status === 403 || r.status === 429) && !!r.headers?.get('cf-mitigated')
+    if (r.status >= 200 && r.status < 300) pass('T7.build-link', `${l.label} ${r.status}${r.finalUrl && r.finalUrl !== l.href ? ` (${r.finalUrl})` : ''}`)
+    else if (challenged) warn('T7.build-link', `${l.label} ${r.status} behind a bot challenge (${r.headers?.get('cf-mitigated') ?? 'no cf-mitigated header'}); check it in a browser`)
+    else if ((r.timedOut || [502, 503, 504].includes(r.status)) && /\.onrender\.com/.test(l.href))
+      warn('T7.build-link', `${l.label}: the free-tier demo is still waking (${r.timedOut ? 'no answer in 60 s' : `HTTP ${r.status}`}); check it in a browser`)
+    else fail('T7.build-link', `${l.label} ${l.href} -> ${fetchErr(r)}`)
+  }
+
   // /resume
   const rs = await get(at(RESUME_PATH), { redirect: 'manual' })
   if (!rs.ok) fail('T7.resume', `${RESUME_PATH} request failed: ${rs.error}`)
@@ -836,6 +909,68 @@ await section('T7', async () => {
   for (const p of ['/api/send', '/this-path-should-not-exist']) {
     const r = await get(at(p), { redirect: 'manual' })
     check(r.status === 404, `T7.404`, `${p} 404`, `${p} -> ${fetchErr(r)}, expected 404`)
+  }
+
+  // The concierge's routes: a session goes only to the site's own pages, and the webhook takes
+  // only signed requests. Both are refused before anything reaches ElevenLabs or Resend, and no
+  // answer may be stored. A deployment from before the routes answers 404.
+  const ask = async (p, init) => {
+    try {
+      const r = await fetch(at(p), {
+        ...init,
+        headers: { ...requestHeaders(undefined, 'application/json'), ...init.headers },
+        redirect: 'manual',
+        signal: AbortSignal.timeout(20000),
+      })
+      const text = await r.text()
+      let error = null
+      try {
+        error = JSON.parse(text)?.error ?? null
+      } catch {}
+      return { ok: true, status: r.status, noStore: /\bno-store\b/i.test(r.headers.get('cache-control') || ''), error }
+    } catch (e) {
+      return { ok: false, status: 0, error: describeError(e) }
+    }
+  }
+  const routes = [
+    {
+      id: 'T7.concierge-session',
+      what: 'GET /api/concierge/session from another site',
+      want: 403,
+      error: 'origin',
+      r: await ask('/api/concierge/session?mode=text', {
+        headers: { origin: 'https://cross-site.example', 'sec-fetch-site': 'cross-site', 'sec-fetch-mode': 'cors' },
+      }),
+    },
+    {
+      id: 'T7.concierge-webhook',
+      what: 'unsigned POST /api/concierge/post-call',
+      want: 401,
+      r: await ask('/api/concierge/post-call', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ type: 'post_call_transcription', data: {} }),
+      }),
+    },
+  ]
+  for (const { id, what, want, error, r } of routes) {
+    if (!r.ok) fail(id, `${what}: request failed: ${r.error}`)
+    else if (r.status === 404) {
+      // Without the concierge the routes answer as if they did not exist.
+      if (CONCIERGE_ON) fail(id, `${what} -> 404 on a concierge build: the routes are missing`)
+      else pass(id, `${what} -> 404 (no concierge in this build)`)
+    }
+    else if (r.status === 503 && r.error === 'unconfigured' && want === 401) {
+      const detail = `${what} -> 503: ELEVENLABS_WEBHOOK_SECRET or ELEVENLABS_AGENT_ID is unset`
+      if (CONCIERGE_ON) fail(id, `${detail} on a concierge build`)
+      else warn(id, `${detail} (no concierge in this build)`)
+    } else {
+      const problems = []
+      if (r.status !== want) problems.push(`HTTP ${r.status}, expected ${want}`)
+      if (error && r.error !== error) problems.push(`error ${q(r.error ?? '')}, expected ${q(error)}`)
+      if (!r.noStore) problems.push('no Cache-Control: no-store')
+      check(!problems.length, id, `${what} -> ${want}${error ? ` ${error}` : ''}, no-store`, `${what}: ${problems.join('; ')}`)
+    }
   }
 
   // The 404 page must not inherit the home page's indexing or canonical tags.
@@ -876,7 +1011,7 @@ await section('T10', async () => {
     'permissions-policy',
     'x-frame-options',
     'cross-origin-opener-policy',
-    'content-security-policy-report-only',
+    CSP_HEADER,
   ]
   const results = await Promise.all(paths.map(async (p) => [p, await rawGet(at(p))]))
   for (const [p, r] of results) {
@@ -897,12 +1032,50 @@ await section('T10', async () => {
     if (h.has('x-powered-by')) fails.push('x-powered-by present')
     const pp = (h.get('permissions-policy') || []).join(',')
     for (const bad of ['clipboard', 'browsing-topics']) if (pp.includes(bad)) fails.push(`permissions-policy mentions ${bad}`)
-    const csp = (h.get('content-security-policy-report-only') || []).join(';')
-    for (const bad of ['nonce-', 'upgrade-insecure-requests']) if (csp.includes(bad)) fails.push(`CSP mentions ${bad}`)
+    // The policy is enforced; a concierge build reports only, until its policy has run clean in
+    // production (next.config.js). The other header alongside would be a leftover.
+    if (h.has(OTHER_CSP_HEADER)) fails.push(`${OTHER_CSP_HEADER} sent as well`)
+    const csp = (h.get(CSP_HEADER) || []).join(';')
+    if (csp.includes('nonce-')) fails.push('CSP mentions nonce-')
+    // A concierge build allows the microphone here and connects to ElevenLabs; any other build
+    // sends these exactly as before. Neither lets scripts run from blob: (the worklets are files).
+    const policy = permissionsOf(pp)
+    for (const [feature, want] of [['camera', '()'], ['microphone', CONCIERGE_ON ? '(self)' : '()'], ['geolocation', '()']])
+      if (policy.get(feature) !== want) fails.push(`permissions-policy ${feature}=${policy.get(feature) ?? '(absent)'}, expected ${want}`)
+    if (csp) {
+      const connect = cspSources(csp, 'connect-src')
+      const wantConnect = ["'self'", ...(CONCIERGE_ON ? CONCIERGE_HOSTS : [])]
+      if (!connect || connect.length !== wantConnect.length || !wantConnect.every((s) => connect.includes(s)))
+        fails.push(`CSP connect-src is ${connect ? q(connect.join(' '), 200) : 'absent'}, expected ${q(wantConnect.join(' '), 200)}`)
+      if ((cspSources(csp, 'script-src') || []).some((s) => /^blob:/i.test(s))) fails.push('CSP script-src allows blob:')
+    }
     const id = `T10.headers`
     if (fails.length) fail(id, `${p}: ${[...fails, ...warns].join('; ')}`)
     else if (warns.length) warn(id, `${p}: ${warns.join('; ')}`)
-    else pass(id, `${p}: security headers once each`)
+    else pass(id, `${p}: security headers once each${CONCIERGE_ON ? ', microphone and ElevenLabs allowed (concierge build)' : ''}`)
+  }
+
+  // The brand files are immutable for a year (renamed when they change); the optimiser's
+  // copies too. Locally the optimiser answers from .next/cache/images, whose files keep the age
+  // they were written with, so a cache older than the setting makes this only a warning there.
+  const pngMark = WALL.marks.find((m) => m.file.endsWith('.png'))
+  const optimisedLogo = `/_next/image?url=${encodeURIComponent(pngMark.file)}&w=256&q=75`
+  for (const [p, immutable] of [[AVATAR.src, true], [OG_IMAGE.url, true], [WALL.marks[0].file, true], [optimisedLogo, false]]) {
+    const r = await rawGet(at(p))
+    const cc = r.ok ? (headerMap(r.rawHeaders).get('cache-control') || []).join(', ') : `request failed: ${r.error}`
+    const ok = /max-age=31536000\b/.test(cc) && (!immutable || /\bimmutable\b/.test(cc))
+    if (ok) pass('T10.cache', `${q(p, 70)}: ${cc}`)
+    else (!immutable && PROFILE === 'local' ? warn : fail)('T10.cache', `${q(p, 70)}: cache-control ${q(cc, 90)}, expected max-age=31536000${immutable ? ', immutable' : ''}`)
+  }
+
+  // The page and its headers come from the same build: the concierge's inline entry
+  // ([data-concierge]) ships only where Permissions-Policy lets it use the microphone.
+  if (!HOME_OK) skip('T10.concierge', `cannot read / (${fetchErr(home)})`)
+  else {
+    const entry = !!doc.querySelector('[data-concierge]')
+    if (entry && !CONCIERGE_ON) fail('T10.concierge', 'the page carries the concierge ([data-concierge]) but Permissions-Policy keeps the microphone off')
+    else if (!entry && CONCIERGE_ON) warn('T10.concierge', 'the headers are a concierge build (microphone=(self)) but the page has no [data-concierge] entry')
+    else pass('T10.concierge', CONCIERGE_ON ? 'concierge build: the entry is in the page and the headers allow the microphone' : 'no concierge: no entry in the page, microphone off')
   }
 })
 

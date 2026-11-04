@@ -16,9 +16,21 @@ export function describeError(e) {
   return cause ? `${e.message} (${cause})` : e.code || e.message || String(e)
 }
 
-export function requestHeaders(ua, accept) {
+// The preview bypass secret goes to the site under test and nowhere else: verify-site names that
+// origin once it has parsed its arguments. Every other host (a build's site, GitHub, nexerah.com)
+// gets a plain request.
+let bypassOrigin = null
+export const setBypassOrigin = (origin) => {
+  bypassOrigin = origin
+}
+
+export function requestHeaders(ua, accept, url) {
   const h = { 'user-agent': ua || CHROME_UA, accept: accept || '*/*' }
-  if (process.env.VERCEL_BYPASS) {
+  let sameSite = false
+  try {
+    sameSite = !!bypassOrigin && new URL(url).origin === bypassOrigin
+  } catch {}
+  if (process.env.VERCEL_BYPASS && sameSite) {
     h['x-vercel-protection-bypass'] = process.env.VERCEL_BYPASS
     h['x-vercel-skip-toolbar'] = '1'
   }
@@ -27,20 +39,21 @@ export function requestHeaders(ua, accept) {
 
 const cache = new Map()
 
-// GET with the built-in fetch. redirect: 'follow' | 'manual'.
-export function get(url, { ua, redirect = 'follow', accept } = {}) {
-  const key = [url, ua || '', redirect, accept || ''].join('|')
-  if (!cache.has(key)) cache.set(key, doGet(url, ua, redirect, accept))
+// GET with the built-in fetch. redirect: 'follow' | 'manual'. timeoutMs: for an address that
+// may need to wake up first (a free-tier demo).
+export function get(url, { ua, redirect = 'follow', accept, timeoutMs = TIMEOUT_MS } = {}) {
+  const key = [url, ua || '', redirect, accept || '', timeoutMs].join('|')
+  if (!cache.has(key)) cache.set(key, doGet(url, ua, redirect, accept, timeoutMs))
   return cache.get(key)
 }
 
-async function doGet(url, ua, redirect, accept) {
+async function doGet(url, ua, redirect, accept, timeoutMs) {
   const empty = { url, status: 0, contentType: '', location: null, buf: Buffer.alloc(0), text: '' }
   try {
     const res = await fetch(url, {
-      headers: requestHeaders(ua, accept),
+      headers: requestHeaders(ua, accept, url),
       redirect,
-      signal: AbortSignal.timeout(TIMEOUT_MS),
+      signal: AbortSignal.timeout(timeoutMs),
     })
     const buf = Buffer.from(await res.arrayBuffer())
     return {
@@ -55,7 +68,8 @@ async function doGet(url, ua, redirect, accept) {
       text: buf.toString('utf8'),
     }
   } catch (e) {
-    return { ...empty, ok: false, error: describeError(e) }
+    const timedOut = e.name === 'TimeoutError' || e.name === 'AbortError'
+    return { ...empty, ok: false, timedOut, error: timedOut ? `timeout after ${timeoutMs} ms` : describeError(e) }
   }
 }
 
@@ -78,7 +92,7 @@ export function rawGet(url, { ua } = {}) {
         resolve(v)
       }
     }
-    const req = mod.request(u, { method: 'GET', headers: requestHeaders(ua) }, (res) => {
+    const req = mod.request(u, { method: 'GET', headers: requestHeaders(ua, undefined, url) }, (res) => {
       res.on('data', () => {})
       res.on('end', () => finish({ ok: true, status: res.statusCode, rawHeaders: res.rawHeaders }))
       res.on('error', (e) => finish({ ok: false, error: describeError(e) }))

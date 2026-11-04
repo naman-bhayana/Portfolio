@@ -21,6 +21,8 @@ export default function SiteHeader() {
               </a>
             )),
           )}
+          {/* The bar under the current section's link; MotionIsland places it. */}
+          <i className="navline" aria-hidden="true" />
         </nav>
         <div className="navend">
           {/* Click target for the pause checkbox in layout.js, which carries the accessible name. */}
@@ -28,8 +30,9 @@ export default function SiteHeader() {
             <Icon name="pause" className="when-playing" />
             <Icon name="play" className="when-paused" />
           </label>
-          <a className="pill pill-primary navcta" href={HEADER_CTA.href}>
+          <a className="pill pill-ghost navcta" href={HEADER_CTA.href}>
             {HEADER_CTA.label}
+            <i className="lq" aria-hidden="true" />
           </a>
         </div>
       </div>

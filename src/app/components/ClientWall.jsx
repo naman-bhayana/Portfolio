@@ -17,6 +17,9 @@ function Mark({ mark }) {
       height={mark.height}
       alt={mark.name}
       decoding="async"
+      // Eager (on a laptop the wall is on the first screen) but never ahead of the avatar, and
+      // with no preload of its own in the head, where it would share the line with the fonts.
+      fetchPriority="low"
     />
   )
 }
@@ -25,19 +28,21 @@ export default function ClientWall() {
   return (
     <section className="wall" data-rv="wall" aria-labelledby="wall-heading">
       <div className="wrap">
-        <ul className="wgrid" role="list">
-          <li className="wlabel">
-            <h2 id="wall-heading" className="eyebrow">
-              {WALL.label}
-            </h2>
-          </li>
-          {WALL.marks.map((mark) => (
-            <li key={mark.id} className="wcell">
-              <Mark mark={mark} />
-              <span className="wdesc">{mark.desc}</span>
-            </li>
-          ))}
-        </ul>
+        {/* The heading stands before the list, not in it; the list lays its marks into the
+            band's grid beside the heading (wall.css). */}
+        <div className="wgrid">
+          <h2 id="wall-heading" className="wlabel eyebrow">
+            {WALL.label}
+          </h2>
+          <ul className="wlist" role="list">
+            {WALL.marks.map((mark) => (
+              <li key={mark.id} className="wcell">
+                <Mark mark={mark} />
+                <span className="wdesc">{mark.desc}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
     </section>
   )

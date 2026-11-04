@@ -10,7 +10,11 @@ function Figure({ parts }) {
         {part}
       </span>
     ) : part === '-' ? (
-      part
+      // A hyphen never breaks before a digit; the <wbr> lets a range wrap after it when a
+      // reader's own text spacing makes it wider than its column. It shows nothing otherwise.
+      <span key={i}>
+        -<wbr />
+      </span>
     ) : (
       <small key={i} className="u">
         {part}
@@ -66,6 +70,7 @@ export default function Proof() {
               <div className="num2">
                 <Num item={cell} />
               </div>
+              <p className="flab2">{cell.label}</p>
               {cell.bars && (
                 <div className="bars" aria-hidden="true">
                   {Array.from({ length: cell.bars }, (_, i) => (
@@ -73,7 +78,6 @@ export default function Proof() {
                   ))}
                 </div>
               )}
-              <p className="flab2">{cell.label}</p>
               <p className="src">{cell.source}</p>
             </li>
           ))}
